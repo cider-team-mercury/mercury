@@ -22,7 +22,6 @@ import burnman.composite as composite
 # constants
 G = 6.67e-11
 
-
 class Planet:
     def __init__(self,  boundaries, compositions, methods=None):
         ''' 
@@ -32,13 +31,13 @@ class Planet:
             methods: list of EOS fitting method
         '''
 
-        for i,c in enumerate(compositions):
+        for c in compositions:
             assert( isinstance(c,burnman.Material) )
 
-        for i,b in boundaries:
+        for i,b in enumerate(boundaries):
             assert( i == 0 or b >= boundaries[i-1])
 
-        assert( len(boundaries) == len(compositions)
+        assert( len(boundaries) == len(compositions) )
 
         self.boundaries = boundaries
         self.compositions = compositions
@@ -66,24 +65,21 @@ class Planet:
 
         densities = np.empty_like(radii)    
 
-        for i in range(len(radii)):
-            if radii[i] > self.cmb:
-                density, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.ol, np.array([pressures[i]]), np.array([temperatures[i]]))
-                densities[i] = density
-            else:
-                density, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.fe, np.array([pressures[i]]), np.array([temperatures[i]]))
-                densities[i] = density
-
         # iterate over layers
         last = -1.
         for bound,comp in zip(self.boundaries,self.compositions):
-            rrange = radii[ last < radii <= bound]
-            prange = pressures[last < radii <= bound]
-            trange = trange[last < radii <= bound]
+            layer =  (radii > last) & ( radii <= bound)
+            rrange = radii[ layer ]
+            drange = np.empty_like(rrange)
+            prange = pressures[ layer ]
+            trange = temperatures[ layer ]
 
             for i in range(len(rrange)):
                     density, vp, vs, vphi, K, G = burnman.velocities_from_rock(comp, np.array([prange[i]]), np.array([trange[i]]))
-                    densities[last < radii <= bound] = density
+                    drange[i] = density
+
+            densities[layer] = drange
+            last = bound # update last boundary
 
         return densities
 
@@ -103,7 +99,7 @@ class Planet:
         pressure = np.ravel(odeint( (lambda p, x : gfunc(x)* rhofunc(x)), 0.0,depth[::-1]))
         return pressure[::-1]
    
-    def integrate(self,n_slices,P0,T0,n_iter=5)
+    def integrate(self,n_slices,P0,T0,n_iter=5,plot=False):
         '''
         Iteratively determine the pressure, temperature and gravity profiles for the
         planet.
@@ -119,19 +115,34 @@ class Planet:
             tol: not implemented
         '''
 
-#         n_slices = 300
         radius = np.linspace(0.e3, self.boundaries[-1], n_slices)
-#         pressures = np.linspace(35.0e9, 0.0, n_slices) # initial guess at pressure profile
-        pressures = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
-        temperatures = np.ones_like(pressures)*T0
+        pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
+        temperatures = np.ones_like(pressure)*T0
         gravity = np.empty_like(radius)
 
-        for i in range(n_iter): 
-            density = self.evaluate_eos(pressures, temperatures, radius)
-            gravity = compute_gravity(density, radius)
-            pressures = compute_pressure(density, gravity, radius)
 
-        return density, gravity, pressures
+        if plot == True:
+            f = plt.figure()
+            ax1 = plt.subplot(131)
+            ax2 = plt.subplot(132)
+            ax3 = plt.subplot(133)
+            plt.hold(True)
+
+        for i in range(n_iter): 
+            density = self.evaluate_eos(pressure, temperatures, radius)
+            gravity = self.compute_gravity(density, radius)
+            pressure = self.compute_pressure(density, gravity, radius)
+
+            # Plots !
+            if plot==True:
+                ax1.plot(radius, density)
+                ax2.plot(radius, gravity)
+                ax3.plot(radius, pressure)
+        
+        if plot==True:
+            plt.show()
+    
+        return radius, density, gravity, pressure
 
 
 # Material parameters
@@ -177,18 +188,12 @@ R = 2440.0e3
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
-T0 = 1000.
+T0 = 0.
 
-# 
-merc = Planet([cmb,R],[iron,ol])
+# build planet!
+# merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
+merc = Planet([cmb,R],[fe,ol])
 
-# radius, density, pressure = merc.integrate(n_slices,P0,T0)
-# 
-# plt.subplot(131)
-# plt.plot(radius, density)
-# plt.subplot(132)
-# plt.plot(radius, gravity)
-# plt.subplot(133)
-# plt.plot(radius, pressures)
-# 
-# plt.show()
+# # Integrate!
+radius, density, gravity, pressure = merc.integrate(n_slices,P0,T0,n_iter=5,plot=True)
+ 
