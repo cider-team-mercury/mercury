@@ -11,41 +11,18 @@ import burnman.composite as composite
 
 from build_planet import Planet
 
-# Material parameters - These are unrealistic
-class iron (burnman.Mineral):
-    def __init__(self):
-        self.params = {
-            'equation_of_state':'slb3',
-            'V_0': 6.6e-6,
-            'K_0': 180.0e9,
-            'Kprime_0': 4.9,
-            'G_0': 130.9e9,
-            'Gprime_0': 1.92,
-            'molar_mass': .0558,
-            'n': 1,
-            'Debye_0': 300.,
-            'grueneisen_0': 1.5,
-            'q_0': 1.5,
-            'eta_s_0': 2.3 }
-
-class olivine (burnman.Mineral):
-    def __init__(self):
-        self.params = {
-            'equation_of_state':'slb3',
-            'V_0': 11.24e-6,
-            'K_0': 161.0e9,
-            'Kprime_0': 3.9,
-            'G_0': 130.9e9,
-            'Gprime_0': 1.92,
-            'molar_mass': .0403,
-            'n': 2,
-            'Debye_0': 773.,
-            'grueneisen_0': 1.5,
-            'q_0': 1.5,
-            'eta_s_0': 2.3 }
-
+# Material Properties
+from mercury_materials import *
 fe = iron()
-ol = olivine()
+
+n_fe_ol = .05
+n_fe_opx = .05
+ol = olivine(n_fe_ol)
+opx = orthopyroxene(n_fe_ol)
+
+fol = 0.2; fopx = 1. - fol
+rock = burnman.Composite([fol,fopx],[ol,opx])
+
 
 # Structural Parameters
 cmb = 2020.0e3
