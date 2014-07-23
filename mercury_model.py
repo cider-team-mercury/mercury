@@ -12,11 +12,11 @@ import burnman.composite as composite
 from build_planet import Planet
 
 # Material Properties
-from mercury_materials import *
+from mercury_minerals import *
 fe = iron()
 
-n_fe_ol = .05
-n_fe_opx = .05
+n_fe_ol = 0.5
+n_fe_opx = 0.5
 ol = olivine(n_fe_ol)
 opx = orthopyroxene(n_fe_ol)
 
@@ -35,7 +35,7 @@ T0 = 0.
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
-merc = Planet([cmb,R],[fe,ol])
+merc = Planet([cmb,R],[fe,rock])
 
 # # Integrate!
 radius, density, gravity, pressure = merc.integrate(n_slices,P0,T0,n_iter=5,plot=True)
