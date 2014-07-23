@@ -18,7 +18,7 @@ fe = iron()
 n_fe_ol = 0.5
 n_fe_opx = 0.5
 ol = olivine(n_fe_ol)
-opx = orthopyroxene(n_fe_ol)
+opx = orthopyroxene(n_fe_opx)
 
 fol = 0.2; fopx = 1. - fol
 rock = burnman.Composite([fol,fopx],[ol,opx])
