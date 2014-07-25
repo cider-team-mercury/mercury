@@ -61,6 +61,15 @@ T0 = [2200.,1550.,1500.,1000.]
 merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock],T0)
 
 # # Integrate!
-radius, density, gravity, pressure, temperatures = \
+radius, density, gravity, pressure, temperature = \
         merc.integrate(n_slices,P0,n_iter=5,plot=True)
 #         merc.integrate(n_slices,P0,n_iter=5,plot=True,profile_type='isothermal')
+
+# calculate mass and moments
+M, Mlayer, C, Clayer, MR2 = merc.calculate_mass_moments(density,radius)
+
+print 'Mass: ', M,'kg', Mlayer
+print 'Moment of inertia:', C,'MR^2', Clayer
+print 'Cm / C:',  np.sum(Clayer[-2:]) / C
+print 'MR^2 :',MR2
+print 'Surface gravity :',gravity[-1],'m s^-2'

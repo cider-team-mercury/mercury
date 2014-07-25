@@ -130,8 +130,13 @@ class iron_sulfide10_liquid (burnman.Mineral):
             'weight_percent' : wS}
 
 class iron_silicide_liquid (burnman.Mineral): #placeholder
+    '''
+    Fe-Si liquid endmember
+    Parameters from:
+        Hauck et. al 2013
+        T_0 and V_0 from dumay and cramba 1995
+    '''
     def __init__(self):
-        #Hauck 2013 / dumay and cramb
         xSi = .5; xFe = 1. - xSi
         wSi = xSi * mSi / ( xSi * mSi + xFe * mFe)
         self.params = {
@@ -152,9 +157,16 @@ class iron_silicide_liquid (burnman.Mineral): #placeholder
             'T_0' : 1450. # T_0 from dumay and cramb
             }
             
-class iron_sulfide_liquid (burnman.Mineral): #placeholder
+class iron_sulfide_liquid (burnman.Mineral): 
     def __init__(self):
-        # Hauck 2013 / sanloup 2003 / Kairu and Toguri 1979
+        '''
+        Fe-S liquid endmember
+        Parameters from:
+            Hauck 2013  
+            Ko from sanloup 2003, linear fit is causing problems
+            T_0 and V_0 from Kairu and Toguri 1979
+        '''
+
         xS = .5; xFe = 1. - xS
         wS = xS * mS / ( xS * mS + xFe * mFe)
         # wS = 0.36

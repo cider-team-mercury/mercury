@@ -139,6 +139,8 @@ class Planet:
             last = bound # update last boundary
 
         return temperatures
+        
+    
 
     def compute_isotherm(self,radii,T_bound):
         """
@@ -175,6 +177,65 @@ class Planet:
         print '\tType of temperature profile:',profile_type
         print '\tIntial guess for central pressure:',P0,'\n'
 
+    def calculate_mass_moments(self,density,radii):
+        '''
+        Calculate the integrated mass of the body.
+
+        Parameters
+        ----------
+        density : Array with densities [kg m^-3] at a given radius in planet
+
+        radius : Corresponding radii [m] in planet
+
+        Returns
+        ----------
+        Mtotal : Integrated mass [kg] of the entire planet
+
+        Mlayer : Integrated mass [kg] of each layer in planet
+
+        Ctotal_norm : Normalized moment [M R^2] of the entire planet
+
+        Clayer_norm : Normalized moment [M R^2] of each layer in planet
+
+        MR2 : Normalization factor for moments [kg m^2] defined as 
+                Mtotal * (radius of planet)^2
+        '''
+        
+        Mlayer = np.empty_like(self.boundaries)
+        Clayer = np.empty_like(self.boundaries)
+
+        # iterate over layers
+        last = 0.
+        for i,bound in enumerate(self.boundaries):
+            layer =  (radii > last) & ( radii <= bound)
+            r2 = radii[ layer ]
+            r1= np.hstack([np.array([last]),r2[:-1]])
+            rho = density[ layer]
+
+            m = 4. / 3. * np.pi * rho * ( r2**3 - r1**3 )
+            
+            # http://en.wikipedia.org/wiki/List_of_moments_of_inertia
+            # Sphere (shell) of radius r2, with centered spherical cavity of radius r1 and mass m
+            c =  2. * m / 5. * ( r2**5 - r1**5 ) / ( r2**3 - r1**3)
+
+            # save mass and moment of the layer
+            Mlayer[i] = np.sum(m)
+            Clayer[i] = np.sum(c)
+
+            last = r2[-1]
+
+        # sum and normalize the moments
+        R = radii[-1]
+        Mtotal = np.sum(Mlayer)
+        Ctotal = np.sum(Clayer)
+
+        Clayer_norm = Clayer / ( Mtotal * R**2)
+        Ctotal_norm = Ctotal / ( Mtotal * R**2)
+
+        MR2 =  Mtotal * R**2
+
+        return Mtotal, Mlayer, Ctotal_norm, Clayer_norm, MR2
+
 
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
         """
@@ -198,6 +259,18 @@ class Planet:
                 of radius (default: False)
         
         verbose : (default: True)
+
+        Returns
+        ----------
+        radius : Array with radii [m] described by n_slices
+
+        density : Array with the density [kg m^-3] calculated for at radius
+
+        gravity : Array with gravitational acceleration [m s^-2] calculated at radius
+
+        pressure : Array with pressure [Pa] calculated at radius
+
+        temperature : Array with temperature [K] calculated at radius
         """
         if verbose:
             self.display_input(n_slices,P0,n_iter,profile_type)
@@ -235,5 +308,5 @@ class Planet:
         
         if plot==True:
             plt.show()
-    
+        
         return radius, density, gravity, pressure, temperature
