@@ -30,14 +30,14 @@ fol = 0.2; fopx = 1. - fol
 rock = burnman.Composite([fol,fopx],[ol,opx])
 
 # inner core / FeS layer
-wSi = 0.05; wFe = 1.-wSi
+wSi = 0.15; wFe = 1.-wSi
 xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe )
 iron = iron()
 solidFeS = iron_sulfide() # solid FeS
 solidFeSi = ironSilicideAlloy(xSi) # solid solution of Si in Fe
 
 # outer core
-wS = 0.15; wFe = 1.-wS
+wS = 0.05; wFe = 1.-wS
 xS = (wS/mS) / ( wS/mS + wFe/mFe )
 
 liquidFe = iron_liquid() # pure liquid Fe
@@ -58,7 +58,7 @@ T0 = [2200.,1550.,1500.,1000.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
-merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock],T0)
+merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSSi,solidFeS,rock],T0)
 
 # # Integrate!
 merc.integrate(n_slices,P0,n_iter=5,plot=False)
