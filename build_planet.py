@@ -226,19 +226,23 @@ class Planet:
             plt.show()
 
 
-    def mass(self):
+    def mass_list(self):
         '''
-        Returns the mass of the planet [kg]
+        Returns a list of masses of the planet [kg]
         '''
+        masses = np.empty( len(self.compositions) )
         rhofunc = UnivariateSpline(self.radius, self.density )
-        print rhofunc( self.radius )
-        mass = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
-                               0.0, self.radius[-1] )
-        return mass[0]
+        for i,layer in enumerate(self.compositions):
+            masses[i] = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
+                                     (0.0 if i==0 else self.boundaries[i-1]), self.boundaries[i] )[0]
+        return masses
+  
+    def mass(self):
+        return np.sum(self.mass_list())
   
     def moment_of_inertia_list(self):
         '''
-        Returns the mass of the planet [kg m^3]
+        Returns a list of moments of inertia of the planet [kg m^2]
         '''
         moments = np.empty( len(self.compositions) )
         rhofunc = UnivariateSpline(self.radius, self.density )
@@ -248,6 +252,9 @@ class Planet:
         return moments
 
     def moment_of_inertia(self):
+        '''
+        Returns the total moment of inertia of the planet [kg m^2]
+        '''
         return np.sum(self.moment_of_inertia_list())
            
  
