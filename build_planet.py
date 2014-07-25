@@ -11,8 +11,7 @@ need so solve them iteratively.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.integrate import odeint
-from scipy.interpolate import interp1d
+import scipy.integrate as integrate
 from scipy.interpolate import UnivariateSpline
 
 import burnman
@@ -55,7 +54,7 @@ class Planet:
 
         self.boundaries = boundaries
         self.compositions = compositions
-        self.temperatures = temperatures
+        self.boundary_temperatures = temperatures
         self.Nlayer = len(boundaries)
 
         if methods is None:
@@ -67,107 +66,96 @@ class Planet:
             comp.set_method(m)
 
 
-    def evaluate_eos(self, pressures, temperatures, radii):
+    def evaluate_eos(self):
         '''
         Find densities for a given set of pressures, temperatures and radii
         '''
 
-        assert(radii.max() <= self.boundaries[-1] and radii.min() >= 0. )
+        assert(self.radius[-1] == self.boundaries[-1] and self.radius[0] == 0. )
 
-        densities = np.empty_like(radii)    
 
         # iterate over layers
         last = -1.
         for bound,comp in zip(self.boundaries,self.compositions):
-            layer =  (radii > last) & ( radii <= bound)
-            rrange = radii[ layer ]
+            layer =  (self.radius > last) & ( self.radius <= bound)
+            rrange = self.radius[ layer ]
             drange = np.empty_like(rrange)
-            prange = pressures[ layer ]
-            trange = temperatures[ layer ]
+            prange = self.pressure[ layer ]
+            trange = self.temperature[ layer ]
 
             for i in range(len(rrange)):
-                    density, vp, vs, vphi, K, G = burnman.velocities_from_rock(comp, np.array([prange[i]]), np.array([trange[i]]))
-                    drange[i] = density
+                    rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(comp, np.array([prange[i]]), np.array([trange[i]]))
+                    drange[i] = rho
 
-            densities[layer] = drange
+            self.density[layer] = drange
             last = bound # update last boundary
 
-        return densities
 
-
-    def compute_gravity(self, density, radii):
+    def compute_gravity(self):
         '''
         Find gravity for a given set of densities and radii
         '''
-        rhofunc = UnivariateSpline(radii, density )
+        rhofunc = UnivariateSpline(self.radius, self.density )
         poisson = lambda p, x : 4.0 * np.pi * G * rhofunc(x) * x * x
-        grav = np.ravel(odeint( poisson, 0.0, radii ))
-        grav[1:] = grav[1:]/radii[1:]/radii[1:]
+        grav = np.ravel(integrate.odeint( poisson, 0.0, self.radius ))
+        grav[1:] = grav[1:]/self.radius[1:]/self.radius[1:]
         grav[0] = 0.0
-        return grav
+        self.gravity = grav
 
-    def compute_pressure(self, density, gravity, radii):
+    def compute_pressure(self):
         '''
         Find pressure for a given set of densities, gravity and radii
         '''
-        depth = radii[-1]-radii
-        rhofunc = UnivariateSpline( depth[::-1], density[::-1] )
-        gfunc = UnivariateSpline( depth[::-1], gravity[::-1] )
-        pressure = np.ravel(odeint( (lambda p, x : gfunc(x)* rhofunc(x)), 0.0,depth[::-1]))
-        return pressure[::-1]
+        depth = self.radius[-1]-self.radius
+        rhofunc = UnivariateSpline( depth[::-1], self.density[::-1] )
+        gfunc = UnivariateSpline( depth[::-1], self.gravity[::-1] )
+        press = np.ravel(integrate.odeint( (lambda p, x : gfunc(x)* rhofunc(x)), 0.0,depth[::-1]))
+        self.pressure = press[::-1]
 
-    def compute_adiabat(self,pressures,radii,T_bound):
+    def compute_adiabat(self):
         """
         Find temperatures for a given set of pressures, radii and boundary temperatures 
                 using adiabatic profiles.
         """
 
-        assert( len(T_bound) == self.Nlayer )
-
-        temperatures = np.empty_like(radii)
+        assert( len(self.boundary_temperatures) == self.Nlayer )
 
         # iterate over layers
         last = -1.
-        for bound,comp,T0 in zip(self.boundaries,self.compositions,T_bound):
-            layer =  (radii > last) & ( radii <= bound)
-            rrange = radii[ layer ]
-            prange = pressures[ layer ]
+        for bound,comp,T0 in zip(self.boundaries,self.compositions,self.boundary_temperatures):
+            layer =  (self.radius > last) & ( self.radius <= bound)
+            rrange = self.radius[ layer ]
+            prange = self.pressure[ layer ]
 
             trange = burnman.geotherm.adiabatic(prange[::-1],np.array([T0]),comp)
-            temperatures[layer] = trange[::-1]
-
+            self.temperature[layer] = trange[::-1]
             last = bound # update last boundary
 
-        return temperatures
-
-    def compute_isotherm(self,radii,T_bound):
+    def compute_isotherm(self):
         """
         Find temperatures for a given set of pressures, radii and boundary temperatures 
                 using isothermal profiles.
         """
-        assert( len(T_bound) == self.Nlayer )
+        assert( len(self.boundary_temperatures) == self.Nlayer )
 
-        temperatures = np.empty_like(radii)
 
         # iterate over layers
         last = -1.
-        for bound,T0 in zip(self.boundaries,T_bound):
-            layer =  (radii > last) & ( radii <= bound)
+        for bound,T0 in zip(self.boundaries, self.boundary_temperatures):
+            layer =  (self.radius > last) & ( self.radius <= bound)
             rrange = radii[ layer ]
 
             trange = np.ones_like(rrange)*T0
-            temperatures[layer] = trange[::-1]
+            self.temperature[layer] = trange[::-1]
 
             last = bound # update last boundary
-
-        return temperatures
 
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
         print 'Planet Model:'
         print '\tNumber of Layers:',self.Nlayer
         print '\tRadii of upper boundaries:',self.boundaries
-        print '\tTemperature of upper boundaries,',self.temperatures
+        print '\tTemperature of upper boundaries,',self.boundary_temperatures
         print '\tComposition of boundaries:', self.compositions, '\n'
         print 'Integration parameters:'
         print '\tNumber of radial slices:',n_slices
@@ -202,10 +190,11 @@ class Planet:
         if verbose:
             self.display_input(n_slices,P0,n_iter,profile_type)
 
-        radius = np.linspace(0.e3, self.boundaries[-1], n_slices)
-        pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
-        temperature = np.ones_like(pressure)*self.temperatures[-1]
-        gravity = np.empty_like(radius)
+        self.radius = np.linspace(0.e3, self.boundaries[-1], n_slices)
+        self.pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
+        self.temperature = np.ones_like(self.pressure)*self.boundary_temperatures[-1]
+        self.gravity = np.empty_like(self.radius)
+        self.density = np.empty_like(self.radius)
 
         if plot == True:
             ax1 = plt.subplot(141)
@@ -218,22 +207,57 @@ class Planet:
             if verbose: print 'Iteration #',i+1
 
             if profile_type == 'adiabatic':
-                temperature = self.compute_adiabat(pressure,radius,self.temperatures)
+                self.compute_adiabat()
             elif profile_type == 'isothermal':
-                temperature = self.compute_isotherm(radius,self.temperatures)
+                self.compute_isotherm()
             else:
                 raise NameError('Invalid profile_type:'+profile_type)
-            density = self.evaluate_eos(pressure, temperature, radius)
-            gravity = self.compute_gravity(density, radius)
-            pressure = self.compute_pressure(density, gravity, radius)
+            self.evaluate_eos()
+            self.compute_gravity()
+            self.compute_pressure()
 
             if plot==True:
-                ax1.plot(radius, density)
-                ax2.plot(radius, gravity)
-                ax3.plot(radius, pressure)
-                ax4.plot(radius, temperature)
+                ax1.plot(self.radius, self.density)
+                ax2.plot(self.radius, self.gravity)
+                ax3.plot(self.radius, self.pressure)
+                ax4.plot(self.radius, self.temperature)
         
         if plot==True:
             plt.show()
-    
-        return radius, density, gravity, pressure, temperature
+
+
+    def mass(self):
+        '''
+        Returns the mass of the planet [kg]
+        '''
+        rhofunc = UnivariateSpline(self.radius, self.density )
+        print rhofunc( self.radius )
+        mass = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
+                               0.0, self.radius[-1] )
+        return mass[0]
+  
+    def moment_of_inertia_list(self):
+        '''
+        Returns the mass of the planet [kg m^3]
+        '''
+        moments = np.empty( len(self.compositions) )
+        rhofunc = UnivariateSpline(self.radius, self.density )
+        for i,layer in enumerate(self.compositions):
+            moments[i] = integrate.quad( lambda r : 8.0/3.0*np.pi*rhofunc(r)*r*r*r*r, 
+                             (0.0 if i==0 else self.boundaries[i-1]), self.boundaries[i] )[0]
+        return moments
+
+    def moment_of_inertia(self):
+        return np.sum(self.moment_of_inertia_list())
+           
+ 
+    def radial_profile(self):
+        return self.radius
+    def density_profile(self):
+        return self.density
+    def gravity_profile(self):
+        return self.gravity
+    def pressure_profile(self):
+        return self.pressure
+    def temperature_profile(self):
+        return self.temperature
