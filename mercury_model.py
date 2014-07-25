@@ -30,14 +30,14 @@ fol = 0.2; fopx = 1. - fol
 rock = burnman.Composite([fol,fopx],[ol,opx])
 
 # inner core / FeS layer
-wSi = 0.05; wFe = 1.-wSi
+wSi = 0.15; wFe = 1.-wSi
 xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe )
 iron = iron()
 solidFeS = iron_sulfide() # solid FeS
 solidFeSi = ironSilicideAlloy(xSi) # solid solution of Si in Fe
 
 # outer core
-wS = 0.15; wFe = 1.-wS
+wS = 0.05; wFe = 1.-wS
 xS = (wS/mS) / ( wS/mS + wFe/mFe )
 
 liquidFe = iron_liquid() # pure liquid Fe
@@ -58,7 +58,7 @@ T0 = [2200.,1550.,1500.,1000.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
-merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock],T0)
+merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSSi,solidFeS,rock],T0)
 
 # # Integrate!
 radius, density, gravity, pressure, temperature = \
@@ -68,8 +68,8 @@ radius, density, gravity, pressure, temperature = \
 # calculate mass and moments
 M, Mlayer, C, Clayer, MR2 = merc.calculate_mass_moments(density,radius)
 
-print 'Mass: ', M,'kg', Mlayer
+print '\nMass: ', M,'kg', Mlayer
 print 'Moment of inertia:', C,'MR^2', Clayer
 print 'Cm / C:',  np.sum(Clayer[-2:]) / C
-print 'MR^2 :',MR2
+print 'MR^2 :',MR2, ' kg m^2'
 print 'Surface gravity :',gravity[-1],'m s^-2'

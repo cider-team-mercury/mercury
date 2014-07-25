@@ -101,35 +101,38 @@ class iron_liquid (burnman.Mineral):
                                     
         
 class iron_sulfide10_liquid (burnman.Mineral): 
-    # Balog 2003 
-    # A fit to the measured data only was made using
-    # density values obtained between 1.5 and 17.5 GPa at all
-    # three temperature levels considered, 1773 K, 1923 K, and
-    # 2123 K. The third-order Birch-Murnaghan EOS revealed
-    # K0T = 64.3 GPa, K0
-    # 0T = 4.7, and 5.5 g/cm3 for the density of
-    # the Fe-10 wt % S at 1 atm. A
+    '''
+    Fe - 10 wt % S endmember
+    Balog 2003 
+        A fit to the measured data only was made using
+        density values obtained between 1.5 and 17.5 GPa at all
+        three temperature levels considered, 1773 K, 1923 K, and
+        2123 K. The third-order Birch-Murnaghan EOS revealed
+        K0T = 64.3 GPa, K0'0T = 4.7, and 5.5 g/cm3 for the density of
+        the Fe-10 wt % S at 1 atm. A
+    '''
     def __init__(self):
         wS = .1; wFe = 1.-wS; #mFe = 55.845; mS = 32.066
         xS = (wS/mS) / ( wS/mS + wFe/mFe )
         xFe = 1. - xS
         self.params = {
             'equation_of_state':'slb3',
-            'V_0': 9.453e-06, #  1 / (5.5 g / cm^3) * (.05199 kg / mol)
-            'K_0': 64.3e9, # changed
-            'Kprime_0': 4.7, # changed
+            'V_0': 9.754e-06, #  1 / (5.33 g / cm^3) * (.05199 kg / mol)
+            'K_0': 64.3e9, 
+            'Kprime_0': 4.8, 
             'G_0': 0.,
             'Gprime_0': 0.,
-            'molar_mass': .05199, #changed
+            'molar_mass': .05199, 
             'n': 1,
-            'Debye_0': 100., # unknown?
+            'Debye_0': 10., # assymptote to 3R
             'grueneisen_0': 1.5, #  Alfe liquid iron ?
             'q_0': 0., # unknown ?
             'eta_s_0': 0.,
             'mole_fraction' : xS,
-            'weight_percent' : wS}
+            'weight_percent' : wS,
+            'T0' : 1173}
 
-class iron_silicide_liquid (burnman.Mineral): #placeholder
+class iron_silicide_liquid (burnman.Mineral): 
     '''
     Fe-Si liquid endmember
     Parameters from:
@@ -279,7 +282,7 @@ class ironSilicideAlloy(burnman.HelperSolidSolution):
 
 class ironSulfideLiquid(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_S):
-        base_materials = [iron_liquid(), iron_sulfide_liquid()]
+        base_materials = [iron_liquid(), iron_sulfide10_liquid()]
         x0 = base_materials[1].params['mole_fraction']
         assert( mole_frac_S <= x0 )
         molar_fraction = [1. - mole_frac_S / x0, 0.0 + mole_frac_S / x0] # keep the 0.0 +, otherwise it is an array sometimes
@@ -295,7 +298,7 @@ class ironSilicideLiquid(burnman.HelperSolidSolution):
 
 class ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_S, mole_frac_Si):
-        base_materials = [iron_liquid(),iron_sulfide_liquid(),iron_silicide_liquid()]
+        base_materials = [iron_liquid(),iron_sulfide10_liquid(),iron_silicide_liquid()]
         xS0 = base_materials[1].params['mole_fraction']
         xSi0 = base_materials[2].params['mole_fraction']
         assert( mole_frac_S <= xS0 )
