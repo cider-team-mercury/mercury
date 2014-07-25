@@ -256,6 +256,12 @@ class Planet:
         Returns the total moment of inertia of the planet [kg m^2]
         '''
         return np.sum(self.moment_of_inertia_list())
+
+    def moment_over_mr2(self):
+        '''
+        Returns the total moment of inertia divided by MR^2
+        '''
+        return self.moment_of_inertia() / self.mass() / self.radius[-1] /self.radius[-1]
            
  
     def radial_profile(self):

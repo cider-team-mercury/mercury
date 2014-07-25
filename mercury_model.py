@@ -62,8 +62,7 @@ merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock],T0)
 
 # # Integrate!
 merc.integrate(n_slices,P0,n_iter=5,plot=False)
-print merc.mass()
-print merc.moment_of_inertia()
+print merc.moment_over_mr2()
 
 plt.subplot(141)
 plt.plot(merc.radial_profile()/1.e3, merc.density_profile())
