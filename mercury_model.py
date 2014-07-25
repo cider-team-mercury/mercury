@@ -54,11 +54,13 @@ dFeS = 100 * 1e3
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
-T0 = 0.
+T0 = [2200.,1550.,1500.,1000.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
-merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock])
+merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSi,solidFeS,rock],T0)
 
 # # Integrate!
-radius, density, gravity, pressure = merc.integrate(n_slices,P0,T0,n_iter=5,plot=True)
+radius, density, gravity, pressure, temperatures = \
+        merc.integrate(n_slices,P0,n_iter=5,plot=True)
+#         merc.integrate(n_slices,P0,n_iter=5,plot=True,profile_type='isothermal')

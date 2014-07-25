@@ -23,7 +23,7 @@ import burnman.composite as composite
 G = 6.67e-11
 
 class Planet:
-    def __init__(self,  boundaries, compositions, methods=None):
+    def __init__(self,  boundaries, compositions, temperatures, methods=None):
         ''' 
         args:
             boundaries: list of increasing outer boundaries of layers
@@ -41,6 +41,7 @@ class Planet:
 
         self.boundaries = boundaries
         self.compositions = compositions
+        self.temperatures = temperatures
         self.Nlayer = len(boundaries)
 
         if methods is None:
@@ -98,8 +99,61 @@ class Planet:
         gfunc = UnivariateSpline( depth[::-1], gravity[::-1] )
         pressure = np.ravel(odeint( (lambda p, x : gfunc(x)* rhofunc(x)), 0.0,depth[::-1]))
         return pressure[::-1]
+
+    def compute_adiabat(self,pressures,radii,T_bound):
+
+        assert( len(T_bound) == self.Nlayer )
+
+        temperatures = np.empty_like(radii)
+
+        # iterate over layers
+        last = -1.
+        for bound,comp,T0 in zip(self.boundaries,self.compositions,T_bound):
+            layer =  (radii > last) & ( radii <= bound)
+            rrange = radii[ layer ]
+            prange = pressures[ layer ]
+
+            trange = burnman.geotherm.adiabatic(prange[::-1],np.array([T0]),comp)
+            temperatures[layer] = trange[::-1]
+
+            last = bound # update last boundary
+
+        return temperatures
+
+    def compute_isotherm(self,radii,T_bound):
+        assert( len(T_bound) == self.Nlayer )
+
+        temperatures = np.empty_like(radii)
+
+        # iterate over layers
+        last = -1.
+        for bound,T0 in zip(self.boundaries,T_bound):
+            layer =  (radii > last) & ( radii <= bound)
+            rrange = radii[ layer ]
+
+            trange = np.ones_like(rrange)*T0
+            temperatures[layer] = trange[::-1]
+
+            last = bound # update last boundary
+
+        return temperatures
+
+    def display_input(self,n_slices,P0,n_iter,profile_type):
+        print 'Computing interior structure with layers:\n'
+        print 'Planet Model:'
+        print '\tNumber of Layers:',self.Nlayer
+        print '\tRadii of upper boundaries:',self.boundaries
+        print '\tTemperature of upper boundaries,',self.temperatures
+        print '\tComposition of boundaries:', self.compositions, '\n'
+        print 'Integration parameters:'
+        print '\tNumber of radial slices:',n_slices
+        print '\tNumber of iterations:',n_iter
+        print '\tType of temperature profile:',profile_type
+        print '\tIntial guess for central pressure:',P0,'\n'
+
+
    
-    def integrate(self,n_slices,P0,T0,n_iter=5,plot=False):
+    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
         '''
         Iteratively determine the pressure, temperature and gravity profiles for the
         planet.
@@ -115,21 +169,32 @@ class Planet:
             tol: not implemented
         '''
 
+        if verbose:
+            self.display_input(n_slices,P0,n_iter,profile_type)
+
         radius = np.linspace(0.e3, self.boundaries[-1], n_slices)
         pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
-        temperatures = np.ones_like(pressure)*T0
+        temperature = np.ones_like(pressure)*self.temperatures[-1]
         gravity = np.empty_like(radius)
 
-
         if plot == True:
-            f = plt.figure()
-            ax1 = plt.subplot(131)
-            ax2 = plt.subplot(132)
-            ax3 = plt.subplot(133)
+            ax1 = plt.subplot(141)
+            ax2 = plt.subplot(142)
+            ax3 = plt.subplot(143)
+            ax4 = plt.subplot(144)
             plt.hold(True)
 
         for i in range(n_iter): 
-            density = self.evaluate_eos(pressure, temperatures, radius)
+            if verbose: print 'Iteration #',i+1
+
+            if profile_type == 'adiabatic':
+                temperature = self.compute_adiabat(pressure,radius,self.temperatures)
+            elif profile_type == 'isothermal':
+                temperature = self.compute_isotherm(radius,self.temperatures)
+#                 print temperature
+            else:
+                raise NameError('Invalid profile_type:'+profile_type)
+            density = self.evaluate_eos(pressure, temperature, radius)
             gravity = self.compute_gravity(density, radius)
             pressure = self.compute_pressure(density, gravity, radius)
 
@@ -138,11 +203,12 @@ class Planet:
                 ax1.plot(radius, density)
                 ax2.plot(radius, gravity)
                 ax3.plot(radius, pressure)
+                ax4.plot(radius, temperature)
         
         if plot==True:
             plt.show()
     
-        return radius, density, gravity, pressure
+        return radius, density, gravity, pressure, temperature
 
 
  
