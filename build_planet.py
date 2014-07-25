@@ -23,13 +23,27 @@ import burnman.composite as composite
 G = 6.67e-11
 
 class Planet:
+    """
+    Define a planet specified by a number of layers of a given thickness,
+        material and temperature.
+    """
     def __init__(self,  boundaries, compositions, temperatures, methods=None):
-        ''' 
-        args:
-            boundaries: list of increasing outer boundaries of layers
-            compositions: list of burnman.Composite of burnman.Material
-            methods: list of EOS fitting method
-        '''
+        """
+        Parameters
+        ----------
+        boundaries: list of increasing upper boundary radii of layers in km
+
+        compositions: list of burnman.Composite or burnman.Material describing 
+            the material of each layer
+
+        temperatures: temperature of the upper boundary for each layer
+        methods: list of EOS fitting method
+
+        Optional
+        ----------
+        methods: list of burnman EOS methods to be used for each material
+            in compositions, default: 'slb'
+        """
 
         for c in compositions:
             assert( isinstance(c,burnman.Material) )
@@ -55,11 +69,7 @@ class Planet:
 
     def evaluate_eos(self, pressures, temperatures, radii):
         '''
-        Find densities for a given set of pressures and temperatures
-        args:
-            pressures: array of starting pressures in Pa 
-            temperatures: array of constant temperatures in K
-            radii: array of radii in m
+        Find densities for a given set of pressures, temperatures and radii
         '''
 
         assert(radii.max() <= self.boundaries[-1] and radii.min() >= 0. )
@@ -86,6 +96,9 @@ class Planet:
 
 
     def compute_gravity(self, density, radii):
+        '''
+        Find gravity for a given set of densities and radii
+        '''
         rhofunc = UnivariateSpline(radii, density )
         poisson = lambda p, x : 4.0 * np.pi * G * rhofunc(x) * x * x
         grav = np.ravel(odeint( poisson, 0.0, radii ))
@@ -94,6 +107,9 @@ class Planet:
         return grav
 
     def compute_pressure(self, density, gravity, radii):
+        '''
+        Find pressure for a given set of densities, gravity and radii
+        '''
         depth = radii[-1]-radii
         rhofunc = UnivariateSpline( depth[::-1], density[::-1] )
         gfunc = UnivariateSpline( depth[::-1], gravity[::-1] )
@@ -101,6 +117,10 @@ class Planet:
         return pressure[::-1]
 
     def compute_adiabat(self,pressures,radii,T_bound):
+        """
+        Find temperatures for a given set of pressures, radii and boundary temperatures 
+                using adiabatic profiles.
+        """
 
         assert( len(T_bound) == self.Nlayer )
 
@@ -121,6 +141,10 @@ class Planet:
         return temperatures
 
     def compute_isotherm(self,radii,T_bound):
+        """
+        Find temperatures for a given set of pressures, radii and boundary temperatures 
+                using isothermal profiles.
+        """
         assert( len(T_bound) == self.Nlayer )
 
         temperatures = np.empty_like(radii)
@@ -152,23 +176,29 @@ class Planet:
         print '\tIntial guess for central pressure:',P0,'\n'
 
 
-   
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
-        '''
-        Iteratively determine the pressure, temperature and gravity profiles for the
-        planet.
-        Only Isothermal temperature profile implemented. Should implement adiabatic
-        profiles.
-        Usage:
-            density, gravity, pressures = integrate(n_slices,P0,T0,n_iter=5)
-        args:
-            n_slices: number of radial slices
-            P0: initial central pressure in Pa
-            T0: exterior temperature in K
-            n_iter: number of iterations (default: 5)
-            tol: not implemented
-        '''
+        """
+        Iteratively determine the pressure, density temperature and gravity profiles for the
+        as a function of radius within a planet.
 
+        Parameters
+        ----------
+        n_slices : number of radial slices
+
+        P0 : initial guess for central pressure in Pa
+
+        Optional
+        ----------
+        n_iter : number of iterations (default: 5)
+
+        profile_type : temperature profile type ('adiabatic' or 'isothermal, default: 
+                'adiabatic')
+
+        plot : create plot of density, gravity, pressure and temperature as a function
+                of radius (default: False)
+        
+        verbose : (default: True)
+        """
         if verbose:
             self.display_input(n_slices,P0,n_iter,profile_type)
 
@@ -191,14 +221,12 @@ class Planet:
                 temperature = self.compute_adiabat(pressure,radius,self.temperatures)
             elif profile_type == 'isothermal':
                 temperature = self.compute_isotherm(radius,self.temperatures)
-#                 print temperature
             else:
                 raise NameError('Invalid profile_type:'+profile_type)
             density = self.evaluate_eos(pressure, temperature, radius)
             gravity = self.compute_gravity(density, radius)
             pressure = self.compute_pressure(density, gravity, radius)
 
-            # Plots !
             if plot==True:
                 ax1.plot(radius, density)
                 ax2.plot(radius, gravity)
@@ -209,6 +237,3 @@ class Planet:
             plt.show()
     
         return radius, density, gravity, pressure, temperature
-
-
- 

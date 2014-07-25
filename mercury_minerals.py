@@ -70,7 +70,7 @@ class iron_sulfide (burnman.Mineral):
             'G_0': 0.,
             'Gprime_0': 0.,
             'molar_mass': .04396, 
-            'n': 1,
+            'n': 2,
             'Debye_0': 300., # asymptote to 3R
             'grueneisen_0': 1.5,
             'q_0': 1.5,
