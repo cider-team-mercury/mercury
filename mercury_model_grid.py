@@ -4,6 +4,7 @@ mercury_model.py
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 
 import burnman
 import burnman.minerals as minerals
@@ -21,44 +22,48 @@ mS = 32.066
 
 # fe = iron()
 
-n_fe_ol = 0.5
-n_fe_opx = 0.5
+
+# Structural Parameters
+icb = 1500.0e3
+cmb = 2020.0e3
+R = 2440.0e3
+
+# integration parameters
+n_slices = 300
+P0 = 40.0e9
+T0 = [1900.,1800.,1750.] # approximate temperatures from breuer
+
+n_fe_ol = 0.0
+n_fe_opx = 0.0
+
+DSi = 1.
+xSi_arr = np.linspace(0.,0.3,7)
+xS_arr = np.linspace(0.,0.15,4)
+
+for xSi in xSi_arr:
+    for xS in xS_arr:
+
 ol = olivine(n_fe_ol)
 opx = orthopyroxene(n_fe_opx)
 
 fol = 0.2; fopx = 1. - fol
 rock = burnman.Composite([fol,fopx],[ol,opx])
 
-
 # outer core xSmax = 0.162, xSi = .30 
 wSi = .18; wS = 0.0; wFe = 1. - wS -wSi
 xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe + wS/mS)
 xS = (wS/mS) / ( wS/mS + wFe/mFe + wSi/mSi)
 
-liquidFe = iron_liquid() # pure liquid Fe
-liquidFeS = ironSulfideLiquid(xS) # solution of liquid Fe and FeS
-liquidFeSi = ironSilicideLiquid(xSi) # solution of FeSi and Fe
 liquidFeSSi = ironSulfideSilicideLiquid(xS,xSi) # ternary solution
 
 # inner core / FeS layer
 DSi = 1.
 xSi_solid = DSi * xSi
-iron = iron()
 solidFeS = iron_sulfide() # solid FeS
 solidFeSi = ironSilicideAlloy() # solid solution of Si in Fe
 
 
 
-# Structural Parameters
-icb = 1300.0e3
-cmb = 2020.0e3
-R = 2440.0e3
-dFeS = 100 * 1e3
-
-# integration parameters
-n_slices = 300
-P0 = 40.0e9
-T0 = [2200.,1550.,1500.,1000.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
