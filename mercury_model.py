@@ -21,8 +21,8 @@ mS = 32.066
 
 # fe = iron()
 
-n_fe_ol = 0.5
-n_fe_opx = 0.5
+n_fe_ol = 0.
+n_fe_opx = 0.
 ol = olivine(n_fe_ol)
 opx = orthopyroxene(n_fe_opx)
 
@@ -31,9 +31,11 @@ rock = burnman.Composite([fol,fopx],[ol,opx])
 
 
 # outer core xSmax = 0.162, xSi = .30 
-wSi = .18; wS = 0.0; wFe = 1. - wS -wSi
-xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe + wS/mS)
-xS = (wS/mS) / ( wS/mS + wFe/mFe + wSi/mSi)
+# wSi = .18; wS = 0.0; wFe = 1. - wS -wSi
+# xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe + wS/mS)
+# xS = (wS/mS) / ( wS/mS + wFe/mFe + wSi/mSi)
+
+xS = .05; xSi = .15 ; xFe = 1. - xS - xSi
 
 liquidFe = iron_liquid() # pure liquid Fe
 liquidFeS = ironSulfideLiquid(xS) # solution of liquid Fe and FeS
@@ -45,7 +47,7 @@ DSi = 1.
 xSi_solid = DSi * xSi
 iron = iron()
 solidFeS = iron_sulfide() # solid FeS
-solidFeSi = ironSilicideAlloy() # solid solution of Si in Fe
+solidFeSi = ironSilicideAlloy(xSi_solid) # solid solution of Si in Fe
 
 
 
@@ -58,15 +60,17 @@ dFeS = 100 * 1e3
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
-T0 = [2200.,1550.,1500.,1000.]
+T0 = [2250.,1900.,1800.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
-merc = Planet([icb,cmb,cmb+dFeS,R],[iron,liquidFeSSi,solidFeS,rock],T0)
+merc = Planet([icb,cmb,R],[solidFeSi,liquidFeSSi,rock],T0)
 
 # # Integrate!
 merc.integrate(n_slices,P0,n_iter=5,plot=False)
 print merc.moment_over_mr2()
+C = merc.moment_of_inertia_list()
+print C[-1] / np.sum(C)
 
 plt.subplot(141)
 plt.plot(merc.radial_profile()/1.e3, merc.density_profile())

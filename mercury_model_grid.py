@@ -31,7 +31,7 @@ R = 2440.0e3
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
-T0 = [1900.,1800.,1750.] # approximate temperatures from breuer
+T0 = [2000.,1850.,1800.] # approximate temperatures from tosi
 
 n_fe_ol = 0.0
 n_fe_opx = 0.0
