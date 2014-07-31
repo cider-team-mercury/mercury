@@ -87,20 +87,20 @@ class iron_sulfide (burnman.Mineral):
 
 # liquids
 
-class iron_liquid (burnman.Mineral): 
+class iron_liquid(burnman.Mineral): 
     # Hauck 2013
     def __init__(self):
         self.params = {
             'equation_of_state':'slb3',
             'V_0': 6.92e-6, #1 / (8.069 g / cm^3) * (.0558 kg / mol)
-            'K_0': 124.0e9,
-            'Kprime_0': 5.5,
+            'K_0': 109.0e9,  # Williams, 124 in Hauck
+            'Kprime_0': 5., # poorly constrained
             'G_0': 0.e9,
             'Gprime_0': 0.,
             'molar_mass': .0558,
             'n': 1,
             'Debye_0': 10., # asymptote to 3R
-            'grueneisen_0': 1.5, # alfe liquid iron
+            'grueneisen_0': 1.2, # alfe liquid iron
             'q_0': 0., # unkonwn
             'eta_s_0': 0.,
             } 
@@ -131,7 +131,7 @@ class iron_sulfide10_liquid (burnman.Mineral):
             'molar_mass': .05199, 
             'n': 1,
             'Debye_0': 10., # assymptote to 3R
-            'grueneisen_0': 1.5, #  Alfe liquid iron ?
+            'grueneisen_0': 1.2, #  Alfe liquid iron ?
             'q_0': 0., # unknown ?
             'eta_s_0': 0.,
             'mole_fraction' : xS,
@@ -159,7 +159,7 @@ class iron_silicide_liquid (burnman.Mineral):
             'molar_mass': .04197,
             'n': 1,
             'Debye_0': 10., # asymptote to 3R
-           'grueneisen_0': 1.5,
+           'grueneisen_0': 1.2,
             'q_0': 0.,
             'eta_s_0': 0.,
             'mole_fraction' : xSi,
@@ -184,7 +184,7 @@ class iron_sulfide_liquid (burnman.Mineral): #placeholder
             'molar_mass': .04396, 
             'n': 1,
             'Debye_0': 10., # asymptote to 3R
-            'grueneisen_0': 1.5,
+            'grueneisen_0': 1.2,
             'q_0': 0.,
             'eta_s_0': 0.,
             'mole_fraction' : xS,
@@ -274,6 +274,7 @@ class ironSilicideAlloy(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_Si):
         base_materials = [iron_liquid(), iron_silicide_liquid()]
         x0 = base_materials[1].params['mole_fraction']
+        self.base_fraction = [1.,x0]
         assert( mole_frac_Si <= x0 )
         molar_fraction = [1. - mole_frac_Si / x0, 0.0 + mole_frac_Si / x0] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
@@ -284,6 +285,7 @@ class ironSulfideLiquid(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_S):
         base_materials = [iron_liquid(), iron_sulfide10_liquid()]
         x0 = base_materials[1].params['mole_fraction']
+        self.base_fraction = [1.,x0]
         assert( mole_frac_S <= x0 )
         molar_fraction = [1. - mole_frac_S / x0, 0.0 + mole_frac_S / x0] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
@@ -292,6 +294,7 @@ class ironSilicideLiquid(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_Si):
         base_materials = [iron_liquid(), iron_silicide_liquid()]
         x0 = base_materials[1].params['mole_fraction']
+        self.base_fraction = [1.,x0]
         assert( mole_frac_Si <= x0 )
         molar_fraction = [1. - mole_frac_Si / x0, 0.0 + mole_frac_Si / x0] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
@@ -301,6 +304,7 @@ class ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
         base_materials = [iron_liquid(),iron_sulfide10_liquid(),iron_silicide_liquid()]
         xS0 = base_materials[1].params['mole_fraction']
         xSi0 = base_materials[2].params['mole_fraction']
+        self.base_fraction = [1.,xS0,xSi0]
         assert( mole_frac_S <= xS0 )
         assert( mole_frac_Si <= xSi0 )
         molar_fraction = [1. - mole_frac_Si / xSi0 - mole_frac_S / xS0, 0.0 +

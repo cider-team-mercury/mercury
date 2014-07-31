@@ -36,7 +36,7 @@ rock = burnman.Composite([fol,fopx],[ol,opx])
 # xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe + wS/mS)
 # xS = (wS/mS) / ( wS/mS + wFe/mFe + wSi/mSi)
 
-xS = .02; xSi = 0.1 ; xFe = 1. - xS - xSi
+xS = 0.05; xSi = 0. ; xFe = 1. - xS - xSi
 liquidFe = iron_liquid() # pure liquid Fe
 liquidFeS = ironSulfideLiquid(xS) # solution of liquid Fe and FeS
 liquidFeSi = ironSilicideLiquid(xSi) # solution of FeSi and Fe
@@ -61,14 +61,14 @@ dFeS = 100 * 1e3
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
-T0 = [2200.,1950.,1800.]
+T0 = [2000.,1800.,1700.]
 
 # build planet!
 # merc = Planet([cmb,R],[fe,ol],['bm3','bm3'])
 merc = Planet([icb,cmb,R],[solidFeSi,liquidFeSSi,rock],T0)
 
 # # Integrate!
-merc.integrate(n_slices,P0,n_iter=10,plot=True)
+merc.integrate(n_slices,P0,n_iter=20,plot=True,inner_core=True)
 print merc.mass()
 print merc.moment_over_mr2()
 C = merc.moment_of_inertia_list()

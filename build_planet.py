@@ -200,7 +200,7 @@ class Planet:
             self.boundary_temperatures[0] = t[i]
             
          
-    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
+    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True,inner_core=False):
         """
         Iteratively determine the pressure, density temperature and gravity profiles for the
         as a function of radius within a planet.
@@ -222,6 +222,9 @@ class Planet:
                 of radius (default: False)
         
         verbose : (default: True)
+
+        inner_core: attempt to find the inner inner core radius self consistantly,
+                this converges very slowly (default: False)
         """
         if verbose:
             self.display_input(n_slices,P0,n_iter,profile_type)
@@ -233,10 +236,21 @@ class Planet:
         self.density = np.empty_like(self.radius)
 
         if plot == True:
-            ax1 = plt.subplot(141)
-            ax2 = plt.subplot(142)
-            ax3 = plt.subplot(143)
-            ax4 = plt.subplot(144)
+            ax1 = plt.subplot(221)
+            plt.xlabel(r"Radius [$km$]")
+            plt.ylabel(r"Density [$kg/m^3$]")
+
+            ax2 = plt.subplot(222)
+            plt.xlabel(r"Radius [$km$]")
+            plt.ylabel(r"Gravity [$m/s^2$]")
+
+            ax3 = plt.subplot(223)
+            plt.xlabel(r"Radius [$km$]")
+            plt.ylabel(r"Pressure [$Pa$]")
+
+            ax4 = plt.subplot(224)
+            plt.xlabel(r"Radius [$km$]")
+            plt.ylabel(r"Temperature [$K$]")
             plt.hold(True)
 
         for i in range(n_iter): 
@@ -252,7 +266,8 @@ class Planet:
             self.compute_gravity()
             self.compute_pressure()
 
-            self.inner_core_size()
+            if inner_core:
+                self.inner_core_size()
 
             if plot==True:
                 ax1.plot(self.radius, self.density)
