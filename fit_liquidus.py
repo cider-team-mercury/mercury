@@ -2,6 +2,20 @@
 This code fits experimental data for the melting of a binary system.
 The goal is to fit the liquidus to a polynomial model (after Stevenson 1983)
 to describe the thermal evolotion of a parameterized convecting planet.
+
+It contains the class 
+
+    Liquidus()
+
+Which reads in tabulated data on the Fe melting temperature and FeS
+eutectic.
+
+The relevent functional models are: 
+---------------------------------------------------------------------
+
+    Liquidus.Tliq_with_piecewise_eutectic(p,x)
+
+    Liquidus.Tliq_simple(p,x)
 '''
 
 import numpy as np
@@ -46,7 +60,7 @@ class Liquidus(object):
         t_init = [ 1880. , 1.36e-12, -6.2e-24 ] 
 
         # functional fits
-        self.Tm, params = func_from_fit(t_poly3,fe_melt,'P','T',t_init)
+        self.Tm, params = self.func_from_fit(self.t_poly3,self.fe_melt,'P','T',t_init)
 #         self.Teut, params = func_from_fit(t_poly3,eut,'P','T',t_init) 
 #         Teut_sp = UnivariateSpline(eut['P'],eut['T'])
 
@@ -54,7 +68,7 @@ class Liquidus(object):
 #         Xeut_lin,params = func_from_fit(x_lin,eut,'P','mol_frac',None)
 
         # Try a piecewise fit for the eutectic
-        self.eut1 = eut[:6]; self.eut2 = eut[6:]; pbreak = 10.e9
+        self.eut1 = eut[:6]; self.eut2 = eut[6:]; self.pbreak = 10.e9
         self.Teut1 = interp1d(self.eut1['P'],self.eut1['T'],kind='linear')
         self.Teut2 = interp1d(self.eut2['P'],self.eut2['T'],kind='linear')
 
@@ -106,31 +120,34 @@ class Liquidus(object):
     def Tliq_simple(self,p,x):
         return (1. - 2.*x) * self.Tm(p)
 
-# plot and compare
-prange = np.linspace(0.e9,40.e9,100)
+if __name__ == "__main__":
+    # plot and compare
+    prange = np.linspace(0.e9,40.e9,100)
 
-# plt.figure()
-# plt.plot(fe_melt['P'],fe_melt['T'])
-# plt.plot(prange,Tm(prange))
-# 
-# plt.figure()
-# plt.plot(eut['P'],eut['T'])
-# plt.plot(prange,Teut(prange))
-# # plt.plot(prange,Teut_sp(prange))
-# plt.plot(prange,Teut_pw(prange))
-# 
-# plt.figure()
-# plt.plot(eut['P'],eut['mol_frac'])
-# # plt.plot(prange,Xeut_lin(prange))
-# plt.plot(prange,Xeut(prange))
-# plt.plot(prange,Xeut_pw(prange))
+    # plt.figure()
+    # plt.plot(fe_melt['P'],fe_melt['T'])
+    # plt.plot(prange,Tm(prange))
+    # 
+    # plt.figure()
+    # plt.plot(eut['P'],eut['T'])
+    # plt.plot(prange,Teut(prange))
+    # # plt.plot(prange,Teut_sp(prange))
+    # plt.plot(prange,Teut_pw(prange))
+    # 
+    # plt.figure()
+    # plt.plot(eut['P'],eut['mol_frac'])
+    # # plt.plot(prange,Xeut_lin(prange))
+    # plt.plot(prange,Xeut(prange))
+    # plt.plot(prange,Xeut_pw(prange))
 
-x = 0.05
-liq = Liquidus()
-plt.figure()
-plt.plot(prange,liq.Tliq_with_piecewise_eutectic(prange,x) )
-plt.plot(prange,liq.Tliq_simple(prange,x) )
+    x = 0.05
+    liq = Liquidus()
+    plt.figure()
+    plt.plot(prange,liq.Tliq_with_piecewise_eutectic(prange,x) )
+    plt.plot(prange,liq.Tliq_simple(prange,x) )
+    plt.plot(prange,liq.Tm(prange),'k')
+    plt.plot(prange,liq.Teut_pw(prange),'k')
 
-plt.show()
+    plt.show()
 
 

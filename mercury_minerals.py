@@ -18,7 +18,10 @@ def value(x):
 # solids
 class iron (burnman.Mineral):
     def __init__(self):
-        # Hauck2013
+        '''
+        Hauck2013
+        mie-gruneisen from Boehler
+        '''
         self.params = {
             'equation_of_state':'slb3',
             'V_0': 6.830e-6, # 1 / (8.170 g / cm^3) * (.0558 kg / mol)
@@ -27,14 +30,17 @@ class iron (burnman.Mineral):
             'G_0': 130.9e9, # where did shear stuff come from
             'Gprime_0': 1.92,
             'molar_mass': .0558,
-            'n': 1,
+            'n': 5.8,
             'Debye_0': 300.,
-            'grueneisen_0': 1.5, # are these correct?
-            'q_0': 1.5,
+            'grueneisen_0': 1.66, # are these correct?
+            'q_0': 0.6,
             'eta_s_0': 2.3 }
 
 class iron_silicide17 (burnman.Mineral): 
-    # Hauck 2013
+    '''
+    Hauck2013
+    mie-gruneisen from Boehler (for Fe)
+    '''
     def __init__(self):
         wSi = .17; wFe = 1.-wSi; mFe = 55.845; mSi = 28.0855
         xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe )
@@ -47,10 +53,10 @@ class iron_silicide17 (burnman.Mineral):
             'G_0': 0.,
             'Gprime_0': 0.,
             'molar_mass': .04880, #changed
-            'n': 1,
+            'n': 5.,
             'Debye_0': 300., # unknown?
-            'grueneisen_0': 1.5, #  Alfe liquid iron ?
-            'q_0': 1.5, # unknown ?
+            'grueneisen_0': 1.66, 
+            'q_0': 0.6, # unknown ?
             'eta_s_0': 0.,
             'mole_fraction' : xSi,
             'weight_percent' : wSi}

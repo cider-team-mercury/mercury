@@ -18,6 +18,8 @@ import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+from fit_liquidus import Liquidus
+
 # constants
 G = 6.67e-11
 
@@ -42,6 +44,7 @@ class Planet:
         ----------
         methods: list of burnman EOS methods to be used for each material
             in compositions, default: 'slb'
+
         """
 
         for c in compositions:
@@ -64,6 +67,8 @@ class Planet:
 
         for m, comp in zip(meths,self.compositions):
             comp.set_method(m)
+
+        self.liq = Liquidus()
 
 
     def evaluate_eos(self):
@@ -164,6 +169,37 @@ class Planet:
         print '\tIntial guess for central pressure:',P0,'\n'
 
 
+    def inner_core_size(self):
+        print 'messing with inner core'
+        liqalloy = self.compositions[1]
+        xS = liqalloy.molar_fraction[1] * liqalloy.base_fraction[1]
+
+        print xS
+        cmb = self.boundaries[1]
+#         liq = Liquidus()
+        p = self.pressure[self.radius<cmb]
+        r = self.radius[self.radius<cmb]
+        t = self.temperature[self.radius<cmb]
+
+        Tliq = self.liq.Tliq_simple(p,xS)
+        self.Tliq = Tliq
+
+        if t[0] > Tliq[0]:
+            print 'all liquid'
+            self.boundaries[0] = 0.
+        elif Tliq[-1] > t[-1]:
+            print 'all solid'
+            self.boundaries[0] = self.boundaries[1]  
+            self.boundary_temperatures[0] = self.boundary_temperatures[1]
+        else:
+            print 'part solid'
+            i = 0
+            while Tliq[i] >t[i]:
+                i += 1
+            self.boundaries[0] = r[i]
+            self.boundary_temperatures[0] = t[i]
+            
+         
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
         """
         Iteratively determine the pressure, density temperature and gravity profiles for the
@@ -215,6 +251,8 @@ class Planet:
             self.evaluate_eos()
             self.compute_gravity()
             self.compute_pressure()
+
+            self.inner_core_size()
 
             if plot==True:
                 ax1.plot(self.radius, self.density)
