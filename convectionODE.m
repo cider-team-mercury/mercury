@@ -57,6 +57,10 @@ dTl=Tb(2:end)-Tl;
 qt=sign(dTu).*thetau.*(abs(dTu)).^(4/3);
 qb=sign(dTl).*thetal.*(abs(dTl)).^(4/3);
 
+% Calculate new C for core
+
+
+
 dTadt=((A(2:end).*qb... heat flux from next layer below
     -A(1:end-1).*qt... heat flux toward next layer above
     )./M... spread over the volume of each layer
