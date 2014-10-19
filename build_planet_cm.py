@@ -21,16 +21,16 @@ import burnman.composite as composite
 # constants
 G = 6.67e-11
 
-class Planet:
+class cm_Planet:
     """
-    Define a planet specified by a number of layers of a given thickness,
+    Define a planet specified by a number of layers of a given mass,
         material and temperature.
     """
-    def __init__(self,  boundaries, compositions, temperatures, methods=None):
+    def __init__(self,  boundaries, masses, temperatures, methods=None):
         """
         Parameters
         ----------
-        boundaries: list of increasing upper boundary radii of layers in km
+        masses: list of layer masses ordered in to out
 
         compositions: list of burnman.Composite or burnman.Material describing 
             the material of each layer
@@ -47,12 +47,15 @@ class Planet:
         for c in compositions:
             assert( isinstance(c,burnman.Material) )
 
-        for i,b in enumerate(boundaries):
-            assert( i == 0 or b >= boundaries[i-1])
+#         for i,b in enumerate(boundaries):
+#             assert( i == 0 or b >= boundaries[i-1])
 
-        assert( len(boundaries) == len(compositions) )
+        assert( len(masses) == len(compositions) )
 
-        self.boundaries = boundaries
+        
+        self.masses = masses
+
+        self.boundaries = np.zeros_like(masses)
         self.compositions = compositions
         self.boundary_temperatures = temperatures
         self.Nlayer = len(boundaries)
@@ -65,46 +68,98 @@ class Planet:
         for m, comp in zip(meths,self.compositions):
             comp.set_method(m)
 
+        self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
+        msum = 0.
+        for i,m in enumerate(masses):
+            msum += m
+            self.massBelowBoundary[i] = msum
+
+        assert self.massBelowBoundary[-1] == np.sum(self.masses)
+
 
     def evaluate_eos(self):
         '''
-        Find densities for a given set of pressures, temperatures and radii
+        Find densities for a given set of pressures, temperatures
+
+        This does not require the radii to have been determined yet.
         '''
 
-        assert(self.radius[-1] == self.boundaries[-1] and self.radius[0] == 0. )
+#         assert(self.radius[-1] == self.boundaries[-1] and self.radius[0] == 0. )
 
 
         # iterate over layers
         last = -1.
-        for bound,comp in zip(self.boundaries,self.compositions):
-            layer =  (self.radius > last) & ( self.radius <= bound)
-            rrange = self.radius[ layer ]
-            drange = np.empty_like(rrange)
+        for bound,comp in zip(self.massBelowBoundary,self.compositions):
+            layer =  (self.int_mass > last) & ( self.int_mass <= bound)
+            mrange = self.int_mass[ layer ] #range in int_mass within the layer
+            drange = np.empty_like(mrange)
             prange = self.pressure[ layer ]
             trange = self.temperature[ layer ]
 
-            for i in range(len(rrange)):
+            for i in range(len(mrange)):
                     rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(comp, np.array([prange[i]]), np.array([trange[i]]))
                     drange[i] = rho
 
+            # set the self.density within the layer
             self.density[layer] = drange
             last = bound # update last boundary
 
+    def compute_radii(self):
+        '''
+        Convert from an self.int_mass and self.density to self.radius.
+
+        Note: This uses trapezoidal rule (should probably make more accurate).
+        Checked in case of uniform density
+        '''
+#         assert int_mass[0] >= 0.
+        d_plus = self.density
+        d_minus = np.hstack((self.density[0],self.density[:-1])) 
+        avg_density = (d_plus + d_minus) / 2.
+
+        mass = self. int_mass - np.hstack((0.,self.int_mass[:-1]))
+
+        radii = np.zeros_like(self.int_mass)
+        r = 0.
+        for i,m in enumerate(mass):
+            rnext = (m / avg_density[i] * 3. / 4. / np.pi + r**3.)**(1./3.)
+            radii[i] = rnext
+            r = rnext
+
+        # set self.radius
+        self.radius = radii
+
+    def compute_boundaries(self):
+        '''
+        Determine the positions of the boundaries in meters.
+
+        self.int_mass, and self.radius should both be updated
+        '''
+
+        radfunc = UnivariateSpline(self.int_mass,self.radius)
+
+        # set self.boundaries
+        self.boundaries = np.array([ radfunc(m) for m in massBelowBoundary])
 
     def compute_gravity(self):
         '''
-        Find gravity for a given set of densities and radii
+        Find gravity for a given set of densities and radius
+
+        requires self.radius to be computed
         '''
         rhofunc = UnivariateSpline(self.radius, self.density )
         poisson = lambda p, x : 4.0 * np.pi * G * rhofunc(x) * x * x
         grav = np.ravel(integrate.odeint( poisson, 0.0, self.radius ))
         grav[1:] = grav[1:]/self.radius[1:]/self.radius[1:]
         grav[0] = 0.0
+
+        # set self.gravity
         self.gravity = grav
 
     def compute_pressure(self):
         '''
-        Find pressure for a given set of densities, gravity and radii
+        Find pressure for a given set of densities, gravity and radius
+
+        requires self.radius to be computed
         '''
         depth = self.radius[-1]-self.radius
         rhofunc = UnivariateSpline( depth[::-1], self.density[::-1] )
@@ -116,15 +171,17 @@ class Planet:
         """
         Find temperatures for a given set of pressures, radii and boundary temperatures 
                 using adiabatic profiles.
+
+        Does not require self.radius to be set.
         """
 
         assert( len(self.boundary_temperatures) == self.Nlayer )
 
         # iterate over layers
         last = -1.
-        for bound,comp,T0 in zip(self.boundaries,self.compositions,self.boundary_temperatures):
-            layer =  (self.radius > last) & ( self.radius <= bound)
-            rrange = self.radius[ layer ]
+        for bound,comp,T0 in zip(self.massBelowBoundary,self.compositions,self.boundary_temperatures):
+            layer =  (self.int_mass > last) & ( self.int_mass <= bound)
+            mrange = self.int_mass[ layer ]
             prange = self.pressure[ layer ]
 
             trange = burnman.geotherm.adiabatic(prange[::-1],np.array([T0]),comp)
@@ -138,14 +195,13 @@ class Planet:
         """
         assert( len(self.boundary_temperatures) == self.Nlayer )
 
-
         # iterate over layers
         last = -1.
-        for bound,T0 in zip(self.boundaries, self.boundary_temperatures):
-            layer =  (self.radius > last) & ( self.radius <= bound)
-            rrange = radii[ layer ]
+        for bound,comp,T0 in zip(self.massBelowBoundary,self.compositions,self.boundary_temperatures):
+            layer =  (self.int_mass > last) & ( self.int_mass <= bound)
+            mrange = self.int_mass[ layer ]
 
-            trange = np.ones_like(rrange)*T0
+            trange = np.ones_like(mrange)*T0
             self.temperature[layer] = trange[::-1]
 
             last = bound # update last boundary
@@ -171,7 +227,7 @@ class Planet:
 
         Parameters
         ----------
-        n_slices : number of radial slices
+        n_slices : number of steps in integrated mass
 
         P0 : initial guess for central pressure in Pa
 
@@ -190,11 +246,17 @@ class Planet:
         if verbose:
             self.display_input(n_slices,P0,n_iter,profile_type)
 
-        self.radius = np.linspace(0.e3, self.boundaries[-1], n_slices)
+        self.int_mass = np.linspace(0.,self.massBelowBoundary[-1], n_slices)
         self.pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
+        # take isothermal starting T profile
         self.temperature = np.ones_like(self.pressure)*self.boundary_temperatures[-1]
-        self.gravity = np.empty_like(self.radius)
-        self.density = np.empty_like(self.radius)
+
+        self.radius = np.empty_like(self.int_mass)
+        self.boundaries = np.empty_like(self.massBelowBoundary)
+
+        self.gravity = np.empty_like(self.int_mass)
+        self.density = np.empty_like(self.int_mass)
+
 
         if plot == True:
             ax1 = plt.subplot(141)
@@ -204,6 +266,7 @@ class Planet:
             plt.hold(True)
 
         for i in range(n_iter): 
+            # Calculate temperature and density before finding radii.
             if verbose: print 'Iteration #',i+1
 
             if profile_type == 'adiabatic':
@@ -213,6 +276,12 @@ class Planet:
             else:
                 raise NameError('Invalid profile_type:'+profile_type)
             self.evaluate_eos()
+            
+            # find radii from the calculated density profile.
+            self.compute_radii()
+            self.compute_boundaries()
+
+            # compute gravity and pressure from radii
             self.compute_gravity()
             self.compute_pressure()
 
@@ -225,20 +294,19 @@ class Planet:
         if plot==True:
             plt.show()
 
-
-    def mass_list(self):
-        '''
-        Returns a list of masses of the planet [kg]
-        '''
-        masses = np.empty( len(self.compositions) )
-        rhofunc = UnivariateSpline(self.radius, self.density )
-        for i,layer in enumerate(self.compositions):
-            masses[i] = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
-                                     (0.0 if i==0 else self.boundaries[i-1]), self.boundaries[i] )[0]
-        return masses
+#     def mass_list(self):
+#         '''
+#         Returns a list of masses of the planet [kg]
+#         '''
+#         masses = np.empty( len(self.compositions) )
+#         rhofunc = UnivariateSpline(self.radius, self.density )
+#         for i,layer in enumerate(self.compositions):
+#             masses[i] = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
+#                                      (0.0 if i==0 else self.boundaries[i-1]), self.boundaries[i] )[0]
+#         return masses
   
     def mass(self):
-        return np.sum(self.mass_list())
+        return self.massBelowBoundary[-1]
   
     def moment_of_inertia_list(self):
         '''
@@ -274,3 +342,5 @@ class Planet:
         return self.pressure
     def temperature_profile(self):
         return self.temperature
+    def mass_profile(self):
+        return self.int_mass
