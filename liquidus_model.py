@@ -228,3 +228,18 @@ class Solver:
         else
             return False
 
+class Solver_no14(Solver):
+    '''
+    Version of the Solver class which omits data from Chen at 14 GPa. (So clapeyron
+    slopes are monatonic at low S concentrations.
+    '''
+
+    def T_SPl(self,S,P):
+            Pfit = [3.,10.,21.,23.,30.,40.]
+            Tfit = [self.T_p3l(S),self.T_p10l(S),self.T_p21l(S),self.T_p23l(S),self.T_p30l(S),self.T_p40l(S)]
+            return float(UnivariateSpline(Pfit,Tfit,k=1,s=0)(P))
+
+    def T_SPh(self,S,P):
+            Pfit = [3.,10.,21.,23.,30.,40.]
+            Tfit = [self.T_p3h(S),self.T_p10h(S),self.T_p21h(S),self.T_p23h(S),self.T_p30h(S),self.T_p40h(S)]
+            return float(UnivariateSpline(Pfit,Tfit,k=1,s=0)(P))
