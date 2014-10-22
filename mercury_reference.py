@@ -16,7 +16,7 @@ def Cm_over_C(): return np.array([0.432,.025])
 
 # Smith et al. 2012
 def GM(): return np.array([22031.78,.02]) 
-def M(): return np.array([GM_target / G])
+def M(): return np.array([GM() / G])
 
 # Zuber et al. 2012
 def R_equatorial(): return np.array([2439.83,.05])
