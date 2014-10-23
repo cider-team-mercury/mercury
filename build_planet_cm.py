@@ -26,7 +26,7 @@ class cm_Planet:
     Define a planet specified by a number of layers of a given mass,
         material and temperature.
     """
-    def __init__(self,  boundaries, masses, temperatures, methods=None):
+    def __init__(self,  masses, compositions, temperatures, methods=None):
         """
         Parameters
         ----------
@@ -58,7 +58,7 @@ class cm_Planet:
         self.boundaries = np.zeros_like(masses)
         self.compositions = compositions
         self.boundary_temperatures = temperatures
-        self.Nlayer = len(boundaries)
+        self.Nlayer = len(masses)
 
         if methods is None:
             meths = ['slb3'] * self.Nlayer
@@ -116,14 +116,14 @@ class cm_Planet:
         d_minus = np.hstack((self.density[0],self.density[:-1])) 
         avg_density = (d_plus + d_minus) / 2.
 
-        mass = self. int_mass - np.hstack((0.,self.int_mass[:-1]))
+        mass = self.int_mass - np.hstack((0.,self.int_mass[:-1]))
 
         radii = np.zeros_like(self.int_mass)
         r = 0.
         for i,m in enumerate(mass):
             rnext = (m / avg_density[i] * 3. / 4. / np.pi + r**3.)**(1./3.)
-            radii[i] = rnext
             r = rnext
+            radii[i] = r
 
         # set self.radius
         self.radius = radii
@@ -138,7 +138,7 @@ class cm_Planet:
         radfunc = UnivariateSpline(self.int_mass,self.radius)
 
         # set self.boundaries
-        self.boundaries = np.array([ radfunc(m) for m in massBelowBoundary])
+        self.boundaries = np.array([ radfunc(m) for m in self.massBelowBoundary])
 
     def compute_gravity(self):
         '''
@@ -251,11 +251,11 @@ class cm_Planet:
         # take isothermal starting T profile
         self.temperature = np.ones_like(self.pressure)*self.boundary_temperatures[-1]
 
-        self.radius = np.empty_like(self.int_mass)
-        self.boundaries = np.empty_like(self.massBelowBoundary)
+        self.radius = np.zeros_like(self.int_mass)
+        self.boundaries = np.zeros_like(self.massBelowBoundary)
 
-        self.gravity = np.empty_like(self.int_mass)
-        self.density = np.empty_like(self.int_mass)
+        self.gravity = np.zeros_like(self.int_mass)
+        self.density = np.zeros_like(self.int_mass)
 
 
         if plot == True:
@@ -266,6 +266,9 @@ class cm_Planet:
             plt.hold(True)
 
         for i in range(n_iter): 
+
+            print 'Initial'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
             # Calculate temperature and density before finding radii.
             if verbose: print 'Iteration #',i+1
 
@@ -275,15 +278,29 @@ class cm_Planet:
                 self.compute_isotherm()
             else:
                 raise NameError('Invalid profile_type:'+profile_type)
+            print 'compute_adiabatic'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+
             self.evaluate_eos()
+            print 'evaluate_eos'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
             
             # find radii from the calculated density profile.
             self.compute_radii()
+            print 'compute_radii'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
             self.compute_boundaries()
+            print 'compute_boundaries'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+
 
             # compute gravity and pressure from radii
             self.compute_gravity()
+            print 'compute_gravity'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
             self.compute_pressure()
+            print 'compute_pressure'
+            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
 
             if plot==True:
                 ax1.plot(self.radius, self.density)
@@ -292,6 +309,7 @@ class cm_Planet:
                 ax4.plot(self.radius, self.temperature)
         
         if plot==True:
+            ax1.legend()
             plt.show()
 
 #     def mass_list(self):

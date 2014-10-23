@@ -15,8 +15,8 @@ def C_over_MR2(): return np.array([.346,.01])
 def Cm_over_C(): return np.array([0.432,.025])
 
 # Smith et al. 2012
-def GM(): return np.array([22031.78,.02]) 
-def M(): return np.array([GM() / G])
+def GM(): return np.array([2.203178e+13,20000000])
+def M(): return GM() / G
 
 # Zuber et al. 2012
 def R_equatorial(): return np.array([2439.83,.05])

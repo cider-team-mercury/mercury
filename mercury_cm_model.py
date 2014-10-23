@@ -9,7 +9,7 @@ import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
-# from build_cm_planet import cm_planet
+from build_planet_cm import cm_Planet
 
 from core_partition import partition
 
@@ -21,9 +21,10 @@ core_Mfrac = 0.9
 # Fraction of the cores mass in the inner core
 inner_Mfrac = 0.5
 
-M_mantle = M()*(1. - core_Mfrac)
-M_inner = M()*core_Mfrac*inner_Mfrac
-M_outer = M()*core_Mfrac*(1.-inner_Mfrac)
+M_planet = M()[0]
+M_mantle = M_planet*(1. - core_Mfrac)
+M_inner = M_planet*core_Mfrac*inner_Mfrac
+M_outer = M_planet*core_Mfrac*(1.-inner_Mfrac)
 
 
 # Material Properties
@@ -56,8 +57,26 @@ DSi = 1.0
 
 w_outer, w_inner = partition([wS,wSi],[DS,DSi],inner_Mfrac)
 
-wS_l = w_outer[0]; wSi_l=w_outer[1]; wFe_l = 1.-wS
+wS_l = w_outer[0]; wSi_l=w_outer[1]; wFe_l = 1.-wS_l-wSi_l
 xS_l = (wS_l/mS) / ( wS_l/mS + wFe_l/mFe + wSi_l/mSi)
-xSi_l = (wSi_l/mSi) / ( wS_l/mS + wFe_l/mFe + wSi/mSi)
+xSi_l = (wSi_l/mSi) / ( wS_l/mS + wFe_l/mFe + wSi_l/mSi)
 liquidFeSSi = ironSulfideSilicideLiquid(xS_l,xSi_l) # ternary solution
+
+wS_s = w_inner[0]; wSi_s=w_inner[1]; wFe_s = 1.-wS_s-wSi_s
+xS_s = (wS_s/mS) / ( wS_s/mS + wFe_s/mFe + wSi_s/mSi)
+xSi_s = (wSi_s/mSi) / ( wS_s/mS + wFe_s/mFe + wSi_s/mSi)
+assert xS_s == 0. # DS has to be zero for the current burnman solution model!!!
+solidFeSi = ironSilicideAlloy(xSi_s) # solid solution of Si in Fe
+
+# integration parameters
+n_slices = 300
+P0 = 40.0e9
+T0 = [2200.,1550.,1000.]
+
+# build planet!
+merc = cm_Planet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0)
+
+# # Integrate!
+merc.integrate(n_slices,P0,n_iter=10,plot=True)
+# print merc.moment_over_mr2()
 
