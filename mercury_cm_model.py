@@ -9,6 +9,10 @@ import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+
+# from liquidus_model import Solver as Liquidus
+from liquidus_model import Solver_no14 as Liquidus
+
 from build_planet_cm import cm_Planet
 
 from core_partition import partition
@@ -68,15 +72,23 @@ xSi_s = (wSi_s/mSi) / ( wS_s/mS + wFe_s/mFe + wSi_s/mSi)
 assert xS_s == 0. # DS has to be zero for the current burnman solution model!!!
 solidFeSi = ironSilicideAlloy(xSi_s) # solid solution of Si in Fe
 
+# find the T(P) liquidus curve for the given wS (is this absurdly slow?)
+# could always refit, or add a function to the liquidus model
+liq_w = Liquidus()
+liquidus = lambda p: liq_w.T_SP(wS_l,p) 
+
+
 # integration parameters
 n_slices = 300
 P0 = 40.0e9
 T0 = [2200.,1550.,1000.]
 
 # build planet!
-merc = cm_Planet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0)
+merc = cm_Planet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0,
+        liquidus=liquidus)
 
 # # Integrate!
 merc.integrate(n_slices,P0,n_iter=10,plot=True)
 # print merc.moment_over_mr2()
+
 

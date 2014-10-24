@@ -18,6 +18,7 @@ import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+
 # constants
 G = 6.67e-11
 
@@ -26,7 +27,7 @@ class cm_Planet:
     Define a planet specified by a number of layers of a given mass,
         material and temperature.
     """
-    def __init__(self,  masses, compositions, temperatures, methods=None):
+    def __init__(self,  masses, compositions, temperatures, liquidus=None, methods=None):
         """
         Parameters
         ----------
@@ -75,6 +76,10 @@ class cm_Planet:
             self.massBelowBoundary[i] = msum
 
         assert self.massBelowBoundary[-1] == np.sum(self.masses)
+
+        # liquidus model
+        self.liquidus = liquidus
+
 
 
     def evaluate_eos(self):
@@ -205,6 +210,19 @@ class cm_Planet:
             self.temperature[layer] = trange[::-1]
 
             last = bound # update last boundary
+
+    def find_cmb_temp(self,idx=0):
+        assert not self.liquidus is None
+
+        m_inner = self.massBelowBoundary[idx]
+        p_func = UnivariateSpline(self.int_mass, self.pressure) 
+        p_cmb = p_func(m_inner)
+        t_cmb = self.liquidus(p_cmb)
+
+        print 'liquidus:',p_cmb,t_cmb
+        self.temperature[idx] = t_cmb
+        
+
 
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
