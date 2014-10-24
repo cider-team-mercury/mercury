@@ -84,11 +84,11 @@ P0 = 40.0e9
 T0 = [2200.,1550.,1000.]
 
 # build planet!
-merc = cm_Planet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0,
+merc = corePlanet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0,
         liquidus=liquidus)
 
 # # Integrate!
-merc.integrate(n_slices,P0,n_iter=10,plot=True)
+merc.integrate(n_slices,P0,n_iter=5,plot=True)
 # print merc.moment_over_mr2()
 
 

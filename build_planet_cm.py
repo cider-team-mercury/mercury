@@ -27,7 +27,7 @@ class cm_Planet:
     Define a planet specified by a number of layers of a given mass,
         material and temperature.
     """
-    def __init__(self,  masses, compositions, temperatures, liquidus=None, methods=None):
+    def __init__(self,  masses, compositions, temperatures, methods=None):
         """
         Parameters
         ----------
@@ -77,8 +77,6 @@ class cm_Planet:
 
         assert self.massBelowBoundary[-1] == np.sum(self.masses)
 
-        # liquidus model
-        self.liquidus = liquidus
 
 
 
@@ -211,18 +209,51 @@ class cm_Planet:
 
             last = bound # update last boundary
 
-    def find_cmb_temp(self,idx=0):
-        assert not self.liquidus is None
+    def compute_isotherm_layer(self,idx,T0,fromLowerBound=False):
+        '''
+        Calculates iosothermal temperature gradient across a layer.
+        '''
+        ubound = self.massBelowBoundary[idx]
+        if idx == 0:
+            lbound = -1.
+        else:
+            lbound = self.massBelowBoundary[idx-1]
+        layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
 
-        m_inner = self.massBelowBoundary[idx]
-        p_func = UnivariateSpline(self.int_mass, self.pressure) 
-        p_cmb = p_func(m_inner)
-        t_cmb = self.liquidus(p_cmb)
+        mrange = self.int_mass[ layer ]
+        prange = self.pressure[ layer ]
 
-        print 'liquidus:',p_cmb,t_cmb
-        self.temperature[idx] = t_cmb
-        
+        # if fromLowerbounds: # This doesn't matter for an isotherm given T0
+        trange = np.ones_like(mrange)*T0
+        self.temperature[layer] = trange[::-1]
+        print self.temperature[layer]
 
+
+    def compute_adiabat_layer(self,idx,T0,fromLowerBound=False):
+        '''
+        Calculates an adiabatic temperature gradient across a layer. Defaults 
+        to calculating from the upper boundary downwards. fromLowerBounds=True
+        is for calculating up from the lower boundary.
+        '''
+        ubound = self.massBelowBoundary[idx]
+        if idx == 0:
+            lbound = -1.
+        else:
+            lbound = self.massBelowBoundary[idx-1]
+
+
+        comp = self.compositions[idx]
+        layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
+
+        mrange = self.int_mass[ layer ]
+        prange = self.pressure[ layer ]
+
+        if not fromLowerBound:
+            trange = burnman.geotherm.adiabatic(prange[::-1],np.array([T0]),comp)
+            self.temperature[layer] = trange[::-1]
+        else:
+            trange = burnman.geotherm.adiabatic(prange,np.array([T0]),comp)
+            self.temperature[layer] = trange
 
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
@@ -238,10 +269,11 @@ class cm_Planet:
         print '\tIntial guess for central pressure:',P0,'\n'
 
 
-    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,verbose=True):
+    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
+            verbose=True):
         """
-        Iteratively determine the pressure, density temperature and gravity profiles for the
-        as a function of radius within a planet.
+        Iteratively determine the pressure, density temperature and gravity profiles
+        for the planet as a function of radius within a planet.
 
         Parameters
         ----------
@@ -253,11 +285,11 @@ class cm_Planet:
         ----------
         n_iter : number of iterations (default: 5)
 
-        profile_type : temperature profile type ('adiabatic' or 'isothermal, default: 
-                'adiabatic')
+        profile_type : temperature profile type ('adiabatic' or 'isothermal,
+            default: 'adiabatic')
 
-        plot : create plot of density, gravity, pressure and temperature as a function
-                of radius (default: False)
+        plot : create plot of density, gravity, pressure and temperature as a 
+            function of radius (default: False)
         
         verbose : (default: True)
         """
@@ -367,16 +399,116 @@ class cm_Planet:
         '''
         return self.moment_of_inertia() / self.mass() / self.radius[-1] /self.radius[-1]
            
- 
-    def radial_profile(self):
-        return self.radius
-    def density_profile(self):
-        return self.density
-    def gravity_profile(self):
-        return self.gravity
-    def pressure_profile(self):
-        return self.pressure
-    def temperature_profile(self):
-        return self.temperature
-    def mass_profile(self):
-        return self.int_mass
+    def get_layer(self,idx):
+        '''
+        Return an index range correpsonding to a single layer.
+        '''
+        ubound = self.massBelowBoundary[idx]
+        if idx == 0:
+            lbound = -1.
+        else:
+            lbound = self.massBelowBoundary[idx-1]
+
+        layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
+        return layer
+
+    def radial_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.radius[irange]
+    def density_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.density[irange]
+    def gravity_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.gravity[irange]
+    def pressure_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.pressure[irange]
+    def temperature_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.temperature[irange]
+    def mass_profile(self,irange=np.arange(len(self.int_mass))):
+        ''' 
+        Profiles by default show the profile over the entire planet and have an 
+        option of including an index (irange=)
+        '''
+        return self.int_mass[irange]
+
+
+
+
+class corePlanet(cm_Planet):
+    def __init__(self,  masses, compositions, temperatures, liquidus=None, methods=None):
+        """
+        Parameters
+        ----------
+        masses: list of layer masses ordered in to out
+
+        compositions: list of burnman.Composite or burnman.Material describing 
+            the material of each layer
+
+        temperatures: temperature of the upper boundary for each layer
+        methods: list of EOS fitting method
+
+        Optional
+        ----------
+        liquidus: A function describing the icb temperature (for a given 
+        composition).
+
+        methods: list of burnman EOS methods to be used for each material
+            in compositions, default: 'slb'
+        """
+        super.__init__(self, masses, compositions, temperatures,  methods=None)
+
+        # liquidus model
+        self.liquidus = liquidus
+
+        assert self.Nlayers >= 3
+
+    def find_icb_temp(self,idx=0):
+        '''
+        Use an FeS liquidus model to find a thermodynamically consisten temperature
+        for the icb. Assumes that the 0th index refers to the inner core and inner
+        core boundary.
+        '''
+        assert not self.liquidus is None
+
+        m_inner = self.massBelowBoundary[idx]
+        p_func = UnivariateSpline(self.int_mass, self.pressure) 
+        p_cmb = p_func(m_inner)
+        t_cmb = self.liquidus(p_cmb)
+
+#         print 'liquidus:',p_cmb,t_cmb
+        self.temperature[idx] = t_cmb
+        
+    def core_adiabat(self):
+        '''
+        Calculate a core adiabat consistent with the size of the inner core
+        using the model FeS liquidus.
+        '''
+
+
+    def inner_core(self):
+        return self.get_layer(0)
+    def outer_core(self):
+        return self.get_layer(1)
+    def mantle(self):
+        mantle = np.array([])
+        for i in range(2,self.Nlayer):
+            mantle = np.hstack((mantle,self.get_layer(i)) )
+        return mantle
