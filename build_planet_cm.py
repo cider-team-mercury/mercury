@@ -313,7 +313,7 @@ class cm_Planet(object):
         for i in range(n_iter): 
 
             print 'Initial'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
             # Calculate temperature and density before finding radii.
             if verbose: print 'Iteration #',i+1
 
@@ -324,28 +324,30 @@ class cm_Planet(object):
             else:
                 raise NameError('Invalid profile_type:'+profile_type)
             print 'compute_adiabatic'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
 
             self.evaluate_eos()
             print 'evaluate_eos'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
             
             # find radii from the calculated density profile.
             self.compute_radii()
             print 'compute_radii'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
+
             self.compute_boundaries()
             print 'compute_boundaries'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
 
 
             # compute gravity and pressure from radii
             self.compute_gravity()
             print 'compute_gravity'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
+
             self.compute_pressure()
             print 'compute_pressure'
-            print self.int_mass[150],self.radius[150],self.density[150],self.gravity[150],self.pressure[150],self.temperature[150]
+            self.print_state()
 
             if plot==True:
                 ax1.plot(self.radius, self.density)
@@ -556,7 +558,14 @@ class corePlanet(cm_Planet):
             verbose=True):
         """
         Iteratively determine the pressure, density temperature and gravity profiles
-        for the planet as a function of radius within a planet.
+        for the planet as a function of radius within a planet, with a consistent
+        temperature and pressure for the inner core boundary.
+
+        Sets pressure, temperature, radius, boundaries, gravity, and density, for 
+        given profile in integrated mass (int_mass).
+
+        Also sets differences for quantities between the last two iterations 
+        for convergence analysis.
 
         Parameters
         ----------
@@ -590,53 +599,54 @@ class corePlanet(cm_Planet):
         self.gravity = np.zeros_like(self.int_mass)
         self.density = np.zeros_like(self.int_mass)
 
-
         if plot == True:
-            ax1 = plt.subplot(141)
-            ax2 = plt.subplot(142)
-            ax3 = plt.subplot(143)
-            ax4 = plt.subplot(144)
+            ax1 = plt.subplot(141);ax1.set_ylabel('rho')
+            ax2 = plt.subplot(142);ax1.set_ylabel('g')
+            ax3 = plt.subplot(143);ax1.set_ylabel('P')
+            ax4 = plt.subplot(144);ax1.set_ylabel('T')
             plt.hold(True)
 
         for i in range(n_iter): 
 
-            print 'Initial'
-            self.print_state()
+            # Keep track of the previous iteration for an idea of the uncertainty
+            self.last_state = np.vstack((self.int_mass.copy(),self.radius.copy(),
+                self.pressure.copy(), self.temperature.copy(),self.gravity.copy(),
+                self.density.copy()) )
+            self.last_boundaries = self.boundaries.copy()
+            self.last_icb_temp = self.boundary_temperatures[0]
+
+            if verbose: print 'Initial'; self.print_state()
 
             # Calculate temperature and density before finding radii.
             if verbose: print 'Iteration #',i+1
 
+            # calculate temperature profile with consistent ICB temp
             if profile_type == 'adiabatic':
                 self.compute_temperature()
             elif profile_type == 'isothermal':
-                pass
-#                 self compute_temperature(inner_isotherm=False,outer_isotherm=False,mantle_isotherm=False)
-#             else:
-#                 raise NameError('Invalid profile_type:'+profile_type)
-            print 'compute_temperature'
-            self.print_state()
+                self.compute_temperature(inner_isotherm=False,outer_isotherm=False,
+                        mantle_isotherm=False)
+            else:
+                 raise NameError('Invalid profile_type:'+profile_type)
+
+            if verbose: print 'compute_temperature';self.print_state()
 
             self.evaluate_eos()
-            print 'evaluate_eos'
-            self.print_state()
+            if verbose: print 'evaluate_eos';self.print_state()
             
             # find radii from the calculated density profile.
             self.compute_radii()
-            print 'compute_radii'
-            self.print_state()
+            if verbose: print 'compute_radii';self.print_state()
 
             self.compute_boundaries()
-            print 'compute_boundaries'
-            self.print_state()
+            if verbose: print 'compute_boundaries';self.print_state()
 
             # compute gravity and pressure from radii
             self.compute_gravity()
-            print 'compute_gravity'
-            self.print_state()
+            if verbose: print 'compute_gravity'; self.print_state()
 
             self.compute_pressure()
-            print 'compute_pressure'
-            self.print_state()
+            if verbose: print 'compute_pressure';self.print_state()
 
             if plot==True:
                 ax1.plot(self.radius, self.density)
@@ -644,6 +654,34 @@ class corePlanet(cm_Planet):
                 ax3.plot(self.radius, self.pressure)
                 ax4.plot(self.radius, self.temperature)
         
+        # compare differences between last two iterations
+        present_state = np.vstack((self.int_mass,self.radius,self.pressure,
+                    self.temperature,self.gravity,self.density))
+
+        self.diff_state = present_state - self.last_state
+        self.diff_mean = np.mean(self.diff_state,axis=1)
+        self.diff_max = max_magnitude(self.diff_state,axis=1)
+        self.diff_bounds = self.boundaries - self.last_boundaries
+        self.diff_icb_temp = self.boundary_temperatures[0] - self.last_icb_temp
+
+        # print diagnostiscs for last iteration
+        if verbose:
+            print 'Change during last iteration:'
+            print 'mean: ', self.diff_mean
+            print 'max: ', self.diff_max
+            print 'boundaries: ', self.diff_bounds
+            print 'ICB temp: ', self.diff_icb_temp
+
         if plot==True:
-            ax1.legend()
             plt.show()
+
+def max_magnitude(x,**kwargs):
+    '''
+    Return values with the largest magnitude (+ or -).
+    '''
+    maxCol = np.argmax(np.abs(x),**kwargs)
+    soln = np.zeros_like(maxCol).astype(float)
+    for row,col in enumerate(maxCol):
+        print row,col
+        soln[row] = x[row,col]
+    return soln
