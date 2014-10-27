@@ -22,7 +22,7 @@ import burnman.composite as composite
 # constants
 G = 6.67e-11
 
-class cm_Planet:
+class cm_Planet(object):
     """
     Define a planet specified by a number of layers of a given mass,
         material and temperature.
@@ -213,12 +213,8 @@ class cm_Planet:
         '''
         Calculates iosothermal temperature gradient across a layer.
         '''
-        ubound = self.massBelowBoundary[idx]
-        if idx == 0:
-            lbound = -1.
-        else:
-            lbound = self.massBelowBoundary[idx-1]
-        layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
+
+        layer = self.get_layer(idx)
 
         mrange = self.int_mass[ layer ]
         prange = self.pressure[ layer ]
@@ -235,15 +231,14 @@ class cm_Planet:
         to calculating from the upper boundary downwards. fromLowerBounds=True
         is for calculating up from the lower boundary.
         '''
-        ubound = self.massBelowBoundary[idx]
-        if idx == 0:
-            lbound = -1.
-        else:
-            lbound = self.massBelowBoundary[idx-1]
-
+#         ubound = self.massBelowBoundary[idx]
+#         if idx == 0:
+#             lbound = -1.
+#         else:
+#             lbound = self.massBelowBoundary[idx-1]
 
         comp = self.compositions[idx]
-        layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
+        layer = self.get_layer(idx)
 
         mrange = self.int_mass[ layer ]
         prange = self.pressure[ layer ]
@@ -412,37 +407,51 @@ class cm_Planet:
         layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
         return layer
 
-    def radial_profile(self,irange=np.arange(len(self.int_mass))):
+#     def radial_profile(self,irange=np.arange(len(self.int_mass))):
+    def radial_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.radius[irange]
-    def density_profile(self,irange=np.arange(len(self.int_mass))):
+        if not irange is None:
+            return self.radius[irange]
+        else:
+            return self.radius
+
+    def density_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.density[irange]
-    def gravity_profile(self,irange=np.arange(len(self.int_mass))):
+        if not irange is None:
+            return self.density[irange]
+        else:
+            return self.density
+    def gravity_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.gravity[irange]
-    def pressure_profile(self,irange=np.arange(len(self.int_mass))):
+        if not irange is None:
+            return self.gravity[irange]
+        else:
+            return self.gravity
+    def pressure_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.pressure[irange]
-    def temperature_profile(self,irange=np.arange(len(self.int_mass))):
+        if not irange is None:
+            return self.pressure[irange]
+        else:
+            self.pressure
+    def temperature_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
         return self.temperature[irange]
-    def mass_profile(self,irange=np.arange(len(self.int_mass))):
+    def mass_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
@@ -450,10 +459,8 @@ class cm_Planet:
         return self.int_mass[irange]
 
 
-
-
 class corePlanet(cm_Planet):
-    def __init__(self,  masses, compositions, temperatures, liquidus=None, methods=None):
+    def __init__(self,  masses, compositions, temperatures, liquidus=None,**kwargs):
         """
         Parameters
         ----------
@@ -473,12 +480,12 @@ class corePlanet(cm_Planet):
         methods: list of burnman EOS methods to be used for each material
             in compositions, default: 'slb'
         """
-        super.__init__(self, masses, compositions, temperatures,  methods=None)
+        super(corePlanet,self).__init__(masses, compositions, temperatures,**kwargs)
 
         # liquidus model
         self.liquidus = liquidus
 
-        assert self.Nlayers >= 3
+        assert self.Nlayer >= 3
 
     def find_icb_temp(self,idx=0):
         '''
@@ -490,25 +497,153 @@ class corePlanet(cm_Planet):
 
         m_inner = self.massBelowBoundary[idx]
         p_func = UnivariateSpline(self.int_mass, self.pressure) 
-        p_cmb = p_func(m_inner)
-        t_cmb = self.liquidus(p_cmb)
+        p_icb = p_func(m_inner)
+        t_icb = self.liquidus(p_icb)
 
-#         print 'liquidus:',p_cmb,t_cmb
-        self.temperature[idx] = t_cmb
+#         print 'liquidus:',p_icb,t_icb
+        self.temperature[idx] = t_icb
+        return t_icb
         
-    def core_adiabat(self):
+    def compute_temperature(self,inner_isotherm=False,outer_isotherm=False,
+            mantle_isotherm=False):
         '''
         Calculate a core adiabat consistent with the size of the inner core
         using the model FeS liquidus.
+
+        Defaults to calculating adiabatic profiles, starting at the icb for
+        both inner and outer core.
         '''
 
+        t_icb = self.find_icb_temp()
+
+        # compute inner_core
+        if not inner_isotherm:
+            self.compute_adiabat_layer(0,t_icb)
+        else:
+            self.compute_isotherm_layer(0,t_icb)
+        
+        if not outer_isotherm:
+            self.compute_adiabat_layer(1,t_icb,fromLowerBound=True)
+        else:
+            self.compute_isotherm_layer(1,t_icb,fromLowerBound=True)
+
+        if not mantle_isotherm:
+            for i in range(2,self.Nlayer):
+                self.compute_adiabat_layer(i,self.boundary_temperatures[i])
+
+        else:
+            for i in range(2,self.Nlayer):
+                self.compute_isotherm_layer(i,self.boundary_temperatures[i])
+
+        self.boundary_temperatures[0] = t_icb
 
     def inner_core(self):
         return self.get_layer(0)
     def outer_core(self):
         return self.get_layer(1)
     def mantle(self):
-        mantle = np.array([])
-        for i in range(2,self.Nlayer):
-            mantle = np.hstack((mantle,self.get_layer(i)) )
-        return mantle
+        return -self.inner_core() - merc.outer_core()
+
+    def print_state(self,i=150):
+        '''
+        For debugging
+        '''
+        print self.int_mass[i],self.radius[i],self.density[i],self.gravity[i],
+        print self.pressure[i],self.temperature[i]
+
+
+    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
+            verbose=True):
+        """
+        Iteratively determine the pressure, density temperature and gravity profiles
+        for the planet as a function of radius within a planet.
+
+        Parameters
+        ----------
+        n_slices : number of steps in integrated mass
+
+        P0 : initial guess for central pressure in Pa
+
+        Optional
+        ----------
+        n_iter : number of iterations (default: 5)
+
+        profile_type : temperature profile type ('adiabatic' or 'isothermal,
+            default: 'adiabatic')
+
+        plot : create plot of density, gravity, pressure and temperature as a 
+            function of radius (default: False)
+        
+        verbose : (default: True)
+        """
+        if verbose:
+            self.display_input(n_slices,P0,n_iter,profile_type)
+
+        self.int_mass = np.linspace(0.,self.massBelowBoundary[-1], n_slices)
+        self.pressure = np.linspace(P0, 0.0, n_slices) # initial guess at pressure profile
+        # take isothermal starting T profile
+        self.temperature = np.ones_like(self.pressure)*self.boundary_temperatures[-1]
+
+        self.radius = np.zeros_like(self.int_mass)
+        self.boundaries = np.zeros_like(self.massBelowBoundary)
+
+        self.gravity = np.zeros_like(self.int_mass)
+        self.density = np.zeros_like(self.int_mass)
+
+
+        if plot == True:
+            ax1 = plt.subplot(141)
+            ax2 = plt.subplot(142)
+            ax3 = plt.subplot(143)
+            ax4 = plt.subplot(144)
+            plt.hold(True)
+
+        for i in range(n_iter): 
+
+            print 'Initial'
+            self.print_state()
+
+            # Calculate temperature and density before finding radii.
+            if verbose: print 'Iteration #',i+1
+
+            if profile_type == 'adiabatic':
+                self.compute_temperature()
+            elif profile_type == 'isothermal':
+                pass
+#                 self compute_temperature(inner_isotherm=False,outer_isotherm=False,mantle_isotherm=False)
+#             else:
+#                 raise NameError('Invalid profile_type:'+profile_type)
+            print 'compute_temperature'
+            self.print_state()
+
+            self.evaluate_eos()
+            print 'evaluate_eos'
+            self.print_state()
+            
+            # find radii from the calculated density profile.
+            self.compute_radii()
+            print 'compute_radii'
+            self.print_state()
+
+            self.compute_boundaries()
+            print 'compute_boundaries'
+            self.print_state()
+
+            # compute gravity and pressure from radii
+            self.compute_gravity()
+            print 'compute_gravity'
+            self.print_state()
+
+            self.compute_pressure()
+            print 'compute_pressure'
+            self.print_state()
+
+            if plot==True:
+                ax1.plot(self.radius, self.density)
+                ax2.plot(self.radius, self.gravity)
+                ax3.plot(self.radius, self.pressure)
+                ax4.plot(self.radius, self.temperature)
+        
+        if plot==True:
+            ax1.legend()
+            plt.show()

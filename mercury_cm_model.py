@@ -13,7 +13,7 @@ import burnman.composite as composite
 # from liquidus_model import Solver as Liquidus
 from liquidus_model import Solver_no14 as Liquidus
 
-from build_planet_cm import cm_Planet
+from build_planet_cm import cm_Planet, corePlanet
 
 from core_partition import partition
 
