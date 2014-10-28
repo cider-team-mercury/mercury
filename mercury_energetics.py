@@ -4,7 +4,7 @@ from matplotlib.collections import PatchCollection
 import numpy as np
 
 from scipy.integrate import odeint
-
+from scipy.optimize import minimize_scalar
 from define_physics import *
 
 class Layer(object):
@@ -140,98 +140,101 @@ class Planet(object):
 
 
 
-class ConvectiveLayer(Layer):
-    '''
-    Possible regimes 'symmetric','transitional','stagnant_lid'
-    '''
-    def __init__(self,inner_radius,outer_radius):
-        params = {
-            'regime' : 'isoviscous',
-            'mu' : 1.0,  #conversion factor in each layer (vector); STO table 13.2
-            'Ra_c' : 2e3, #critical Rayleigh number
-#             eta_0 : 0.9e20, #viscosity Pa.s
-            'rho' : 3.0e3, # density; kg/m^3
-            'H_0' : 0., #heat production W/m^3
-            'decay_constant' : 1.38e-17, # some half-life
-            'nu_0' : 1.65e2, #kinematic viscosity m^2/s
-            'A_0' : 7.e4,
-            'k' : 3., #thermal conductivity W/m/K
-            'kappa' : 1.e-6, #thermal diffusivity m^2/s
-            'alpha' : 2.e-5, #thermal expansion 1/K
-            'g' : 3., #acceleration of gravity m/s^2
-            'beta' : 1./3, #parameter Nu=Ra^(1/beta)
-            } 
-            
-        Layer.__init__(self,inner_radius,outer_radius,params)
-
-        params['Cp'] = params['k'] / ( params['rho'] * params['kappa'] )
-        params['gamma'] = 1. / params['beta']
-        self.calculate_mass()
-
-
-# I would like to add these but they may be incosistant with definition of T_a
-
-#     def calculate_rayleigh(self,deltaT):
-#         return self.g * self.alpha * self.thickness ** 3 * deltaT \
-#                 / self.kappa / viscosity(self.T_a)
-
-    def T_outer(self,T_a):
-        self.outer_temperature = T_a / self.mu
-        return T_a / self.mu
-
-    def T_inner(self,T_a):
-        self.inner_temperature =  2 * T_a - self.T_outer(T_a)
-        return 2 * T_a - self.T_outer(T_a)
-
-    def viscosity(self,T): # should T be self.T_a
-        '''
-        Temperature dependent viscosity using 'nu_0' and 'A_0'.
-
-        If no A_0 provided: isoviscous with nu = nu_0.
-        '''
-        
-        nu_0 = self.params['nu_0']
-
-        if 'A_0' in self.params:
-            A_0 = self.params['A_0']
-
-        return nu_0 * np.exp(A_0 / T)
-
-
-    def theta(self, T_a): # can we give this a better name?
-        '''
-        Temperature drop to heat flux conversion factor
-        Schubert (13.2.9)
-        ''' 
-
-        k = self.params['k']
-        alpha = self.params['alpha']
-        g = self.params['g']
-        kappa = self.params['kappa']
-        Ra_c = self.params['Ra_c']
-        beta = self.params['beta']
-        d = self.thickness
-
-        visc = self.viscosity(T_a)
-
-        # note the addition of d**3 to make the expression in the power unitless
-        return k *  (alpha * g * d**3./ ( kappa * visc * Ra_c))**beta
-
-#     function dTadt=convectionODE(t,Ta,Tuf,Tlf,Ts,Theta,gamma,A,M,H,C,n);
-    
 class CoreLayer(Layer):
     def __init__(self,inner_radius,outer_radius,params=core_params):
         Layer.__init__(self,inner_radius,outer_radius,params)
-
+        '''
+        Note that the default params are loaded from the file "define_physics"
+        '''
+        # - Parameters from Stevenson et al 1983 for liquiudus and Adiabat
+        '''
+        Hard Code Adiabat and Liquidus
+        parameters from tables (II) (VI) in Stevenson et al 1983 
+        '''
+        self.stevenson = {
+            'alpha_c'   = 2,
+            'g'         = 3.8,
+            'Tm0'       = 1880.0,
+            'Tm1'       = 1.36,
+            'Tm2'       = -6.2,
+            'Ta1'       = 8.0,
+            'Ta2'       = -3.9,
+            'x0'        = 0.01,
+            'Pcm'       = 10.0,
+            'Pc'        = 40.0
+            }
         self.calculate_mass()
+        self.light_alloy = self.stevenson['x0']
 
-    def adiabat(self,p):
-        pass
 
-    def pressure(self,r,x):
-        pressure
+    # - Should write this so we can choose different models, for example
+    # - when we initiate CoreLayer we should choose "core_evolution_model = 'stevenson' "
+    # - will update with values from Fei et al 1997, 2000
+    # - Then we can use the look up tables from Sean as well
+    
+    def set_light_alloy_concentration(self):
+        '''
+        Equation (7) from Stevenson 1983
+        '''
+        x0 = self.stevenson['x0']
+        Rc = self.outer_radius
+        Ri = self.inner_radius
+        self.light_alloy = x0*(Rc**3)/(Rc**3-Ri**3)
+        return self.light_alloy
 
-    def liquidus(self,p,x):
+    def set_inner_core_radius(self,Ri):
+        self.inner_radius = Ri
+        return Ri
+
+    ### We could code the integrals here. 
+    def core_mantle_boundary_temp(self):
+        return  self.T_average / self.params['mu']
+
+    def stevenson_liquidus(self,Pio,p=self.stevenson):
+        '''
+        Equation (3) from Stevenson 1983
+        
+        Calculates the liquidus temp for a given pressure at the inner core
+        outer core boundary Pio
+        '''
+        x = self.light_alloy
+        a  = p['alpha_c']
+        c1 = p['Tm0']
+        c2 = p['Tm1']
+        c2 = p['Tm2']
+        return c1*(1-a*x)*(1 + c2*Pio +c3*Pio**2)        
+    
+    def stevenson_adiabat(self,Pio,p=self.stevenson):
+        '''
+        Equation (4) from Stevenson 1983
+
+        Calculates adiabat temp for a given pressure at the inner core 
+        outer core boundary Pio
+        '''
+        Tcm = self.core_mantle_boundary_temp()
+        c1  = p['Ta1']
+        c2  = p['Ta2']
+        Pcm = p['Pcm']
+        return Tcm*(1+c1*Pio+c2*Pio**2)/(1+c1*Pcm+c2*Pcm**2)
+    
+    def calculate_pressure_io_boundary(self):
+        Pcm = self.stevenson['Pcm']
+        Pc  = self.stevenson['Pc']
+        diff_function = lambda Pio: np.abs(self.stevenson_adiabat(Pio)-self.stevenson_liquidus(Pio))
+        res = minimize_scalar(diff_function, bounds=(Pcm, Pc), method='bounded')
+        return res.x
+
+    def calculate_inner_core_radius(self):
+        Pc  = self.stevenson['Pc'] 
+        Rc  = self.outer_radius
+        rho = self.params['rho']
+        g   = self.stevenson['g']
+        Pio = calculate_pressure_io_boundary()
+        Ri  = np.sqrt(2*(Pc -Pio)*Rc/(rho*g))
+        return self.set_inner_core_radius(Ri)
+
+    def core_energy_balance(core_flux, delta_core_radius, p):
+            return -core_flux*p['A']/(p['rho']*p['c']*p['V']*p['epsilon']-p['L+Eg']*p['rho']*p['A']*delta_core_radius)
 
 T0 = [ 2000., 1000.]        
 core = CoreLayer(0.0,2020.0e3)

@@ -105,24 +105,3 @@ mantle_params = {
     'epsilon' : epsilon_mantle
     }
 
-# - Parameters from Stevenson et al 1983 for liquiudus and Adiabat
-#stevenson_params = {
-#    'alpha_c'   = 2,
-#    'Tm1'       = 1.36,
-#    'Tm2'       = -6.2,
-#    'Ta1'       = 8.0,
-#    'Ta2'       = -3.9,
-#    'x0'        =0.01
-#    }
-
-def core_energy_balance(core_flux, delta_core_radius, p):
-    return -core_flux*p['A']/(p['rho']*p['c']*p['V']*p['epsilon']-p['L+Eg']*p['rho']*p['A']*delta_core_radius)
-
-def mantle_energy(delta_crustal_thickness, p):
-    # Tm-Tl  - Temperature of the upper mantle minus Temperature at the base of the 
-                    # - stagnant lid
-    coef_LHS = rho_mantle*mantle_heat_capacity*V_mantle*epsilon_mantle*(1+St)
-    coef_crust = (rho_crust*latent_heat_melting_crust + rho_crust*magma_heat_capacity*(T_mantle-T_lid)
-    return -( (mantle_flux + coef_crust*delta_crustal_thickness)*A_mantle + core_flux*A_core +\
-                heating_rate*V_mantle )/coef_LHS
-
