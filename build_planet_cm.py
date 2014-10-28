@@ -110,27 +110,15 @@ class cm_Planet(object):
     def compute_radii(self):
         '''
         Convert from an self.int_mass and self.density to self.radius.
-
-        Note: This uses trapezoidal rule (should probably make more accurate).
-        Checked in case of uniform density
         '''
-#         assert int_mass[0] >= 0.
-        d_plus = self.density
-        d_minus = np.hstack((self.density[0],self.density[:-1])) 
-        avg_density = (d_plus + d_minus) / 2.
+        rhofunc = UnivariateSpline(self.int_mass, self.density )
 
-        mass = self.int_mass - np.hstack((0.,self.int_mass[:-1]))
-
-        radii = np.zeros_like(self.int_mass)
-        r = 0.
-        for i,m in enumerate(mass):
-            rnext = (m / avg_density[i] * 3. / 4. / np.pi + r**3.)**(1./3.)
-            r = rnext
-            radii[i] = r
+        deltaV = lambda p,m: 1./rhofunc(m)
+        volume = np.ravel(integrate.odeint( deltaV, 0.0, self.int_mass ))
 
         # set self.radius
-        self.radius = radii
-
+        self.radius = ( 3. / 4. / np.pi * volume ) ** (1./3.)
+    
     def compute_boundaries(self):
         '''
         Determine the positions of the boundaries in meters.
