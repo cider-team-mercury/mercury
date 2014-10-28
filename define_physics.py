@@ -81,12 +81,11 @@ mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 ###!!!!####
 # - Note that the volume and Area of the mantle are currently incorect since
 # - we have neglected the crust
-V_mercury = 4./3.*np.pi*radius**3      # - Volume of Mercury
-V_core    = 4./3.*np.pi*core_radius**3 # - Volume of Core
-V_mantle  = V_mercury-V_core           # - Volume of Mantle
-A_core    = 4.*np.pi*core_radius**2    # - Surface Area of Core
-A_mantle  = 4.*np.pi*radius**2         # - Surface Area of Mantle
-
+#V_mercury = 4./3.*np.pi*radius**3      # - Volume of Mercury
+#V_core    = 4./3.*np.pi*core_radius**3 # - Volume of Core
+#V_mantle  = V_mercury-V_core           # - Volume of Mantle
+#A_core    = 4.*np.pi*core_radius**2    # - Surface Area of Core
+#A_mantle  = 4.*np.pi*radius**2         # - Surface Area of Mantle
 
 
 core_params = { 
@@ -95,7 +94,7 @@ core_params = {
     'V'   : V_core,
     'A'   : A_core,
     'L+Eg': latent_heat_solidification_core+grav_energy_release,
-    'epsilon' : epsilon_core
+    'mu' : epsilon_core
     }
 
 mantle_params = {
@@ -105,6 +104,16 @@ mantle_params = {
     'A'   : A_mantle,
     'epsilon' : epsilon_mantle
     }
+
+# - Parameters from Stevenson et al 1983 for liquiudus and Adiabat
+#stevenson_params = {
+#    'alpha_c'   = 2,
+#    'Tm1'       = 1.36,
+#    'Tm2'       = -6.2,
+#    'Ta1'       = 8.0,
+#    'Ta2'       = -3.9,
+#    'x0'        =0.01
+#    }
 
 def core_energy_balance(core_flux, delta_core_radius, p):
     return -core_flux*p['A']/(p['rho']*p['c']*p['V']*p['epsilon']-p['L+Eg']*p['rho']*p['A']*delta_core_radius)
