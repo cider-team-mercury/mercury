@@ -91,4 +91,26 @@ merc = corePlanet([M_inner,M_outer,M_mantle],[solidFeSi,liquidFeSSi,rock],T0,
 merc.integrate(n_slices,P0,n_iter=5,plot=True)
 # print merc.moment_over_mr2()
 
-
+# # Plot 
+# plt.subplot(141)
+# plt.plot(merc.radial_profile()/1.e3, merc.density_profile())
+# plt.xlabel(r"Radius [$km$]")
+# plt.ylabel(r"Density [$kg/m^3$]")
+# 
+# plt.subplot(142)
+# plt.plot(merc.radial_profile()/1.e3, merc.gravity_profile())
+# plt.xlabel(r"Radius [$km$]")
+# plt.ylabel(r"Gravity [$m/s^2$]")
+# 
+# plt.subplot(143)
+# plt.plot(merc.radial_profile()/1.e3, merc.pressure_profile()/1.e9)
+# plt.xlabel(r"Radius [$km$]")
+# plt.ylabel(r"Pressure [$Pa$]")
+# 
+# plt.subplot(144)
+# plt.plot(merc.radial_profile()/1.e3, merc.temperature_profile())
+# plt.xlabel(r"Radius [$km$]")
+# plt.ylabel(r"Temperature [$K$]")
+# 
+# 
+# plt.show()

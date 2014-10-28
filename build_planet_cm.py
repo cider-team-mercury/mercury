@@ -600,10 +600,10 @@ class corePlanet(cm_Planet):
         self.density = np.zeros_like(self.int_mass)
 
         if plot == True:
-            ax1 = plt.subplot(141);ax1.set_ylabel('rho')
-            ax2 = plt.subplot(142);ax1.set_ylabel('g')
-            ax3 = plt.subplot(143);ax1.set_ylabel('P')
-            ax4 = plt.subplot(144);ax1.set_ylabel('T')
+            ax1 = plt.subplot(141);ax1.set_title('rho')
+            ax2 = plt.subplot(142);ax2.set_title('g')
+            ax3 = plt.subplot(143);ax3.set_title('P')
+            ax4 = plt.subplot(144);ax4.set_title('T')
             plt.hold(True)
 
         for i in range(n_iter): 
