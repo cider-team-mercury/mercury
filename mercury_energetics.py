@@ -111,34 +111,6 @@ class Planet(object):
         plt.axis('off')
         plt.show()
 
-        def convectionODE(self,t,T_a,T_surface = 0.):
-
-            T_out =  np.array([ layer.T_outer(T) for layer in self.layers \
-                    for T in T_a] )
-            T_in = np.array( [ layer.T_inner(T) for layer in self.layers \
-                    for T in T_a] )
-
-            theta = np.array([ layer.
-            # determine the boundary conditions
-            T_bound = np.empty_like(T_out)
-            T_bound[-1] = T_surface
-
-            # estimate the boundary layer temperatures
-            T_bound_up = np.empty_like(T_bound)
-            T_bound_up[-1] = (T_out[-1] + T_in[-1]) / 2.
-
-            T_bound_low = np.enpty_like(T_bound)
-            T_bound_low[0] = T_in[0]
-            T_bound[0] = T_in[0]        #this doesn't make any sense
-                                        #made-up temperature at the center of the Earth
-
-            print 'Setting T_bound_up, T_bound_low'
-
-            for i in np.arange(Nlayer-1,0,-1)-1:
-                T_bound_up[i] = 0.75 * T_out[i] + 0.25 * T_in(i+1)
-                T_bound_low[i+1] = 0.25 * T_out[i] + 0.75 * T_in[i+1]
-
-
 
 class CoreLayer(Layer):
     def __init__(self,inner_radius,outer_radius,params=core_params):
@@ -152,16 +124,16 @@ class CoreLayer(Layer):
         parameters from tables (II) (VI) in Stevenson et al 1983 
         '''
         self.stevenson = {
-            'alpha_c'   = 2,
-            'g'         = 3.8,
-            'Tm0'       = 1880.0,
-            'Tm1'       = 1.36,
-            'Tm2'       = -6.2,
-            'Ta1'       = 8.0,
-            'Ta2'       = -3.9,
-            'x0'        = 0.01,
-            'Pcm'       = 10.0,
-            'Pc'        = 40.0
+            'alpha_c'   : 2,
+            'g'         : 3.8,
+            'Tm0'       : 1880.0,
+            'Tm1'       : 1.36,
+            'Tm2'       : -6.2,
+            'Ta1'       : 8.0,
+            'Ta2'       : -3.9,
+            'x0'        : 0.01,
+            'Pcm'       : 10.0,
+            'Pc'        : 40.0
             }
         self.calculate_mass()
         self.light_alloy = self.stevenson['x0']
@@ -188,59 +160,65 @@ class CoreLayer(Layer):
 
     ### We could code the integrals here. 
     def core_mantle_boundary_temp(self):
-        return  self.T_average / self.params['mu']
+        return  self.T_average / self.mu
 
-    def stevenson_liquidus(self,Pio,p=self.stevenson):
+    def stevenson_liquidus(self, Pio):
         '''
         Equation (3) from Stevenson 1983
         
         Calculates the liquidus temp for a given pressure at the inner core
         outer core boundary Pio
         '''
-        x = self.light_alloy
-        a  = p['alpha_c']
-        c1 = p['Tm0']
-        c2 = p['Tm1']
-        c2 = p['Tm2']
-        return c1*(1-a*x)*(1 + c2*Pio +c3*Pio**2)        
+        x  = self.light_alloy
+        p  = self.stevenson
+        return p['Tm0']*(1-p['alpha_c']*x)*(1 + p['Tm1']*Pio +p['Tm2']*Pio**2)        
     
-    def stevenson_adiabat(self,Pio,p=self.stevenson):
+    def stevenson_adiabat(self,Pio, Tcm):
         '''
         Equation (4) from Stevenson 1983
 
         Calculates adiabat temp for a given pressure at the inner core 
         outer core boundary Pio
         '''
-        Tcm = self.core_mantle_boundary_temp()
-        c1  = p['Ta1']
-        c2  = p['Ta2']
-        Pcm = p['Pcm']
-        return Tcm*(1+c1*Pio+c2*Pio**2)/(1+c1*Pcm+c2*Pcm**2)
+        p = self.stevenson
+        return Tcm*(1+p['Ta1']*Pio+p['Ta2']*Pio**2)/(1+p['Ta1']*p['Pcm']+p['Ta2']*p['Pcm']**2)
     
-    def calculate_pressure_io_boundary(self):
-        Pcm = self.stevenson['Pcm']
-        Pc  = self.stevenson['Pc']
-        diff_function = lambda Pio: np.abs(self.stevenson_adiabat(Pio)-self.stevenson_liquidus(Pio))
-        res = minimize_scalar(diff_function, bounds=(Pcm, Pc), method='bounded')
+    def calculate_pressure_io_boundary(self, Tcm):
+        p = self.stevenson
+        opt_function = lambda Pio: np.abs(self.stevenson_adiabat(Pio, Tcm)-self.stevenson_liquidus(Pio))
+        res = minimize_scalar(opt_function, bounds=(p['Pcm'], p['Pc']), method='bounded')
         return res.x
 
-    def calculate_inner_core_radius(self):
-        Pc  = self.stevenson['Pc'] 
+    def calculate_inner_core_radius(self): 
         Rc  = self.outer_radius
-        rho = self.params['rho']
-        g   = self.stevenson['g']
         Pio = calculate_pressure_io_boundary()
-        Ri  = np.sqrt(2*(Pc -Pio)*Rc/(rho*g))
+        Ri  = np.sqrt(2*(p['Pc'] -Pio)*Rc/(self.rho*p['g']))
         return self.set_inner_core_radius(Ri)
 
-    def core_energy_balance(core_flux, delta_core_radius, p):
-            return -core_flux*p['A']/(p['rho']*p['c']*p['V']*p['epsilon']-p['L+Eg']*p['rho']*p['A']*delta_core_radius)
+    def inner_core_derivative(self):
+        p   = self.stevenson
+        Rc  = self.outer_radius
+        Tcm = self.core_mantle_boundary_temp()
+        Ri  = self.calculate_inner_core_radius()
+        Pio = self.calculate_pressure_io_boundary(Tcm)
+        delta_Tcm = Tcm*10**-6
+        dPio_dTcm = ( self.calculate_pressure_io_boundary(Tcm+0.5*delta_Tcm)-\
+                    self.calculate_pressure_io_boundary(Tcm-0.5*delta_Tcm) )/delta_Tcm
+        return -Rc*dPio_dTcm/(self.rho*p['g']*Ri)
+        
+    def core_energy_balance(self, core_flux):
+            p = self.params
+            Ac = self.outer_surface_area
+            Ai = self.inner_surface_area
+            dRi_dTcm = self.inner_core_derivative()
+            thermal_energy_change = p['rho']*p['c']*p['V']*p['mu']
+            latent_heat = -p['L+Eg']*p['rho']*Aic*dRi_dTcm
+            return -core_flux*Ac/(thermal_energy_change-latent_heat)
 
-T0 = [ 2000., 1000.]        
+T0 = [ 2000.]        
 core = CoreLayer(0.0,2020.0e3)
-mantle = ConvectiveLayer(2020.e3, 2440.0e3)
 
-mercury = Planet( [core,mantle], T0)
+mercury = Planet( [core], T0)
        
 # mercury.draw()
 

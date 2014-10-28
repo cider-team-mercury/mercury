@@ -1,5 +1,4 @@
 import numpy as np
-from planetary_energetics import *
 
 # ------------------------------------------------------ #
 # - Fixed Parameters from Grott et al 2011 for Mercury - #
@@ -21,7 +20,7 @@ epsilon_mantle = 1.0 # - Ratio of mean and upper mantle Temp
 epsilon_core   = 1.1 # - Ratio of mean and upper core Temp
 
 R = 8.3144 # - J K^-1 mol^-1 - Gas Constant
-A = 3.0*10^5 # - J mol^-1 - Activation Energy
+A = 3.0*10**5 # - J mol^-1 - Activation Energy
 
 T_ref  = 1600.0 # - K
 T_surf = 440.0  # - K
@@ -29,18 +28,18 @@ T_surf = 440.0  # - K
 k_regolith = 0.2 # - W m^-1 K^-1 - Regolith Thermal Conductivity
 k_mantle   = 4.0   # - W m^-1 K^-1 - Mantle Thermal Conductivity
 
-mantle_diffusivity = 1.0*10^-6 # - m^s s^-1
+mantle_diffusivity = 1.0*10**-6 # - m^s s^-1
 
-alpha_mantle = 2.0*10^-5 # - K^-1
-alpha_core   = 3.0*10^-5 # - K^-1
+alpha_mantle = 2.0*10**-5 # - K^-1
+alpha_core   = 3.0*10**-5 # - K^-1
 
-latent_heat_melting_crust       = 6.0*10^-5   # - J kg^-1
+latent_heat_melting_crust       = 6.0*10**-5   # - J kg^-1
 # It is unclear here what is used in Grott et al 2011
-latent_heat_solidification_core = 2.5*10^-5 # - J kg^-1
-grav_energy_release             = 2.5*10^-5 # - J kg^-1
+latent_heat_solidification_core = 2.5*10**-5 # - J kg^-1
+grav_energy_release             = 2.5*10**-5 # - J kg^-1
 
 Ra_crit = 450.0 # - Critical Rayleigh Number
-convection_speed_scale = 2.0*10^-12 # m s^-1
+convection_speed_scale = 2.0*10**-12 # m s^-1
 
 initial_stagnant_lid_thickness = 50.0 # - km
 primordial_crust_thickness = 5.0 # - km
@@ -54,8 +53,8 @@ core_radius = 2050.0 # - km - 1840 km to 2050 km
 T_upper_mantle_initial = 2000.0 # - K - 1650 K to 2000 K
 T_core_excess = 300.0 # - K - 0 K to 300 K
 k_crust = 4.0 # - W m^-1 K^-1 - 1.5 to 4
-viscosity_ref = 1.0*10^22 # - Pa s - 10^19 to 10^22
-regolith_thickness = 5.0*10^3 # - m - 0 to 5*10^3 m 
+viscosity_ref = 1.0*10**22 # - Pa s - 10^19 to 10^22
+regolith_thickness = 5.0*10**3 # - m - 0 to 5*10^3 m 
 mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 # ------------------------------------------------------- #
 
@@ -91,8 +90,6 @@ mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 core_params = { 
     'rho' : rho_core,
     'c'   : core_heat_capacity,
-    'V'   : V_core,
-    'A'   : A_core,
     'L+Eg': latent_heat_solidification_core+grav_energy_release,
     'mu' : epsilon_core
     }
@@ -100,8 +97,6 @@ core_params = {
 mantle_params = {
     'rho' : rho_mantle,
     'c'   : mantle_heat_capacity,
-    'V'   : V_mantle,
-    'A'   : A_mantle,
     'epsilon' : epsilon_mantle
     }
 
