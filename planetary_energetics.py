@@ -202,7 +202,61 @@ class CoreLayer(Layer):
         sol = integrate.odeint( dTdt, T_cmb_initial, times)
         y = sol
         return times, y
+
+class MantleLayer(Layer):
+    def __init__(self,inner_radius,outer_radius, params={}):
+        Layer.__init__(self,inner_radius,outer_radius,params)
+        '''
+        Note that the default params are loaded from the file "define_physics"
+        '''
+        # - Parameters from Stevenson et al 1983 for liquiudus and Adiabat
+        '''
+        Hard Code Adiabat and Liquidus
+        parameters from tables (II) (VI) in Stevenson et al 1983 
+        '''
+        self.stevenson = {
+                'rho' : 3500,
+                'c'   : 1142,
+                'mu'  : 1,
+                'Q0'  : 1.7e7, # - [W]/[m]
+                'lambda' : 1.38e-17 # - [s]
+            }
+        self.light_alloy = self.stevenson['x0']
+
+
+    ### We could code the integrals here. 
+    def upper_mantle_temp(self):
+        return  self.T_average / self.mu
+
+    def heat_production(self, time):
+        p =self.stevenson
+        return p['Q0']*np.exp(-p['lambda']*time)
+    
+    def mantle_energy_balance(self, surface_flux, cmb_flux, T_upper_mantle):
+        p = self.stevenson
+        mantle_surface_area = self.outer_surface_area
+        core_surface_area   = self.inner_surface_area
+
+        thermal_energy_change = p['rho']*p['c']*p['mu']*self.volume
+        heating = 0*self.volume
+        flux = mantle_surface_area*surface_flux - core_surface_area*cmb_flux
+        latent_heat = -p['L+Eg'] * p['rho'] * inner_core_surface_area * dRi_dTcmb
+        print thermal_energy_change, latent_heat, dRi_dTcmb
+ 
         
+        dTdt = -core_flux * core_surface_area / (thermal_energy_change-latent_heat)
+        return dTdt
+
+    def ODE( self, T_cmb_initial ):
+        cmb_flux = 2.e12/self.outer_surface_area
+        dTdt = lambda x, t : self.core_energy_balance( cmb_flux, x )
+        times = np.linspace( 0., 1.e9*np.pi*1.e7, 1000 )
+
+        sol = integrate.odeint( dTdt, T_cmb_initial, times)
+        y = sol
+        return times, y
+
+
 
 core = CoreLayer(0.0,2020.0e3)
 t, y = core.ODE( 2000. )
