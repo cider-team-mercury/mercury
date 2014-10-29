@@ -3,9 +3,9 @@ import matplotlib.patches as patches
 from matplotlib.collections import PatchCollection
 import numpy as np
 
-from scipy.integrate import odeint
-from scipy.optimize import minimize_scalar
-from define_physics import *
+import scipy.integrate as integrate
+import scipy.optimize as opt
+from scipy.misc import derivative
 
 class Layer(object):
     '''
@@ -25,30 +25,6 @@ class Layer(object):
 
         self.volume = 4.0/3.0 * np.pi * ( self.outer_radius**3. - self.inner_radius**3.)
 
-        try:
-            self.calculate_mass()
-        except:
-            pass
-
-        self.params = params
-        self.__dict__.update(params)
-
-    def set_params(self,params):
-        '''
-        Set material parameters for the layer 
-        '''
-        self.params.update(params)
-        self.__dict__.update(params)
-
-    def calculate_mass(self):
-        assert( 'rho' in self.params)
-        self.mass = self.volume * self.params['rho']
-
-    def set_average_temperature(self,T):
-        '''
-        Set the average temperature for the layer
-        '''
-        self.T_a = T
 
     def set_boundary_temperatures(self,outer_temperature,inner_temperature): 
         '''
@@ -58,21 +34,15 @@ class Layer(object):
         self.outer_temperature = outer_temperature
         self.inner_temperature = inner_temperature
 
-    def lower_heat_flux (self):
+    def ODE(y, t):
+        raise NotImplementedError("Need to define an ODE")
+
+    def lower_heat_flux_attempt (self):
         raise NotImplementedError("Need to define a heat flux function")
 
-    def upper_heat_flux (self):
+    def upper_heat_flux_attempt (self):
         raise NotImplementedError("Need to define a heat flux function")
    
-    def update( self, lower_temperature, upper_temperature, time ):
-        raise NotImplementedError("Need to define a physics yo")
-
-    def radiogenic(self,t):
-        assert( 'H_0' in self.params and 'lambda' in self.params)
-        lam = self.params['decay_constant']
-        H_0 = self.params['H_0']
-
-        return H_0 * np. exp( -lam * t )
 
 class Planet(object):
 
@@ -80,13 +50,9 @@ class Planet(object):
        self.layers = layers
        self.temperatures = T0
        self.Nlayers = len(layers)
-#        self.time = 0. # time
 
        self.radius = self.layers[-1].outer_radius 
        self.volume = 4./3. * np.pi * self.radius**3
-
-       for T,layer in zip(T0,self.layers):
-           layer.set_average_temperature(T)
 
     def integrate( self ):
         raise NotImplementedError("Need to define a physics yo")
@@ -113,7 +79,7 @@ class Planet(object):
 
 
 class CoreLayer(Layer):
-    def __init__(self,inner_radius,outer_radius,params=core_params):
+    def __init__(self,inner_radius,outer_radius, params={}):
         Layer.__init__(self,inner_radius,outer_radius,params)
         '''
         Note that the default params are loaded from the file "define_physics"
@@ -124,18 +90,21 @@ class CoreLayer(Layer):
         parameters from tables (II) (VI) in Stevenson et al 1983 
         '''
         self.stevenson = {
-            'alpha_c'   : 2,
+            'alpha_c'   : 2.,
             'g'         : 3.8,
             'Tm0'       : 1880.0,
-            'Tm1'       : 1.36,
-            'Tm2'       : -6.2,
-            'Ta1'       : 8.0,
-            'Ta2'       : -3.9,
+            'Tm1'       : 1.36/1.e12,
+            'Tm2'       : -6.2/1.e12/1.e12,
+            'Ta1'       : 8.0/1.e12,
+            'Ta2'       : -3.9/1.e12/1.e12,
             'x0'        : 0.01,
-            'Pcm'       : 10.0,
-            'Pc'        : 40.0
+            'Pcm'       : 10.0e9,
+            'Pc'        : 40.0e9,
+            'rho' : 7200.,
+            'c'   : 465.,
+            'L+Eg': 2.5e-5,
+            'mu' : 1.1
             }
-        self.calculate_mass()
         self.light_alloy = self.stevenson['x0']
 
 
@@ -171,9 +140,9 @@ class CoreLayer(Layer):
         '''
         x  = self.light_alloy
         p  = self.stevenson
-        return p['Tm0']*(1-p['alpha_c']*x)*(1 + p['Tm1']*Pio +p['Tm2']*Pio**2)        
+        return p['Tm0']*(1.-p['alpha_c']*x)*(1. + p['Tm1']*Pio +p['Tm2']*Pio**2.)        
     
-    def stevenson_adiabat(self,Pio, Tcm):
+    def stevenson_adiabat(self,Pio, T_cmb):
         '''
         Equation (4) from Stevenson 1983
 
@@ -181,45 +150,62 @@ class CoreLayer(Layer):
         outer core boundary Pio
         '''
         p = self.stevenson
-        return Tcm*(1+p['Ta1']*Pio+p['Ta2']*Pio**2)/(1+p['Ta1']*p['Pcm']+p['Ta2']*p['Pcm']**2)
+        return T_cmb*(1.+p['Ta1']*Pio+p['Ta2']*Pio**2.)/(1.+p['Ta1']*p['Pcm']+p['Ta2']*p['Pcm']**2.)
     
-    def calculate_pressure_io_boundary(self, Tcm):
+    def calculate_pressure_io_boundary(self, T_cmb):
         p = self.stevenson
-        opt_function = lambda Pio: np.abs(self.stevenson_adiabat(Pio, Tcm)-self.stevenson_liquidus(Pio))
-        res = minimize_scalar(opt_function, bounds=(p['Pcm'], p['Pc']), method='bounded')
-        return res.x
+        opt_function = lambda Pio: (self.stevenson_adiabat(Pio, T_cmb)-self.stevenson_liquidus(Pio))
+        if opt_function(p['Pc'])*opt_function(p['Pcm']) >= 0.:
+            raise ValueError("OOGA BOOGA")
+        else:
+            res = opt.brentq(opt_function, p['Pc'], p['Pcm'])
+            return res
 
-    def calculate_inner_core_radius(self): 
+    def inner_core_radius(self, T_cmb): 
+        '''
+        Equation 5 from Stevenson et al 1983
+        '''
+        p = self.stevenson
         Rc  = self.outer_radius
-        Pio = calculate_pressure_io_boundary()
-        Ri  = np.sqrt(2*(p['Pc'] -Pio)*Rc/(self.rho*p['g']))
-        return self.set_inner_core_radius(Ri)
+        Pio = self.calculate_pressure_io_boundary( T_cmb )
+        Ri  = np.sqrt(2*(p['Pc'] -Pio)*Rc/(p['rho']*p['g']))
+        return Ri
 
-    def inner_core_derivative(self):
-        p   = self.stevenson
-        Rc  = self.outer_radius
-        Tcm = self.core_mantle_boundary_temp()
-        Ri  = self.calculate_inner_core_radius()
-        Pio = self.calculate_pressure_io_boundary(Tcm)
-        delta_Tcm = Tcm*10**-6
-        dPio_dTcm = ( self.calculate_pressure_io_boundary(Tcm+0.5*delta_Tcm)-\
-                    self.calculate_pressure_io_boundary(Tcm-0.5*delta_Tcm) )/delta_Tcm
-        return -Rc*dPio_dTcm/(self.rho*p['g']*Ri)
+    def core_energy_balance(self, core_flux, T_cmb):
+        p = self.stevenson
+        core_surface_area = self.outer_surface_area
+          
+        inner_core_surface_area = 0
+        try:
+            inner_core_surface_area = np.power(self.inner_core_radius(T_cmb), 2.0) * 4. * np.pi
+        except ValueError:
+            pass
+  
+        dRi_dTcmb = 0.
+        try:
+            dRi_dTcmb = derivative( self.inner_core_radius, T_cmb, dx=1.0)
+        except ValueError:
+            pass    
+        thermal_energy_change = p['rho']*p['c']*self.volume*p['mu']
+        latent_heat = -p['L+Eg'] * p['rho'] * inner_core_surface_area * dRi_dTcmb
+        print thermal_energy_change, latent_heat, dRi_dTcmb
+ 
         
-    def core_energy_balance(self, core_flux):
-            p = self.params
-            Ac = self.outer_surface_area
-            Ai = self.inner_surface_area
-            dRi_dTcm = self.inner_core_derivative()
-            thermal_energy_change = p['rho']*p['c']*p['V']*p['mu']
-            latent_heat = -p['L+Eg']*p['rho']*Aic*dRi_dTcm
-            return -core_flux*Ac/(thermal_energy_change-latent_heat)
+        dTdt = -core_flux * core_surface_area / (thermal_energy_change-latent_heat)
+        return dTdt
 
-T0 = [ 2000.]        
+    def ODE( self, T_cmb_initial ):
+        cmb_flux = 2.e12/self.outer_surface_area
+        dTdt = lambda x, t : self.core_energy_balance( cmb_flux, x )
+        times = np.linspace( 0., 1.e9*np.pi*1.e7, 1000 )
+
+        sol = integrate.odeint( dTdt, T_cmb_initial, times)
+        y = sol
+        return times, y
+        
+
 core = CoreLayer(0.0,2020.0e3)
+t, y = core.ODE( 2000. )
+plt.plot(t, y)
+plt.show()
 
-mercury = Planet( [core], T0)
-       
-# mercury.draw()
-
-    
