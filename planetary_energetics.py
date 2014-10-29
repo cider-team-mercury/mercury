@@ -102,7 +102,7 @@ class CoreLayer(Layer):
             'Pc'        : 40.0e9,
             'rho' : 7200.,
             'c'   : 465.,
-            'L+Eg': 2.5e-5,
+            'L+Eg': 2.5e5,
             'mu' : 1.1
             }
         self.light_alloy = self.stevenson['x0']
@@ -168,7 +168,7 @@ class CoreLayer(Layer):
         p = self.stevenson
         Rc  = self.outer_radius
         Pio = self.calculate_pressure_io_boundary( T_cmb )
-        Ri  = np.sqrt(2*(p['Pc'] -Pio)*Rc/(p['rho']*p['g']))
+        Ri  = np.sqrt(2.*(p['Pc'] -Pio)*Rc/(p['rho']*p['g']))
         return Ri
 
     def core_energy_balance(self, core_flux, T_cmb):
