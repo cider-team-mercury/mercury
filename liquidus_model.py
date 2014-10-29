@@ -219,7 +219,7 @@ class Solver:
         '''
         return (self.T_SP(S,P+h) - self.T_SP(S,P-h))/(2.*h)
 
-    def is_Fe_rich(self,S,P,dS=.01):
+    def is_Fe_rich(self,S,P,dS=.001):
         '''
         Returns True if on the Fe-rich side of the eutectic.
         '''

@@ -19,6 +19,10 @@ def partition(w_total1,D1,f_solid,steps=1000):
     assert len(w_total) == len(D)
     assert f_solid >= 0. and f_solid <= 1. 
 
+    # avoid divide by zeros for trivial case of f_solid = 0.
+    if f_solid == 0.:
+        return w_total, np.zeros_like(w_total)
+
     dm = 1./float(steps) * f_solid
     
     mliq = 1. * np.hstack((w_total,1.-np.sum(w_total)))

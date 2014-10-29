@@ -434,19 +434,25 @@ class cm_Planet(object):
         if not irange is None:
             return self.pressure[irange]
         else:
-            self.pressure
+            return self.pressure
     def temperature_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.temperature[irange]
+        if not irange is None:
+            return self.temperature[irange]
+        else:
+            return self.temperature
     def mass_profile(self,irange=None):
         ''' 
         Profiles by default show the profile over the entire planet and have an 
         option of including an index (irange=)
         '''
-        return self.int_mass[irange]
+        if not irange is None:
+            return self.int_mass[irange]
+        else:
+            self.int_mass
 
 
 class corePlanet(cm_Planet):
@@ -532,7 +538,7 @@ class corePlanet(cm_Planet):
     def outer_core(self):
         return self.get_layer(1)
     def mantle(self):
-        return -self.inner_core() - merc.outer_core()
+        return -self.inner_core() - self.outer_core()
 
     def print_state(self,i=150):
         '''
@@ -670,6 +676,6 @@ def max_magnitude(x,**kwargs):
     maxCol = np.argmax(np.abs(x),**kwargs)
     soln = np.zeros_like(maxCol).astype(float)
     for row,col in enumerate(maxCol):
-        print row,col
+#         print row,col
         soln[row] = x[row,col]
     return soln
