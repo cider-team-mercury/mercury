@@ -266,8 +266,12 @@ class MantleLayer(Layer):
         p = self.stevenson
         nu = self.kinematic_viscosity(T_upper_mantle)
         T_lower_mantle = self.lower_mantle_temperature(T_upper_mantle)
-        delT_eff = (self.surface_temperature-T_upper_mantle)+(T_lower_mantle-T_cmb)
-        return p['g']*p['alpha']*( delT_eff)*np.power(self.thickness,3)/(nu*p['K_diff'])
+        upper_boundary_delta_T = T_upper_mantle - self.surface_temperature
+        lower_boundary_delta_T = T_cmb - T_lower_mantle
+        assert( upper_boundary_delta_T > 0.0)
+        assert( lower_boundary_delta_T > 0.0)
+        delta_T_effective = upper_boundary_delta_T + lower_boundary_delta_T
+        return p['g']*p['alpha']*( delta_T_effective)*np.power(self.thickness,3.)/(nu*p['K_diff'])
     
     def boundary_layer_thickness(self, Ra_mantle):
         '''
@@ -291,7 +295,9 @@ class MantleLayer(Layer):
         T_lower_mantle = self.lower_mantle_temperature(T_upper_mantle)
         average_boundary_layer_temp = (T_upper_mantle + T_lower_mantle)/2
         nu_crit = self.kinematic_viscosity(average_boundary_layer_temp)
-        delta = np.power( p['Ra_boundary_crit']*nu_crit*p['K_diff']/(p['g']*p['alpha']*(T_lower_mantle-T_cmb)), 0.333 )
+        delta_T_lower_boundary_layer = T_cmb - T_lower_mantle
+        assert( delta_T_lower_boundary_layer > 0.0 )
+        delta = np.power( p['Ra_boundary_crit']*nu_crit*p['K_diff']/(p['g']*p['alpha']*(delta_T_lower_boundary_layer)), 0.333 )
         Ra_mantle = self.mantle_rayleigh_number(T_upper_mantle, T_cmb)
         return np.minimum(delta, self.boundary_layer_thickness(Ra_mantle) )
 
@@ -317,13 +323,11 @@ class MantleLayer(Layer):
         cmb_flux = self.lower_boundary_flux(T_upper_mantle, T_cmb)
         surface_flux = self.upper_boundary_flux(T_upper_mantle, T_cmb) 
         flux_energy = mantle_surface_area*surface_flux - core_surface_area*cmb_flux
-        print effective_heat_capacity, internal_heat_energy, flux_energy 
- 
         dTdt = (internal_heat_energy - flux_energy)/effective_heat_capacity
         return dTdt
 
     def ODE( self, T_u_initial ):
-        T_cmb = self.surface_temperature
+        T_cmb = 3000.
         dTdt = lambda x, t : self.mantle_energy_balance( t, x, T_cmb )
         times = np.linspace( 0., 1.e9*np.pi*1.e7, 1000 )
         sol = integrate.odeint( dTdt, T_u_initial, times)
