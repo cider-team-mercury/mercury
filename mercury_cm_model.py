@@ -101,6 +101,7 @@ class mercury_model(object):
         assert self.xS_s == 0. # DS has to be zero for the current burnman solution model!!!
         solidFeSi = ironSilicideAlloy(self.xSi_s) # solid solution of Si in Fe
 
+
         # find the T(P) liquidus curve for the given wS (is this absurdly slow?)
         # could always refit, or add a function to the liquidus model
         self.liq_w = Liquidus()
@@ -148,7 +149,7 @@ class mercury_model(object):
 
             plt.show()
 
-    def generate_table(self,inner_Mfracs,data_dir="tables/",**kwargs):
+    def generate_table(self,inner_Mfracs,data_dir="tables/",test=False,**kwargs):
         '''
         Generate a table with values for a parameterized convection code.
 
@@ -156,10 +157,13 @@ class mercury_model(object):
         mfrac, rfrac
 
         radii (m):
-        r_icb,r_cmb,r_surf,
+        r_slb,r_rib,r_surf,
+
+        Pressure(Pa):
+        P_slb
         
         Temperatures (K):
-        Ti_avg,Tc_avg,Tm_avg,T_center,T_icb,T_cmb,T_surf,
+        Ti_avg,Tc_avg,Tm_avg,T_center,T_slb,T_rib,T_surf,
         
         Gravitational Energy:
         E_g,
@@ -208,6 +212,8 @@ class mercury_model(object):
                 r_surf = self.planet.boundaries[-1]
                 rfrac = r_icb / r_cmb
 
+                P_icb = self.planet.pressure[self.planet.outer_core()][0]
+
                 T_center = self.planet.temperature[0]
                 T_icb = self.planet.boundary_temperatures[0]
                 T_cmb = self.planet.boundary_temperatures[1]
@@ -227,26 +233,35 @@ class mercury_model(object):
                 C_MR2 = self.planet.moment_over_mr2()
                 Cm_C = self.planet.moment_of_inertia_list()[-1] / self.planet.moment_of_inertia()
 
-                row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_center,T_icb,T_cmb,T_surf,
+                at_eutectic = not self.liq_w.is_Fe_rich(w_S,
+                        self.planet.pressure[self.planet.inner_core()][0] )
+
+                row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,P_icb,T_center,T_icb,T_cmb,T_surf,
                     Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,Cm_C,float(at_eutectic)])
                 row_list.append(row)
 
-                at_eutectic = not self.liq_w.is_Fe_rich(w_S,
-                        self.planet.pressure[self.planet.inner_core()][0] )
                 print w_S,at_eutectic
             except:
                 print 'Problem encountered, skipping step without adding to table'
-            
+
+        csv_header = 'Model of mercury with growing inner core:\n'\
+                + 'M_core/M= '+str(self.M_core/self.M_planet)\
+                + ', wS= '+str(self.wS)+', wSi= '+str(self.wSi)+'\n'\
+                + 'mfrac,rfrac,r_slb,r_rib,r_surf,P_slb,T_center,T_slb,T_rib,'\
+                + 'T_surf,Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,'\
+                + 'Cm_C,at_eutectic'
 
         array_to_print = np.vstack(row_list)
         print target
-        np.savetxt(target, array_to_print,delimiter=',',
-                header='mfrac,rfrac,r_icb,r_cmb,r_surf,T_center,T_icb,T_cmb,T_surf,Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,Cm_C,at_eutectic')
+        if not test:
+            np.savetxt(target, array_to_print,delimiter=',',
+                header=csv_header)
         return array_to_print
 
 if __name__ == "__main__":
-    merc = mercury_model(0.9,.05,.05)
-    a1 = merc.generate_table(np.linspace(0.,0.9,50))
+    # .58,.68,.63 (range in masses found in Hauck)
+    merc = mercury_model(0.63,.05,.05)
+    a1 = merc.generate_table([.5,.6,.7,.8,.9])
 #     a2 = merc.generate_table(np.linspace(0.,0.9,10),n_iter=10)
 #     a3 = merc.generate_table(np.linspace(0.,0.9,10),n_slices=1000)
 # 
