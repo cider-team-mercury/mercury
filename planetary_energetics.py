@@ -293,7 +293,7 @@ class MantleLayer(Layer):
         nu_crit = self.kinematic_viscosity(average_boundary_layer_temp)
         delta = np.power( p['Ra_boundary_crit']*nu_crit*p['K_diff']/(p['g']*p['alpha']*(T_lower_mantle-T_cmb)), 0.333 )
         Ra_mantle = self.mantle_rayleigh_number(T_upper_mantle, T_cmb)
-        return np.minimum(delta, self.boundary_layer_thickness)
+        return np.minimum(delta, self.boundary_layer_thickness(Ra_mantle) )
 
     def upper_boundary_flux(self, T_upper_mantle, T_cmb):
         thermal_conductivity = self.stevenson['k']
