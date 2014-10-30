@@ -46,16 +46,31 @@ class Layer(object):
 
 class Planet(object):
 
-    def __init__( self, layers, T0 ):
-       self.layers = layers
-       self.temperatures = T0
-       self.Nlayers = len(layers)
+    def __init__( self, layers):
+        self.layers = layers
+        self.Nlayers = len(layers)
 
-       self.radius = self.layers[-1].outer_radius 
-       self.volume = 4./3. * np.pi * self.radius**3
+        self.radius = self.layers[-1].outer_radius 
+        self.volume = 4./3. * np.pi * self.radius**3
+
+        self.core_layer = layers[0]
+        self.mantle_layer = layers[1]
 
     def integrate( self ):
-        raise NotImplementedError("Need to define a physics yo")
+        
+        def ODE( temperatures, t ):
+            dTmantle_dt = self.mantle_layer.mantle_energy_balance( t, temperatures[1], temperatures[0] )
+            cmb_flux = -self.mantle_layer.lower_boundary_flux( temperatures[1], temperatures[0] )
+            dTcore_dt = self.core_layer.core_energy_balance(temperatures[0], cmb_flux )
+            return np.array([dTcore_dt, dTmantle_dt])
+
+        T_cmb_initial = 3000.
+        T_mantle_initial = 1500.
+        times = np.linspace( 0., 4.e9*np.pi*1.e7)
+ 
+        solution = integrate.odeint( ODE, np.array([T_cmb_initial, T_mantle_initial]), times)
+        return times, solution
+        
        
     def draw(self):
 
@@ -171,7 +186,7 @@ class CoreLayer(Layer):
         Ri  = np.sqrt(2.*(p['Pc'] -Pio)*Rc/(p['rho']*p['g']))
         return Ri
 
-    def core_energy_balance(self, core_flux, T_cmb):
+    def core_energy_balance(self, T_cmb, core_flux):
         p = self.stevenson
         core_surface_area = self.outer_surface_area
           
@@ -191,14 +206,9 @@ class CoreLayer(Layer):
         dTdt = -core_flux * core_surface_area / (thermal_energy_change-latent_heat)
         return dTdt
 
-    def ODE( self, T_cmb_initial ):
-        cmb_flux = 2.e12/self.outer_surface_area
-        dTdt = lambda x, t : self.core_energy_balance( cmb_flux, x )
-        times = np.linspace( 0., 1.e9*np.pi*1.e7, 1000 )
-
-        sol = integrate.odeint( dTdt, T_cmb_initial, times)
-        y = sol
-        return times, y
+    def ODE( self, T_cmb_initial, cmb_flux ):
+        dTdt = lambda x, t : self.core_energy_balance( x, cmb_flux )
+        return dTdt
 
 class MantleLayer(Layer):
     def __init__(self,inner_radius,outer_radius, params={}):
@@ -244,7 +254,7 @@ class MantleLayer(Layer):
         Equation (2) from Stevenson et al 1983
         '''
         p = self.stevenson
-        return p['Q0']*np.exp(-p['lambda']*time)
+        return p['Q0']*np.exp(-p['lambda']*time)*0.
 
     # - The Thickness used here is slightly wrong since we ignore the boundary layer thickness
     #   and extend to the CMB rather than the top of the boundary Layer since we don't know what
@@ -326,15 +336,12 @@ class MantleLayer(Layer):
         dTdt = (internal_heat_energy - flux_energy)/effective_heat_capacity
         return dTdt
 
-    def ODE( self, T_u_initial ):
-        T_cmb = 3000.
+    def ODE( self, T_u_initial, T_cmb ):
         dTdt = lambda x, t : self.mantle_energy_balance( t, x, T_cmb )
-        times = np.linspace( 0., 1.e9*np.pi*1.e7, 1000 )
-        sol = integrate.odeint( dTdt, T_u_initial, times)
-        y = sol
-        return times, y
+        return dTdt
 
-mantle = MantleLayer(2020.0e3, 2440.0e3)
-t, y = mantle.ODE( 2000.0 )
-plt.plot(t,y)
+mercury = Planet( [ CoreLayer( 0.0, 2020.0e3) , MantleLayer( 2020.e3, 2440.e3 ) ] )
+t, y = mercury.integrate()
+plt.plot( t, y[:,0])
+plt.plot( t, y[:,1])
 plt.show()
