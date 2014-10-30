@@ -7,7 +7,10 @@ Contains model material properties for a mercurian mantle and core.
 import burnman
 import numpy as np
 
-# olar masses
+import scipy.integrate as integrate
+from scipy.interpolate import UnivariateSpline
+
+# molar masses of elements
 mFe = 55.845
 mSi = 28.0855
 mS = 32.066
@@ -100,71 +103,6 @@ class iron_liquid (burnman.Mineral):
             'eta_s_0': 0.,
             } 
                                     
-        
-class iron_sulfide10_liquid (burnman.Mineral): 
-    '''
-    Fe - 10 wt % S endmember
-    Balog 2003 
-        A fit to the measured data only was made using
-        density values obtained between 1.5 and 17.5 GPa at all
-        three temperature levels considered, 1773 K, 1923 K, and
-        2123 K. The third-order Birch-Murnaghan EOS revealed
-        K0T = 64.3 GPa, K0'0T = 4.7, and 5.5 g/cm3 for the density of
-        the Fe-10 wt % S at 1 atm. A
-    '''
-    def __init__(self):
-        wS = .1; wFe = 1.-wS; #mFe = 55.845; mS = 32.066
-        xS = (wS/mS) / ( wS/mS + wFe/mFe )
-        xFe = 1. - xS
-        self.params = {
-            'equation_of_state':'slb3',
-            'V_0': 9.754e-06, #  1 / (5.33 g / cm^3) * (.05199 kg / mol)
-            'K_0': 64.3e9, 
-            'Kprime_0': 4.8, 
-            'G_0': 0.,
-            'Gprime_0': 0.,
-            'molar_mass': .05199, 
-            'n': 1,
-            'Debye_0': 10., # assymptote to 3R
-            'grueneisen_0': 1.5, #  Alfe liquid iron ?
-            'q_0': 0., # unknown ?
-            'eta_s_0': 0.,
-            'mole_fraction' : xS,
-            'weight_percent' : wS,
-            'T0' : 1173}
-
-class iron_sulfide10_liquid (burnman.Mineral): 
-    '''
-    Fe - 10 wt % S endmember
-    Balog 2003 
-        A fit to the measured data only was made using
-        density values obtained between 1.5 and 17.5 GPa at all
-        three temperature levels considered, 1773 K, 1923 K, and
-        2123 K. The third-order Birch-Murnaghan EOS revealed
-        K0T = 64.3 GPa, K0'0T = 4.7, and 5.5 g/cm3 for the density of
-        the Fe-10 wt % S at 1 atm. A
-    '''
-    def __init__(self):
-        wS = .1; wFe = 1.-wS; #mFe = 55.845; mS = 32.066
-        xS = (wS/mS) / ( wS/mS + wFe/mFe )
-        xFe = 1. - xS
-        self.params = {
-            'equation_of_state':'slb3',
-            'V_0': 9.754e-06, #  1 / (5.5 g / cm^3) * (.05199 kg / mol)
-            'K_0': 64.3e9, 
-            'Kprime_0': 4.8, 
-            'G_0': 0.,
-            'Gprime_0': 0.,
-            'molar_mass': .05199, 
-            'n': 1,
-            'Debye_0': 10., # assymptote to 3R
-            'grueneisen_0': 1.5, #  Alfe liquid iron ?
-            'q_0': 0., # unknown ?
-            'eta_s_0': 0.,
-            'mole_fraction' : xS,
-            'weight_percent' : wS,
-            'T0' : 1173}
-
 class iron_silicide_liquid (burnman.Mineral): 
     '''
     Fe-Si liquid endmember
@@ -176,9 +114,15 @@ class iron_silicide_liquid (burnman.Mineral):
         #Hauck 2013 / dumay and cramb
         xSi = .5; xFe = 1. - xSi
         wSi = xSi * mSi / ( xSi * mSi + xFe * mFe)
+
+        # convert volume to one consistent at 300 K.
+        T0 = 1450.; alpha0 = 9.2e-5; VatRef = 8.394e-6
+        therm_exp = lambda v,t : v * alpha0
+        volume = np.ravel(integrate.odeint(therm_exp,VatRef,[T0,300.]) )
+
         self.params = {
             'equation_of_state':'slb3',
-            'V_0': 8.394e-6, #  1 / (5.0 g / cm^3) * (.04197 kg / mol)
+            'V_0': volume[-1], #  1 / (5.0 g / cm^3) * (.04197 kg / mol)
             'K_0': 84.0e9, # took value of -80 dK/d (124 - 40)
             'Kprime_0': 5.5,
             'G_0': 0.,
@@ -191,20 +135,30 @@ class iron_silicide_liquid (burnman.Mineral):
             'eta_s_0': 0.,
             'mole_fraction' : xSi,
             'weight_percent' : wSi,
-            'T_0' : 1450. # T_0 from dumay and cramb
             }
             
 class iron_sulfide_liquid (burnman.Mineral): #placeholder
+    '''
+    Fe-S liquid endmember
+    Parameters from:
+        Hauck 2013.
+        K_0 not included, see ironSulfideSilicideLiquid().
+        T0 from Kaiura and Toguri.
+    '''
     def __init__(self):
         # Hauck 2013 / sanloup 2003 / Kairu and Toguri 1979
         xS = .5; xFe = 1. - xS
         wS = xS * mS / ( xS * mS + xFe * mFe)
-        # wS = 0.36
+
+        # convert Volume to 300. for V0
+        T0 = 1200.; alpha0 = 1.1e-4; VatRef = 1.127e-5
+        therm_exp = lambda v,t : v * alpha0
+        volume = np.ravel(integrate.odeint(therm_exp,VatRef,[T0,300.]) )
+
         self.params = {
             'equation_of_state':'slb3',
-            'V_0': 1.127e-5, #  1 / (3.9 g / cm^3) * (.04396 kg / mol)
-            'K_0': 0.1e9, # This takes a non-linear fit in Hauck 
-                            # it will go unstable for large % sulfur
+            'V_0': volume[-1], #  1 / (3.9 g / cm^3) * (.04396 kg / mol)
+            'K_0': np.nan, # see ironSulfideSilicideLiqui()
             'Kprime_0': 5.,
             'G_0': 0.,
             'Gprime_0': 0.,
@@ -215,8 +169,7 @@ class iron_sulfide_liquid (burnman.Mineral): #placeholder
             'q_0': 0.,
             'eta_s_0': 0.,
             'mole_fraction' : xS,
-            'weight_percent' : wS,
-            'T_0' : 1200.} # took T_0 directly from Kaiura and Toguri
+            'weight_percent' : wS} 
 
 
 # Olivine and Orthopyroxene parameters from  stixrude & lithgow-bertelloni 2011
@@ -307,38 +260,6 @@ class ironSilicideAlloy(burnman.HelperSolidSolution):
 
 # liquid "alloys"
 
-class ironSulfideLiquid(burnman.HelperSolidSolution):
-    def __init__(self, mole_frac_S):
-        base_materials = [iron_liquid(), iron_sulfide10_liquid()]
-        x0 = base_materials[1].params['mole_fraction']
-        assert( mole_frac_S <= x0 )
-        molar_fraction = [1. - mole_frac_S / x0, 0.0 + mole_frac_S / x0] # keep the 0.0 +, otherwise it is an array sometimes
-        burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-
-class ironSilicideLiquid(burnman.HelperSolidSolution):
-    def __init__(self, mole_frac_Si):
-        base_materials = [iron_liquid(), iron_silicide_liquid()]
-        x0 = base_materials[1].params['mole_fraction']
-        assert( mole_frac_Si <= x0 )
-        molar_fraction = [1. - mole_frac_Si / x0, 0.0 + mole_frac_Si / x0] # keep the 0.0 +, otherwise it is an array sometimes
-        burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-
-# class ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
-#     def __init__(self, mole_frac_S, mole_frac_Si):
-#         base_materials = [iron_liquid(),iron_sulfide10_liquid(),iron_silicide_liquid()]
-#         xS0 = base_materials[1].params['mole_fraction']
-#         xSi0 = base_materials[2].params['mole_fraction']
-#         print 'xS0',xS0
-#         assert( mole_frac_S <= xS0 )
-#         assert( mole_frac_Si <= xSi0 )
-#         molar_fraction = [1. - mole_frac_Si / xSi0 - mole_frac_S / xS0, 0.0 +
-#                 mole_frac_S / xS0, 0.0 + mole_frac_Si / xSi0] # keep the 0.0 +, otherwise it is an array sometimes
-#         print molar_fraction
-#         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-
-
-# Sanloup K parameterization
-
 class ironSulfideSilicideLiquid(burnman.Mineral):
     '''
     Simple model for a Fe-S-Si liquid alloy using parameters aggregated by Hauck
@@ -348,18 +269,26 @@ class ironSulfideSilicideLiquid(burnman.Mineral):
     S content, while rho_0 is a linear mixture between Fe, FeS and FeSi endmembers.
     '''
     def __init__(self, mole_frac_S, mole_frac_Si):
+
+        # Fe, FeS and FeSi endmembers
         base_materials = [iron_liquid(),iron_sulfide_liquid(),iron_silicide_liquid()]
+
+        # check that composition isn't outside of the range of the model
         xS0 = base_materials[1].params['mole_fraction']
         xSi0 = base_materials[2].params['mole_fraction']
         assert( mole_frac_S <= xS0 )
         assert( mole_frac_Si <= xSi0 )
+
+        # molar fraction of each component to include
         molar_fraction = np.array([1. - mole_frac_Si / xSi0 - mole_frac_S / xS0, 
             0.0 + mole_frac_S / xS0, 0.0 + mole_frac_Si / xSi0] )
         wS = mole_frac_S * mS / ( mole_frac_S * mS + mole_frac_Si * mSi +
                 (1.-mole_frac_S-mole_frac_Si)*mFe )
 
+        # all other parameters take to be the same as pure liquid iron
         self.params = base_materials[0].params
-        # linearly averaged 
+
+        # linearly averaged parameters
         for param in ['V_0','molar_mass']:
             end_members = np.array([ mat.params[param] for mat in base_materials])
             self.params[param] = np.sum(molar_fraction * end_members)

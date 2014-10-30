@@ -113,7 +113,7 @@ class cm_Planet(object):
         '''
         rhofunc = UnivariateSpline(self.int_mass, self.density )
 
-        deltaV = lambda p,m: 1./rhofunc(m)
+        deltaV = lambda y,m: 1./rhofunc(m)
         volume = np.ravel(integrate.odeint( deltaV, 0.0, self.int_mass ))
 
         # set self.radius
