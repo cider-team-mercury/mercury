@@ -212,9 +212,9 @@ class MantleLayer(Layer):
         parameters from tables (II) (VI) in Stevenson et al 1983 
         '''
         self.stevenson = {
-                'rho' : 3500,
-                'c'   : 1142,
-                'mu'  : 1,
+                'rho' : 3500.,
+                'c'   : 1142.,
+                'mu'  : 1.,
                 'Q0'  : 1.7e-7, # - [W]/[m]
                 'lambda' : 1.38e-17, # - [s]
                 'A'      : 5.2e4, # - [k]
@@ -223,10 +223,10 @@ class MantleLayer(Layer):
                 'beta' : 0.3, # - Ra exponent
                 'alpha' : 2 * 10e-5, # - 1/[K]
                 'g'     : 3.8, # - [m]/[s]/[s] 
-                'K_diff' : 10e-6, # - [m][m]/[s]
-                'Ra_crit' : 500,
-                'Ra_boundary_crit' : 2000,
-                'T_surf' : 1073
+                'K_diff' : 10.e-6, # - [m][m]/[s]
+                'Ra_crit' : 500.,
+                'Ra_boundary_crit' : 2000.,
+                'T_surf' : 1073.
             }
         self.surface_temperature = self.stevenson['T_surf']
 
