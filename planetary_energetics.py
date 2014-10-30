@@ -218,20 +218,60 @@ class MantleLayer(Layer):
                 'rho' : 3500,
                 'c'   : 1142,
                 'mu'  : 1,
-                'Q0'  : 1.7e7, # - [W]/[m]
-                'lambda' : 1.38e-17 # - [s]
+                'Q0'  : 1.7e-7, # - [W]/[m]
+                'lambda' : 1.38e-17, # - [s]
+                'v0' : 4.0e3, # [m]^2/[s]
+                'k'  : 4.0 # - [W]/[m]/[K]
+                'beta' : 0.3, # - Ra exponent
+                'alpha' : 2 * 10e-5, # - 1/[K]
+                'g'     : 3.8, # - [m]/[s]/[s] 
+                'K_diff' : 10e-6, # - [m][m]/[s]
+                'Ra_crit' : 500
             }
         self.light_alloy = self.stevenson['x0']
 
 
     ### We could code the integrals here. 
-    def upper_mantle_temp(self):
-        return  self.T_average / self.mu
+    def upper_mantle_temp(self, T_mantle):
+        p = self.stevenson
+        return  T_mantle / p['mu']
 
     def heat_production(self, time):
-        p =self.stevenson
+        '''
+        Equation (2) from Stevenson et al 1983
+        '''
+        p = self.stevenson
         return p['Q0']*np.exp(-p['lambda']*time)
     
+    def surface_flux(self, delta_T, upper_boundary_layer_thickness):
+        '''
+        Fourier's Law
+        '''
+        p = self.stevenson
+        return p['k']*delta_T/upper_boundary_layer_thickness
+
+    def upper_boundary_layer_thickness(self, Ra_mantle):
+        p = self.stevenson
+        return self.thickness*np.power(p['Ra_crit']/Ra_mantle,p['beta'])
+
+    def lower_mantle_temp(self, T_upper_mantle):
+
+    
+    # - we differ from Stevenson slightly in that we assume the Rayleigh Number is equal to the the temperature
+    #   drop across the whol emantle rather than the sum of the temperature drop in the upper boundary layer and 
+    #   the lower boundary layer 
+    def mantle_Rayleigh_number(self, T_upper_mantle, T_surface, T_cmb):
+        p = self.stevenson
+        nu = self.kinematic_viscosity(T_mantle)
+        return p['g']*p['alpha']*(T_surface-T_cmb)*power(self.thickness,3)/(nu*p['K_diff'])
+    
+    def boundary_layer_Rayleigh_number(self, T_mantle
+        
+
+    def kinematic_viscosity(self, T_upper_mantle):
+        p = self.stevenson
+        return p['v0']*np.exp(p['A']/T_upper_mantle)
+
     def mantle_energy_balance(self, surface_flux, cmb_flux, T_upper_mantle):
         p = self.stevenson
         mantle_surface_area = self.outer_surface_area
