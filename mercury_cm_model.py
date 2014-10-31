@@ -202,50 +202,50 @@ class mercury_model(object):
                 print 'Eutectic encountered'
                 break
 
-            try:
-                self.set_innerCore(mfrac) 
+#             try:
+            self.set_innerCore(mfrac) 
 
-                self.integrate(verbose=False,**kwargs)
+            self.integrate(verbose=False,**kwargs)
 
-                r_icb = self.planet.boundaries[0]
-                r_cmb = self.planet.boundaries[1]
-                r_surf = self.planet.boundaries[-1]
-                rfrac = r_icb / r_cmb
+            r_icb = self.planet.boundaries[0]
+            r_cmb = self.planet.boundaries[1]
+            r_surf = self.planet.boundaries[-1]
+            rfrac = r_icb / r_cmb
 
-                P_icb = self.planet.pressure[self.planet.outer_core()][0]
+            P_icb = self.planet.pressure[self.planet.outer_core()][0]
 
-                T_center = self.planet.temperature[0]
-                T_icb = self.planet.boundary_temperatures[0]
-                T_cmb = self.planet.boundary_temperatures[1]
-                T_surf = self.planet.boundary_temperatures[-1]
+            T_center = self.planet.temperature[0]
+            T_icb = self.planet.boundary_temperatures[0]
+            T_cmb = self.planet.boundary_temperatures[1]
+            T_surf = self.planet.boundary_temperatures[-1]
 
-                Ti_avg = np.mean(self.planet.temperature[self.planet.inner_core()] )
-                Tc_avg = np.mean(self.planet.temperature[self.planet.outer_core()] )
-                Tm_avg = np.mean(self.planet.temperature[self.planet.mantle()] )
+            Ti_avg = np.mean(self.planet.temperature[self.planet.inner_core()] )
+            Tc_avg = np.mean(self.planet.temperature[self.planet.outer_core()] )
+            Tm_avg = np.mean(self.planet.temperature[self.planet.mantle()] )
 
-                E_g = 0. # placeholder
+            E_g = 0. # placeholder
 
-                w_S = self.wS_l
-                w_Si = self.wSi_l
+            w_S = self.wS_l
+            w_Si = self.wSi_l
 
-                rho_icb_s, rho_icb_l = density_coexist([self.wS_l,self.wSi_l,self.wFe_l],\
-                        [self.DS,self.DSi],P_icb,T_icb)
-                rho_diff = rho_icb_s - rho_icb_l 
-                print rho_icb_s, rho_icb_l,rho_diff
+            rho_icb_s, rho_icb_l = density_coexist([self.wS_l,self.wSi_l,self.wFe_l],\
+                    [self.DS,self.DSi],P_icb,T_icb)
+            rho_diff = rho_icb_s - rho_icb_l 
+            print rho_icb_s, rho_icb_l,rho_diff
 
-                C_MR2 = self.planet.moment_over_mr2()
-                Cm_C = self.planet.moment_of_inertia_list()[-1] / self.planet.moment_of_inertia()
+            C_MR2 = self.planet.moment_over_mr2()
+            Cm_C = self.planet.moment_of_inertia_list()[-1] / self.planet.moment_of_inertia()
 
-                at_eutectic = not self.liq_w.is_Fe_rich(self.wS_l,
-                        self.planet.pressure[self.planet.inner_core()][0] )
+            at_eutectic = not self.liq_w.is_Fe_rich(self.wS_l,
+                    self.planet.pressure[self.planet.inner_core()][0] )
 
-                row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,P_icb,T_center,T_icb,T_cmb,T_surf,
-                    Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,Cm_C,float(at_eutectic)])
-                row_list.append(row)
+            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,P_icb,T_center,T_icb,T_cmb,T_surf,
+                Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,Cm_C,float(at_eutectic)])
+            row_list.append(row)
 
-                print w_S,at_eutectic
-            except:
-                print 'Problem encountered, skipping step without adding to table'
+            print w_S,at_eutectic
+#             except:
+#                 print 'Problem encountered, skipping step without adding to table'
 
         csv_header = 'Model of mercury with growing inner core:\n'\
                 + 'M_core/M= '+str(self.M_core/self.M_planet)\
@@ -264,7 +264,7 @@ class mercury_model(object):
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercury_model(0.63,.05,.05)
-    a1 = merc.generate_table([.5,.6])
+    a1 = merc.generate_table([.5])
 #     a2 = merc.generate_table(np.linspace(0.,0.9,10),n_iter=10)
 #     a3 = merc.generate_table(np.linspace(0.,0.9,10),n_slices=1000)
 # 
