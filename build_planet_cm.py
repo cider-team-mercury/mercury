@@ -95,16 +95,35 @@ class cm_Planet(object):
         for bound,comp in zip(self.massBelowBoundary,self.compositions):
             layer =  (self.int_mass > last) & ( self.int_mass <= bound)
             mrange = self.int_mass[ layer ] #range in int_mass within the layer
+
             drange = np.empty_like(mrange)
+            vprange =  np.empty_like(mrange)
+            vsrange =  np.empty_like(mrange)
+            vphirange = np.empty_like(mrange)
+            Krange =  np.empty_like(mrange)
+            Grange = np.empty_like(mrange)
+
             prange = self.pressure[ layer ]
             trange = self.temperature[ layer ]
 
             for i in range(len(mrange)):
                     rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(comp, np.array([prange[i]]), np.array([trange[i]]))
                     drange[i] = rho
+                    vprange[i] = vp
+                    vsrange[i] = vs
+                    vphirange[i] = vphi
+                    Krange[i] = K
+                    Grange[i] = G
+#                     print rho, vp, vs, vphi, K, G
 
             # set the self.density within the layer
             self.density[layer] = drange
+            self.vp[layer] = vprange
+            self.vs[layer] = vsrange
+            self.vphi[layer] = vphirange
+            self.K[layer] = Krange
+            self.G[layer] = Grange
+
             last = bound # update last boundary
 
     def compute_radii(self):
@@ -113,7 +132,7 @@ class cm_Planet(object):
         '''
         rhofunc = UnivariateSpline(self.int_mass, self.density )
 
-        deltaV = lambda p,m: 1./rhofunc(m)
+        deltaV = lambda y,m: 1./rhofunc(m)
         volume = np.ravel(integrate.odeint( deltaV, 0.0, self.int_mass ))
 
         # set self.radius
@@ -219,11 +238,6 @@ class cm_Planet(object):
         to calculating from the upper boundary downwards. fromLowerBounds=True
         is for calculating up from the lower boundary.
         '''
-#         ubound = self.massBelowBoundary[idx]
-#         if idx == 0:
-#             lbound = -1.
-#         else:
-#             lbound = self.massBelowBoundary[idx-1]
 
         comp = self.compositions[idx]
         layer = self.get_layer(idx)
@@ -288,7 +302,14 @@ class cm_Planet(object):
         self.boundaries = np.zeros_like(self.massBelowBoundary)
 
         self.gravity = np.zeros_like(self.int_mass)
+
+        # eos parameters
         self.density = np.zeros_like(self.int_mass)
+        self.vp = np.zeros_like(self.int_mass)
+        self.vs = np.zeros_like(self.int_mass)
+        self.vphi = np.zeros_like(self.int_mass)
+        self.K = np.zeros_like(self.int_mass)
+        self.G = np.zeros_like(self.int_mass)
 
 
         if plot == True:
@@ -397,56 +418,29 @@ class cm_Planet(object):
         layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
         return layer
 
-#     def radial_profile(self,irange=np.arange(len(self.int_mass))):
-    def radial_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        if not irange is None:
-            return self.radius[irange]
-        else:
-            return self.radius
-
-    def density_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        if not irange is None:
-            return self.density[irange]
-        else:
-            return self.density
-    def gravity_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        if not irange is None:
-            return self.gravity[irange]
-        else:
-            return self.gravity
-    def pressure_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        if not irange is None:
-            return self.pressure[irange]
-        else:
-            self.pressure
-    def temperature_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        return self.temperature[irange]
-    def mass_profile(self,irange=None):
-        ''' 
-        Profiles by default show the profile over the entire planet and have an 
-        option of including an index (irange=)
-        '''
-        return self.int_mass[irange]
+    # access functions for all profiles (this is kind of redundant)
+    def radial_profile(self):
+        return self.radius
+    def density_profile(self):
+        return self.density
+    def gravity_profile(self):
+        return self.gravity
+    def pressure_profile(self):
+        return self.pressure
+    def temperature_profile(self):
+        return self.temperature
+    def mass_profile(self):
+        return self.int_mass
+    def vp_profile(self):
+        return self.vp
+    def vs_profile(self):
+        return self.vs
+    def vphi_profile(self):
+        return self.vphi
+    def K_profile(self):
+        return self.K
+    def G_profile(self):
+        return self.G
 
 
 class corePlanet(cm_Planet):
@@ -532,7 +526,7 @@ class corePlanet(cm_Planet):
     def outer_core(self):
         return self.get_layer(1)
     def mantle(self):
-        return -self.inner_core() - merc.outer_core()
+        return -self.inner_core() - self.outer_core()
 
     def print_state(self,i=150):
         '''
@@ -585,7 +579,14 @@ class corePlanet(cm_Planet):
         self.boundaries = np.zeros_like(self.massBelowBoundary)
 
         self.gravity = np.zeros_like(self.int_mass)
+
+        # eos parameters
         self.density = np.zeros_like(self.int_mass)
+        self.vp = np.zeros_like(self.int_mass)
+        self.vs = np.zeros_like(self.int_mass)
+        self.vphi = np.zeros_like(self.int_mass)
+        self.K = np.zeros_like(self.int_mass)
+        self.G = np.zeros_like(self.int_mass)
 
         if plot == True:
             ax1 = plt.subplot(141);ax1.set_title('rho')
@@ -670,6 +671,6 @@ def max_magnitude(x,**kwargs):
     maxCol = np.argmax(np.abs(x),**kwargs)
     soln = np.zeros_like(maxCol).astype(float)
     for row,col in enumerate(maxCol):
-        print row,col
+#         print row,col
         soln[row] = x[row,col]
     return soln
