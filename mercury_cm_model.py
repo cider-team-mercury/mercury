@@ -17,7 +17,7 @@ from liquidus_model import Solver_no14 as Liquidus
 
 from build_planet_cm import cm_Planet, corePlanet
 
-from core_partition import partition
+from core_partition import partition, density_coexist
 
 # Material Properties
 from mercury_minerals import *
@@ -228,12 +228,15 @@ class mercury_model(object):
                 w_S = self.wS_l
                 w_Si = self.wSi_l
 
-                rho_diff = 0. # placeholder
+                rho_icb_s, rho_icb_l = density_coexist([self.wS_l,self.wSi_l,self.wFe_l],\
+                        [self.DS,self.DSi],P_icb,T_icb)
+                rho_diff = rho_icb_s - rho_icb_l 
+                print rho_icb_s, rho_icb_l,rho_diff
 
                 C_MR2 = self.planet.moment_over_mr2()
                 Cm_C = self.planet.moment_of_inertia_list()[-1] / self.planet.moment_of_inertia()
 
-                at_eutectic = not self.liq_w.is_Fe_rich(w_S,
+                at_eutectic = not self.liq_w.is_Fe_rich(self.wS_l,
                         self.planet.pressure[self.planet.inner_core()][0] )
 
                 row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,P_icb,T_center,T_icb,T_cmb,T_surf,
@@ -261,7 +264,7 @@ class mercury_model(object):
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercury_model(0.63,.05,.05)
-    a1 = merc.generate_table([.5,.6,.7,.8,.9])
+    a1 = merc.generate_table([.5,.6])
 #     a2 = merc.generate_table(np.linspace(0.,0.9,10),n_iter=10)
 #     a3 = merc.generate_table(np.linspace(0.,0.9,10),n_slices=1000)
 # 

@@ -250,7 +250,7 @@ class orthopyroxene(burnman.HelperSolidSolution):
         molar_fraction = [1. - fe_num, 0.0 + fe_num] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
-class ironSilicideAlloy(burnman.HelperSolidSolution):
+class  ironSilicideAlloy(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_Si):
         base_materials = [iron_liquid(), iron_silicide_liquid()]
         x0 = base_materials[1].params['mole_fraction']
