@@ -264,14 +264,4 @@ class mercury_model(object):
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercury_model(0.63,.05,.05)
-    a1 = merc.generate_table([.5])
-#     a2 = merc.generate_table(np.linspace(0.,0.9,10),n_iter=10)
-#     a3 = merc.generate_table(np.linspace(0.,0.9,10),n_slices=1000)
-# 
-#     plt.figure()
-#     ax = plt.subplot(111)
-#     ax.plot(a1[:,10],a1[:,1])
-#     ax.plot(a3[:,10],a2[:,1])
-#     ax.plot(a4[:,10],a4[:,1])
-#     plt.show()
-
+    a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
