@@ -95,7 +95,14 @@ class cm_Planet(object):
         for bound,comp in zip(self.massBelowBoundary,self.compositions):
             layer =  (self.int_mass > last) & ( self.int_mass <= bound)
             mrange = self.int_mass[ layer ] #range in int_mass within the layer
-            drange = vprange = vsrange = vphirange = Krange = Grange = np.empty_like(mrange)
+
+            drange = np.empty_like(mrange)
+            vprange =  np.empty_like(mrange)
+            vsrange =  np.empty_like(mrange)
+            vphirange = np.empty_like(mrange)
+            Krange =  np.empty_like(mrange)
+            Grange = np.empty_like(mrange)
+
             prange = self.pressure[ layer ]
             trange = self.temperature[ layer ]
 
@@ -107,6 +114,7 @@ class cm_Planet(object):
                     vphirange[i] = vphi
                     Krange[i] = K
                     Grange[i] = G
+#                     print rho, vp, vs, vphi, K, G
 
             # set the self.density within the layer
             self.density[layer] = drange
@@ -303,6 +311,7 @@ class cm_Planet(object):
         self.K = np.zeros_like(self.int_mass)
         self.G = np.zeros_like(self.int_mass)
 
+
         if plot == True:
             ax1 = plt.subplot(141)
             ax2 = plt.subplot(142)
@@ -432,6 +441,7 @@ class cm_Planet(object):
         return self.K
     def G_profile(self):
         return self.G
+
 
 class corePlanet(cm_Planet):
     def __init__(self,  masses, compositions, temperatures, liquidus=None,**kwargs):
