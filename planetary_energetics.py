@@ -128,15 +128,14 @@ class CoreLayer(Layer):
     # - will update with values from Fei et al 1997, 2000
     # - Then we can use the look up tables from Sean as well
     
-    def set_light_alloy_concentration(self):
+    def light_alloy_concentration(self):
         '''
         Equation (7) from Stevenson 1983
         '''
         x0 = self.stevenson['x0']
         Rc = self.outer_radius
         Ri = self.inner_radius
-        self.light_alloy = x0*(Rc**3)/(Rc**3-Ri**3)
-        return self.light_alloy
+        return x0*(Rc**3)/(Rc**3-Ri**3)
 
     def set_inner_core_radius(self,Ri):
         self.inner_radius = Ri
@@ -153,7 +152,7 @@ class CoreLayer(Layer):
         Calculates the liquidus temp for a given pressure at the inner core
         outer core boundary Pio
         '''
-        x  = self.light_alloy
+        x  = self.light_alloy_concentration()
         p  = self.stevenson
         return p['Tm0']*(1.-p['alpha_c']*x)*(1. + p['Tm1']*Pio +p['Tm2']*Pio**2.)        
     
