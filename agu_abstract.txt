@@ -1,8 +1,0 @@
-Thermal evolution and dynamo generation on Mercury
-
-Grace Cox, Brent Delbridge, Ian Rose, Sean Wahl, Jessica Irving, Hiroaki Matsui, Bill McDonough, Anat Shahar
-
-Of the findings of the MESSENGER spacecraft, one of the more surprising is the confirmation that the smallest terrestrial planet has an internally generated, dipolar magnetic field.  This observation constrains Mercury’s core to a thermal state with the fluid convection necessary for to drive a dynamo. However, other observations point to several factors that should disfavor a dynamo. These include physical constraints on a thin, possibly non-convecting mantle, as well as, properties of liquid iron alloys that promote compositional stratification in the planet’s large iron core. The highly reduced state of Mercury’s surface suggests the core should contain high concentrations of silicon, which will lower the efficiency of compositionally driven convection.
-
-These results represent the culmination of a multidisciplinary study of this problem during the 2014 CIDER summer program. We present thermal evolution models for the planet, comparing simulations of mantle heat flow using a convection code, ASPECT, to predictions from a parameterized convection model.  We couple this to a detailed model of core energetics, which considers complications from an iron-sulfur-silicon phase diagram. These are based on structural models compatible with Mercury’s observed gravitational moments. A long-term spatial temperature difference resulting from the planet’s orbital resonance may play an important role in driving a dynamo in Mercury.
-
