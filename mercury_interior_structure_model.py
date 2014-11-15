@@ -261,7 +261,41 @@ class mercury_model(object):
                 header=csv_header)
         return array_to_print
 
+    def get_energetics(self,inner_Mfracs,**kwargs):
+
+        row_list = []
+        at_eutectic = False
+        for mfrac in inner_Mfracs:
+
+            print mfrac
+
+            if at_eutectic: # stop if eutectic has been reached
+                print 'Eutectic encountered'
+                break
+
+#             try:
+            self.set_innerCore(mfrac) 
+
+            self.integrate(verbose=False,**kwargs)
+
+            r_icb = self.planet.boundaries[0]
+            r_cmb = self.planet.boundaries[1]
+            r_surf = self.planet.boundaries[-1]
+            rfrac = r_icb / r_cmb
+
+            dEg_cmb = self.planet.Eg_over_r
+            Eg = self.planet.gravitational_energy
+            Eg_core = self.planet.core_gravitational_energy
+
+            row = np.array([mfrac,r_icb,dEg_cmb,Eg,Eg_core])
+                
+            row_list.append(row)
+
+        array_to_print = np.vstack(row_list)
+        return array_to_print
+
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercury_model(0.63,.05,.05)
-    a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
+#     a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
+    a1 = merc.get_energetics(np.linspace(0.,.5,6))

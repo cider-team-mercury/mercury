@@ -252,6 +252,25 @@ class cm_Planet(object):
             trange = burnman.geotherm.adiabatic(prange,np.array([T0]),comp)
             self.temperature[layer] = trange
 
+    def compute_Eg(self):
+        '''
+        Directly compute gravitational energy from the current profiles
+        '''
+
+        r_func = UnivariateSpline(self.int_mass,self.radius)
+        
+        dE_dm = lambda y, m: - G * m / r_func(m)
+
+#         Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.masses[-1] ))
+        Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.int_mass ))
+
+        # save the total gravitational energy
+        self.Eg = Eg
+        self.gravitational_energy = Eg[-1]
+
+        # save the gravitational energy over the core alone
+#         self.core_gravitational_energy = Eg[self.cmb()]
+
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
         print 'Planet Model:'
@@ -528,6 +547,18 @@ class corePlanet(cm_Planet):
     def mantle(self):
         return -self.inner_core() - self.outer_core()
 
+    def icb(self):
+        x = len(self.int_mass) 
+#         layer = np.linspace(0,x-1,x)[self.inner_core()]
+        layer = np.arange(x)[self.inner_core()]
+        return layer[-1]
+        
+    def cmb(self):
+        x = len(self.int_mass) 
+#         layer = np.linspace(0,x-1,x)[self.outer_core()]
+        layer = np.arange(x)[self.outer_core()]
+        return layer[-1]
+
     def print_state(self,i=150):
         '''
         For debugging
@@ -535,6 +566,41 @@ class corePlanet(cm_Planet):
         print self.int_mass[i],self.radius[i],self.density[i],self.gravity[i],
         print self.pressure[i],self.temperature[i]
 
+    def compute_Eg_over_r(self):
+        '''
+        Calculate the Eg per volume change in the core
+        
+        Delta Eg = int ( [ (rho_l - rho_s)*g*4pi*r^2 ] dr )
+
+        Returns the bracketed parameter.
+        '''
+
+        # Parameters at the inner core boundary
+        idx_icb = self.icb()
+        p_icb = self.pressure[idx_icb]
+        rho_icb = self.density[idx_icb]
+        g_icb = self.gravity[idx_icb]
+        r_icb = self.radius[idx_icb]
+        t_icb = self.temperature[idx_icb]
+
+        rho_s,vp, vs, vphi, K, G =  burnman.velocities_from_rock(self.compositions[0],
+                np.array([p_icb]), np.array([t_icb]) )
+
+        rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
+                np.array([p_icb]), np.array([t_icb]) )
+
+        # Save Eg / dr
+        self.Eg_over_r = (rho_l - rho_s) * g_icb * 4. * np.pi * r_icb**2.
+
+    def compute_Eg(self):
+        '''
+        Directly compute gravitational energy from the current profiles
+        '''
+
+        super(corePlanet,self).compute_Eg()
+
+        # save the gravitational energy over the core alone
+        self.core_gravitational_energy = self.Eg[self.cmb()]
 
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
             verbose=True):
@@ -653,6 +719,10 @@ class corePlanet(cm_Planet):
         self.diff_bounds = self.boundaries - self.last_boundaries
         self.diff_icb_temp = self.boundary_temperatures[0] - self.last_icb_temp
 
+        # compute quantaties for energy/entropy budget
+        self.compute_Eg()
+        self.compute_Eg_over_r()
+
         # print diagnostiscs for last iteration
         if verbose:
             print 'Change during last iteration:'
@@ -663,6 +733,8 @@ class corePlanet(cm_Planet):
 
         if plot==True:
             plt.show()
+
+
 
 def max_magnitude(x,**kwargs):
     '''
