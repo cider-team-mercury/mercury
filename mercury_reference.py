@@ -11,14 +11,14 @@ import numpy as np
 G = 6.673e-11
 
 # Margot et al. 2012
-def C_over_MR2(): return np.array([.346,.01])
-def Cm_over_C(): return np.array([0.432,.025])
+C_over_MR2 = np.array([.346,.01])
+Cm_over_C = np.array([0.432,.025])
 
 # Smith et al. 2012
-def GM(): return np.array([2.203178e+13,20000000])
-def M(): return GM() / G
+GM = np.array([2.203178e+13,20000000])
+M = GM / G
 
 # Zuber et al. 2012
-def R_equatorial(): return np.array([2439.83,.05])
-def R_polar(): return np.array([437.57,.01])
-def R_mean(): return np.array([439.59,.05])
+R_equatorial = np.array([2439.83,.05])
+R_polar = np.array([437.57,.01])
+R_mean = np.array([439.59,.05])

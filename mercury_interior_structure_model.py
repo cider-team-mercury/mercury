@@ -15,7 +15,7 @@ import burnman.composite as composite
 # from liquidus_model import Solver as Liquidus
 from liquidus_model import Solver_no14 as Liquidus
 
-from build_planet_cm import cm_Planet, corePlanet
+from build_planet import cm_Planet, corePlanet
 
 from core_partition import partition, density_coexist
 
@@ -23,7 +23,7 @@ from core_partition import partition, density_coexist
 from mercury_minerals import *
 
 # Constants
-from mercury_reference import *
+import mercury_reference
 
 # molar masses
 mFe = 55.845
@@ -47,7 +47,7 @@ class mercury_model(object):
         self.core_Mfrac = core_Mfrac
 
         # Define masses of layers consistent with mercury_reference
-        self.M_planet = M()[0]
+        self.M_planet = mercury_reference.M[0]
         self.M_mantle = self.M_planet*(1. - self.core_Mfrac)
         self.M_core = self.M_planet*self.core_Mfrac
 
