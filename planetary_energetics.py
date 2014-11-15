@@ -59,9 +59,9 @@ class Planet(object):
     def integrate( self ):
         
         def ODE( temperatures, t ):
-            dTmantle_dt = self.mantle_layer.mantle_energy_balance( t, temperatures[1], temperatures[0] )
+            dTmantle_dt = self.mantle_layer.energy_balance( t, temperatures[1], temperatures[0] )
             cmb_flux = -self.mantle_layer.lower_boundary_flux( temperatures[1], temperatures[0] )
-            dTcore_dt = self.core_layer.core_energy_balance(temperatures[0], cmb_flux )
+            dTcore_dt = self.core_layer.energy_balance(temperatures[0], cmb_flux )
             return np.array([dTcore_dt, dTmantle_dt])
 
         T_cmb_initial = 3000.
@@ -137,14 +137,6 @@ class CoreLayer(Layer):
         Ri = self.inner_radius
         return x0*(Rc**3)/(Rc**3-Ri**3)
 
-    def set_inner_core_radius(self,Ri):
-        self.inner_radius = Ri
-        return Ri
-
-    ### We could code the integrals here. 
-    def core_mantle_boundary_temp(self):
-        return  self.T_average / self.mu
-
     def stevenson_liquidus(self, Pio):
         '''
         Equation (3) from Stevenson 1983
@@ -185,7 +177,7 @@ class CoreLayer(Layer):
         Ri  = np.sqrt(2.*(p['Pc'] -Pio)*Rc/(p['rho']*p['g']))
         return Ri
 
-    def core_energy_balance(self, T_cmb, core_flux):
+    def energy_balance(self, T_cmb, core_flux):
         p = self.stevenson
         core_surface_area = self.outer_surface_area
           
@@ -205,9 +197,6 @@ class CoreLayer(Layer):
         dTdt = -core_flux * core_surface_area / (thermal_energy_change-latent_heat)
         return dTdt
 
-    def ODE( self, T_cmb_initial, cmb_flux ):
-        dTdt = lambda x, t : self.core_energy_balance( x, cmb_flux )
-        return dTdt
 
 class MantleLayer(Layer):
     def __init__(self,inner_radius,outer_radius, params={}):
@@ -322,7 +311,7 @@ class MantleLayer(Layer):
         lower_boundary_layer_thickness = self.lower_boundary_layer_thickness(T_upper_mantle, T_cmb)
         return -thermal_conductivity*delta_T/lower_boundary_layer_thickness
 
-    def mantle_energy_balance(self, time, T_upper_mantle, T_cmb):
+    def energy_balance(self, time, T_upper_mantle, T_cmb):
         p = self.stevenson
         mantle_surface_area = self.outer_surface_area
         core_surface_area   = self.inner_surface_area
@@ -335,9 +324,6 @@ class MantleLayer(Layer):
         dTdt = (internal_heat_energy - flux_energy)/effective_heat_capacity
         return dTdt
 
-    def ODE( self, T_u_initial, T_cmb ):
-        dTdt = lambda x, t : self.mantle_energy_balance( t, x, T_cmb )
-        return dTdt
 
 mercury = Planet( [ CoreLayer( 0.0, 2020.0e3) , MantleLayer( 2020.e3, 2440.e3 ) ] )
 t, y = mercury.integrate()
