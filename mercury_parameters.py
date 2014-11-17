@@ -71,6 +71,7 @@ mantle_params = {
     'epsilon' : epsilon_mantle,
     'gas_constant' : R,
     'activation_energy' : A,
-    'empirical_spherical_stagnant_lid_param' : Theta 
+    'empirical_spherical_stagnant_lid_param' : Theta,
+    'thermal_expansivity' : alpha_mantle
     }
 
