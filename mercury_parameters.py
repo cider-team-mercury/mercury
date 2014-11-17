@@ -45,7 +45,7 @@ initial_stagnant_lid_thickness = 50.0 # - km
 primordial_crust_thickness = 5.0 # - km
 crustal_enrichment = 4.0 # Enrichment of radioactive elements in the crust with respect to the undepleted mantle
 fraction_exctractable_crust = 0.4 
-
+Theta = 2.9 # Empirical Coefficient for Stagnant Lid Convection from Grasset and Partentier
 # ------------------------------------------------------- #
 # - Varied Parameters from Grott et al 2011 for Mercury - #
 # ------------------------------------------------------- #
@@ -58,35 +58,6 @@ regolith_thickness = 5.0e3 # - m - 0 to 5*10^3 m
 mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 # ------------------------------------------------------- #
 
-# Will Try and Modularize this later
-#core_params = {
-#            'regime' : 'Temp. Dependent Viscosity',
-#            'epsilon' : epsilon_mantle
-#            'Ra_c' : Ra_crit, #critical Rayleigh number
-#            'rho' : rho_core, # density; kg/m^3
-#            'H_0' : 0., #heat production W/m^3
-#            'decay_constant' : 1.38e-17, # some half-life
-#            'nu_0' : viscosity_ref, #kinematic viscosity m^2/s
-#            'A_0' : A, # Activation Energy
-#            'R'   : R, # Gas Constant
-#            'k' : , #thermal conductivity W/m/K
-#            'kappa' : 1.e-6, #thermal diffusivity m^2/s
-#            'alpha' : 2.e-5, #thermal expansion 1/K
-#            'g' : 3., #acceleration of gravity m/s^2
-#            'beta' : 1./3, #parameter Nu=Ra^(1/beta)
-#            }
-
-
-###!!!!####
-# - Note that the volume and Area of the mantle are currently incorect since
-# - we have neglected the crust
-#V_mercury = 4./3.*np.pi*radius**3      # - Volume of Mercury
-#V_core    = 4./3.*np.pi*core_radius**3 # - Volume of Core
-#V_mantle  = V_mercury-V_core           # - Volume of Mantle
-#A_core    = 4.*np.pi*core_radius**2    # - Surface Area of Core
-#A_mantle  = 4.*np.pi*radius**2         # - Surface Area of Mantle
-
-
 core_params = { 
     'rho' : rho_core,
     'c'   : core_heat_capacity,
@@ -95,8 +66,11 @@ core_params = {
     }
 
 mantle_params = {
-    'rho' : rho_mantle,
-    'c'   : mantle_heat_capacity,
-    'epsilon' : epsilon_mantle
+    'density' : rho_mantle,
+    'heat_capacity'   : mantle_heat_capacity,
+    'epsilon' : epsilon_mantle,
+    'gas_constant' : R,
+    'activation_energy' : A,
+    'empirical_spherical_stagnant_lid_param' : Theta 
     }
 
