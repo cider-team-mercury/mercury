@@ -122,32 +122,9 @@ class mercury_model(object):
             verbose
         '''
         # # Integrate!
-        self.planet.integrate(n_slices,P0,n_iter=5,plot=False,**kwargs)
+        self.planet.integrate(n_slices,P0,n_iter=5,**kwargs)
         # print self.planet.moment_over_mr2()
 
-        if plot:
-            # Plot 
-            plt.subplot(141)
-            plt.plot(self.planet.radial_profile()/1.e3, self.planet.density_profile())
-            plt.xlabel(r"Radius [$km$]")
-            plt.ylabel(r"Density [$kg/m^3$]")
-
-            plt.subplot(142)
-            plt.plot(self.planet.radial_profile()/1.e3, self.planet.gravity_profile())
-            plt.xlabel(r"Radius [$km$]")
-            plt.ylabel(r"Gravity [$m/s^2$]")
-
-            plt.subplot(143)
-            plt.plot(self.planet.radial_profile()/1.e3, self.planet.pressure_profile()/1.e9)
-            plt.xlabel(r"Radius [$km$]")
-            plt.ylabel(r"Pressure [$Pa$]")
-
-            plt.subplot(144)
-            plt.plot(self.planet.radial_profile()/1.e3, self.planet.temperature_profile())
-            plt.xlabel(r"Radius [$km$]")
-            plt.ylabel(r"Temperature [$K$]")
-
-            plt.show()
 
     def generate_table(self,inner_Mfracs,data_dir="tables/",test=False,**kwargs):
         '''
@@ -294,8 +271,54 @@ class mercury_model(object):
         array_to_print = np.vstack(row_list)
         return array_to_print
 
+    def generate_profiles(self,inner_Mfrac,plot=False,**kwargs):
+
+            self.set_innerCore(inner_Mfrac) 
+            self.integrate(verbose=False,**kwargs)
+
+    def show_profiles(self):
+            # testing detection of snowing layers
+            print self.planet.detect_snow()
+            print self.planet.adiabat_steeper()
+
+            outer_core = self.planet.outer_core()
+            p_oc = self.planet.pressure[outer_core]
+            r_oc = self.planet.radius[outer_core]
+            liq_oc = self.planet.liquidus(p_oc)
+
+            if True:
+                # Plot 
+                plt.subplot(141)
+                plt.plot(self.planet.radial_profile()/1.e3, self.planet.density_profile())
+                plt.xlabel(r"Radius [$km$]")
+                plt.ylabel(r"Density [$kg/m^3$]")
+
+                plt.subplot(142)
+                plt.plot(self.planet.radial_profile()/1.e3, self.planet.gravity_profile())
+                plt.xlabel(r"Radius [$km$]")
+                plt.ylabel(r"Gravity [$m/s^2$]")
+
+                plt.subplot(143)
+                plt.plot(self.planet.radial_profile()/1.e3, self.planet.pressure_profile()/1.e9)
+                plt.xlabel(r"Radius [$km$]")
+                plt.ylabel(r"Pressure [$Pa$]")
+
+                plt.subplot(144)
+                plt.plot(self.planet.radial_profile()/1.e3, self.planet.temperature_profile())
+                plt.plot(r_oc/1.e3,liq_oc,'r')
+                plt.xlabel(r"Radius [$km$]")
+                plt.ylabel(r"Temperature [$K$]")
+
+                plt.show()
+
+
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercury_model(0.63,.05,.05)
+    merc = mercury_model(0.63,.00,.00)
+
 #     a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
-    a1 = merc.get_energetics(np.linspace(0.,.5,6))
+
+#     a1 = merc.get_energetics(np.linspace(0.,.5,6))
+
+    merc.generate_profiles(0.5)
+    merc.show_profiles()

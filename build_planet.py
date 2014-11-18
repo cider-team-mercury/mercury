@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 from scipy.interpolate import UnivariateSpline
+from scipy.misc import derivative
 
 import burnman
 import burnman.minerals as minerals
@@ -486,9 +487,21 @@ class corePlanet(cm_Planet):
         super(corePlanet,self).__init__(masses, compositions, temperatures,**kwargs)
 
         # liquidus model
-        self.liquidus = liquidus
+        #Hack because the liquidus_model only works for a single value.
+        self.liquidus_at_P = liquidus  
 
+        # Make sure the number of layers is consistent with having a growing core
         assert self.Nlayer >= 3
+
+    def liquidus(self,pressure):
+        '''
+        Hack because the liquidus_model only works for a single value.
+        '''
+        try:
+            return np.array([ self.liquidus_at_P(p) for p in pressure ])
+        except:
+            return self.liquidus_at_P(pressure)
+
 
     def find_icb_temp(self,idx=0):
         '''
@@ -601,6 +614,39 @@ class corePlanet(cm_Planet):
 
         # save the gravitational energy over the core alone
         self.core_gravitational_energy = self.Eg[self.cmb()]
+
+    def detect_snow(self):
+        '''
+        Test whether points in the liquid outer core are above the liquidus.
+
+        This is a very simple check and doesn't consider how liquidus should
+        perturb the adiabat
+        '''
+        p_oc = self.pressure[self.outer_core()]
+        t_oc = self.temperature[self.outer_core()]
+
+        t_liq = self.liquidus(p_oc)
+        
+        # Boolean. True if temperature is below the liquidus (snowing)
+        snow = t_liq > t_oc
+        self.has_snow = snow.any()
+
+        return snow
+
+    def adiabat_steeper(self):
+        '''
+        Checks whether the adiabat is steeper than the liquidus. Ultimately this
+        should be part of determining the adiabat in the snow regime.
+        '''
+
+        p_oc = self.pressure[self.outer_core()]
+        t_oc = self.temperature[self.outer_core()]
+
+        t_func = UnivariateSpline(p_oc,t_oc)
+
+        return derivative(t_func,p_oc) > derivative(self.liquidus,p_oc)
+        
+
 
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
             verbose=True):
@@ -718,6 +764,10 @@ class corePlanet(cm_Planet):
         self.diff_max = max_magnitude(self.diff_state,axis=1)
         self.diff_bounds = self.boundaries - self.last_boundaries
         self.diff_icb_temp = self.boundary_temperatures[0] - self.last_icb_temp
+
+        # Check if snow encountered
+        self.detect_snow()
+        self.adiabat_steeper()
 
         # compute quantaties for energy/entropy budget
         self.compute_Eg()
