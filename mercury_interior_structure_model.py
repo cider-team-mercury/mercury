@@ -320,5 +320,5 @@ if __name__ == "__main__":
 
 #     a1 = merc.get_energetics(np.linspace(0.,.5,6))
 
-    merc.generate_profiles(0.5)
+    merc.generate_profiles(0.1)
     merc.show_profiles()

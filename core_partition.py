@@ -5,6 +5,7 @@ core_partition.py
 import numpy as np
 from scipy import integrate
 from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
+from mercury_minerals import w_to_x, x_to_w
 
 # molar masses
 mFe = 55.845
@@ -81,25 +82,4 @@ def density_coexist(w_liquid1,D1,P,T,mat_solid=ironSilicideAlloy, \
     # return densities
     return solid.density(), liquid.density()
 
-def w_to_x(w1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mass fraction to mol fraction
-    '''
-    w = np.array(w1)
-    m = np.array(m1)
-    assert len(w) == len(m)
-
-    x = (w / m) / np.sum(w / m)
-    return x
-
-def x_to_w(x1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mol fraction to mass fraction
-    '''
-    x = np.array(x1)
-    m = np.array(m1)
-    assert len(x) == len(m)
-
-    w = (x * m) / np.sum(x * m)
-    return w
 
