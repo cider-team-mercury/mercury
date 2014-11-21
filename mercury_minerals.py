@@ -50,7 +50,6 @@ class gamma_iron(burnman.Mineral):
         Parameters for gamma - Fe are from Tsujino et al. 2013
         Have no source for G_0 of Gprime_0 or eta_s_0.
         '''
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 1273.,
@@ -66,30 +65,6 @@ class gamma_iron(burnman.Mineral):
             'q_0': 0.21,
             'eta_s_0': 0. }
 
-
-# class iron_silicide17 (burnman.Mineral): 
-#     # Hauck 2013
-#     def __init__(self):
-#         wSi = .17; wFe = 1.-wSi; mFe = 55.845; mSi = 28.0855
-#         xSi = (wSi/mSi) / ( wSi/mSi + wFe/mFe )
-#         xFe = 1. - xSi
-#         mol_mass = xSi*mSi + xFe*mFe /1000.
-#         self.params = {
-#             'equation_of_state':'slb3',
-#             'V_0': mol_mass / 7147., #6.828e-06, #  1 / (7.147 g / cm^3) * (.04880 kg / mol)
-#             'K_0': 199.0e9, 
-#             'Kprime_0': 5.7, 
-#             'G_0': 130.9e9, # where did shear stuff come from
-#             'Gprime_0': 1.92,
-#             'molar_mass': mol_mass, #changed
-#             'n': 1,
-#             'Debye_0': 474., # poirier book
-#             'grueneisen_0': 1.5, 
-#             'q_0': 1.5, # unknown ?
-#             'eta_s_0': 0.,
-#             'mole_fraction' : xSi,
-#             'weight_percent' : wSi}
-
 class iron_silicide17(burnman.Mineral):
     def __init__(self):
         '''
@@ -101,7 +76,6 @@ class iron_silicide17(burnman.Mineral):
         w = [0.,.17,1.-.17]; m = np.array([mS,mSi,mFe])
         x = w_to_x(w,m)
         molar_mass = np.sum( x * m ) / 1000.
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 300.,
@@ -126,7 +100,6 @@ class iron_sulfide (burnman.Mineral):
         xFe = 1. - xS
         wS = xS * mS / ( xS * mS + xFe * mFe)
         # Hauck 2013
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'V_0': 9.991e-6, #  1 / (4.4 g / cm^3) * (.04396 kg / mol)
@@ -156,7 +129,6 @@ class liquid_iron(burnman.Mineral):
         Gruneisen parameter from alpha
         85.4 GPa * 9.2e-5 K^-1 * 7.957 cm^3/mol / (3 R) = 2.506
         '''
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 1811.,
@@ -188,7 +160,6 @@ class liquid_iron_sulfide10(burnman.Mineral):
         w = [.1,0.,.9]; m = np.array([mS,mSi,mFe])
         x = w_to_x(w,m)
         molar_mass = np.sum( x * m ) / 1000.
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 1923.,
@@ -229,19 +200,12 @@ class liquid_iron_sulfide20(burnman.Mineral):
 
         # mol fraction of each
         f =  w_to_x([.1,0.,.9],m)[0] / x[0]
-#         f = 0.5
-#         print f
+
+        Kp0 = lFe.params['Kprime_0']; Kp10 = lFeS10.params['Kprime_0']
 
         V20  =  (  lFeS10.V - (1.-f)*lFe.V ) / f
-#         alpha20 = 1/V20 / f * ( lFeS10.V * lFeS10.alpha - (1.-f)*lFe.V * lFe.alpha)
-#         K20 = V20 * f *( lFeS10.V/lFeS10.K_T - (1.-f)*lFe.V/lFe.K_T)**(-1.)
-        Kp0 = lFe.params['Kprime_0']; Kp10 = lFeS10.params['Kprime_0']
-#         Kp20 = -1 + K20 / V20 / f \
-#                 * (  lFeS10.V/lFeS10.K_T*(1. + Kp0) \
-#                 - (1.-f)*lFe.V/lFe.K_T*(1.+Kp10) )
-
         K20  = ( lFeS10.K_T - (1.-f)*lFe.K_T ) / f
-        Kp20  =  (  Kp0 - (1.-f)*Kp10 ) / f
+#         Kp20  =  (  Kp0 - (1.-f)*Kp10 ) / f
         gamma20 = lFeS10.grueneisen_parameter()
         self.params = {
             'equation_of_state':'slb3',
@@ -268,7 +232,6 @@ class liquid_iron_silicide17(burnman.Mineral):
         w = [0.,.17,1.-.17]; m = np.array([mS,mSi,mFe])
         x = w_to_x(w,m)
         molar_mass = np.sum( x * m ) / 1000.
-        self.method = 'slb3'
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 1773.,
@@ -359,14 +322,12 @@ class olivine(burnman.HelperSolidSolution):
         base_materials = [forsterite(), fayalite()]
         molar_fraction = [1. - fe_num, 0.0 + fe_num] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-        self.method = 'slb3'
 
 class orthopyroxene(burnman.HelperSolidSolution):
     def __init__(self, fe_num):
         base_materials = [enstatite(), ferrosillite()]
         molar_fraction = [1. - fe_num, 0.0 + fe_num] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-        self.method = 'slb3'
 
 
 class  ironSilicideAlloy(burnman.HelperSolidSolution):
@@ -376,7 +337,6 @@ class  ironSilicideAlloy(burnman.HelperSolidSolution):
         assert( mole_frac_Si <= x0 )
         molar_fraction = [1. - mole_frac_Si / x0, 0.0 + mole_frac_Si / x0] # keep the 0.0 +, otherwise it is an array sometimes
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-        self.method = 'slb3'
 
 # liquid "alloys"
 class  ironSulfurSilicideLiquid(burnman.HelperSolidSolution):
@@ -398,7 +358,6 @@ class  ironSulfurSilicideLiquid(burnman.HelperSolidSolution):
                 +" for ternary mixing model"
 
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
-        self.method = 'slb3'
 
 if __name__ == "__main__":
 
