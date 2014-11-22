@@ -19,6 +19,8 @@ import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+import inspect
+
 
 # constants
 G = 6.67e-11
@@ -46,11 +48,9 @@ class cm_Planet(object):
             in compositions, default: 'slb'
         """
 
-        for c in compositions:
-            assert( isinstance(c,burnman.Material) )
-
-#         for i,b in enumerate(boundaries):
-#             assert( i == 0 or b >= boundaries[i-1])
+        # Delay this test until it has to be used.
+#         for c in compositions:
+#             assert( isinstance(c,burnman.Material) )
 
         assert( len(masses) == len(compositions) )
 
@@ -71,13 +71,16 @@ class cm_Planet(object):
             comp.set_method(m)
 
         self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
+        self.update_massBelowBoundary()
+
+
+    def update_massBelowBoundary(self):
         msum = 0.
-        for i,m in enumerate(masses):
+        for i,m in enumerate(self.masses):
             msum += m
             self.massBelowBoundary[i] = msum
 
         assert self.massBelowBoundary[-1] == np.sum(self.masses)
-
 
 
 
@@ -90,6 +93,9 @@ class cm_Planet(object):
 
 #         assert(self.radius[-1] == self.boundaries[-1] and self.radius[0] == 0. )
 
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         # iterate over layers
         last = -1.
@@ -188,6 +194,9 @@ class cm_Planet(object):
 
         assert( len(self.boundary_temperatures) == self.Nlayer )
 
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
         # iterate over layers
         last = -1.
         for bound,comp,T0 in zip(self.massBelowBoundary,self.compositions,self.boundary_temperatures):
@@ -205,6 +214,9 @@ class cm_Planet(object):
                 using isothermal profiles.
         """
         assert( len(self.boundary_temperatures) == self.Nlayer )
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         # iterate over layers
         last = -1.
@@ -239,6 +251,9 @@ class cm_Planet(object):
         to calculating from the upper boundary downwards. fromLowerBounds=True
         is for calculating up from the lower boundary.
         '''
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         comp = self.compositions[idx]
         layer = self.get_layer(idx)
@@ -286,7 +301,7 @@ class cm_Planet(object):
         print '\tIntial guess for central pressure:',P0,'\n'
 
 
-    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
+    def integrate(self,n_slices,P0,n_iter,profile_type='adiabatic',plot=False,
             verbose=True):
         """
         Iteratively determine the pressure, density temperature and gravity profiles
@@ -406,6 +421,10 @@ class cm_Planet(object):
         '''
         Returns a list of moments of inertia of the planet [kg m^2]
         '''
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
         moments = np.empty( len(self.compositions) )
         rhofunc = UnivariateSpline(self.radius, self.density )
         for i,layer in enumerate(self.compositions):
@@ -487,20 +506,33 @@ class corePlanet(cm_Planet):
         super(corePlanet,self).__init__(masses, compositions, temperatures,**kwargs)
 
         # liquidus model
-        #Hack because the liquidus_model only works for a single value.
-        self.liquidus_at_P = liquidus  
+        self.liquidus_model = liquidus()
 
         # Make sure the number of layers is consistent with having a growing core
         assert self.Nlayer >= 3
+
+    def set_liquidus_model(self,liquidus)
+        self.liquidus_model = liquidus()
 
     def liquidus(self,pressure):
         '''
         Hack because the liquidus_model only works for a single value.
         '''
+
+        assert inspect.isfunction(self.liquidus_model.T_SP), "Liquidus is not a valid function"
+
+        try:
+            liquidus_at_P = lambda p: self.liquidus_model.T_SP(self.wS_l,p)
+        except:
+            ValueError('wS_l not set.')
+
         try:
             return np.array([ self.liquidus_at_P(p) for p in pressure ])
         except:
-            return self.liquidus_at_P(pressure)
+            try:
+                return self.liquidus_at_P(pressure)
+            except:
+                raise TypeError('self.liquidus_at_P is not a valid function')
 
 
     def find_icb_temp(self,idx=0):
@@ -587,6 +619,10 @@ class corePlanet(cm_Planet):
 
         Returns the bracketed parameter.
         '''
+
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         # Parameters at the inner core boundary
         idx_icb = self.icb()
