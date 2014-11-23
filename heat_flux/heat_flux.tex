@@ -1,0 +1,220 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+
+%opening
+\title{Heat flux maps}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{ The simple case}
+
+
+If the mercurian mantle is not convecting, and has not been for a long time, we would expect the mantle temperature distribution to approach a conductive solution.  
+However, due to the unusual spin-orbit resonance in which Mercury is locked, there are large and persistent temperature variations on the surface.
+This is because some regions get significantly more insolation than others.
+\\
+\\
+Here I calculate the temperature distribution in a conducting mantle with constant conductivity and temperature boundary conditions.  
+I assume that the temperature at the CMB is constant due to efficient transport of heat in the liquid outer core.  
+Further, I assume that the temperature at the surface is time-independent, but may vary spatially due to insolation differences.  
+This assumes that I am taking the surface to be below the skin-depth of the regolith.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{l l}
+Outer radius & $R_o$ \\
+Inner radius & $R_i$ \\
+Aspect ratio & $R_i/R_o = \eta$ \\
+Inner temperature & $T_i$ \\
+Surface temperature & $S(\theta, \phi)$ \\
+\end{tabular}
+\caption{Symbols used}
+\end{table}
+
+
+\subsection{General solution}
+
+Steady state diffusion satisfies Laplace's equation:
+
+\begin{equation}
+\nabla^2 T = 0
+\end{equation}
+
+In spherical coordinates this has the general solution
+
+\begin{equation}
+T(r, \theta, \phi) = \displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} \left[ A_{lm} r^l + B_{lm} r^{-(l+1)} \right] Y_{lm}(\theta,\phi)
+\end{equation}
+
+Where $Y_{lm}$ represents fully normalized real spherical harmonics, and $A_{lm}$ and $B_{lm}$ are coefficients.
+
+We suplement this with the boundary conditions
+
+\begin{equation}
+T(R_o, \theta, \phi) = \displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} \left[ A_{lm} R_o^l + B_{lm} R_o^{-(l+1)} \right] Y_{lm}(\theta,\phi) = S(\theta, \phi)
+\end{equation}
+
+\begin{equation}
+T(R_i, \theta, \phi) = \displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} \left[ A_{lm} R_i^l + B_{lm} R_i^{-(l+1)} \right] Y_{lm}(\theta,\phi) = T_i
+\end{equation}
+
+
+\subsection{Solution for $l \ne 0$}
+
+The inner boundary has no $\theta, \phi$ dependence, so the function of $r$ multiplying the spherical harmonics must be zero for $l \ne 0$:
+
+\begin{equation}
+\begin{aligned}
+&A_{lm} R_i^l + B_{lm} R_i^{-(l+1)} = 0 \\
+&A_{lm} R_i^l = - B_{lm} R_i^{-(l+1)} \\
+-&A_{lm} R_i^{(2l + 1)} = B_{lm} \\
+\end{aligned}
+\end{equation}
+
+We can plug this in to the upper boundary condition to find
+
+
+\begin{equation}
+\begin{aligned}
+\displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} A_{lm} \left[R_o^l - R_i^{(2l+1)} R_o^{-(l+1)} \right] Y_{lm}(\theta,\phi) &= S(\theta, \phi) \\
+\displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} A_{lm} R_o^{l} \left[1 - R_i^{(2l+1)} R_o^{-(2l+1)} \right] Y_{lm}(\theta,\phi) &= S(\theta, \phi) \\
+\displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} A_{lm} R_o^{l} \left[1 - \eta^{(2l+1)} \right] Y_{lm}(\theta,\phi) &= S(\theta, \phi) \\
+\end{aligned}
+\end{equation}
+
+If we further expand $S(\theta,\phi) = \displaystyle \sum_{l=0}^{\infty} \sum_{m=-l}^{l} S_{lm} Y_{lm}(\theta,\phi)$ we find 
+
+\begin{equation}
+\begin{aligned}
+A_{lm} R_o^{l} \left[1 - \eta^{(2l+1)} \right] &= S_{lm} \\
+\end{aligned}
+\end{equation}
+
+So that
+
+\begin{equation}
+\begin{aligned}
+A_{lm} = \frac{S_{lm}}{ R_o^{l} \left[1 - \eta^{(2l+1)} \right]} \\
+\end{aligned}
+\end{equation}
+
+Finally, we may find $B_{lm}$:
+
+\begin{equation}
+\begin{aligned}
+B_{lm} &= -A_{lm} R_i^{(2l+1)} = \frac{-S_{lm} R_i^{(2l+1)}}{ R_o^{l} \left[1 - \eta^{(2l+1)} \right]} \\
+B_{lm} &= \frac{-S_{lm} \eta^{(2l+1)}}{ R_o^{-(l+1)} \left[1 - \eta^{(2l+1)} \right]} \\
+B_{lm} &= \frac{-S_{lm}}{ R_o^{-(l+1)} \left[\eta^{-(2l+1)} - 1 \right]} \\
+\end{aligned}
+\end{equation}
+
+We may plug these expressions for $A_{lm}$ and $B_{lm}$ into the general solution to find
+
+\begin{equation}
+\begin{aligned}
+T(r, \theta, \phi) &= \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} \left[ \frac{S_{lm}}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^l -  \frac{S_{lm}}{\eta^{-(2l+1)}-1} \left(\frac{r}{R_o}\right)^{-(l+1)} \right] Y_{lm}(\theta,\phi) \\
+ &= \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} S_{lm} \left[ \frac{1}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^l +  \frac{1}{1-\eta^{-(2l+1)}} \left(\frac{r}{R_o}\right)^{-(l+1)} \right] Y_{lm}(\theta,\phi) \\
+ &= \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} S_{lm} \left[ \frac{1}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^l -  \frac{\eta^{(2l+1)}}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^{-(l+1)} \right] Y_{lm}(\theta,\phi)
+\end{aligned}
+\end{equation}
+
+We may verify that for $r = R_o$ this becomes $S(\theta, \phi)$ and for $r=R_i$ this is zero.
+
+\subsection{Solution for $l=0$}
+
+
+Now we must do the case for $l=0$.  Using the equation for the inner boundary condition, we find 
+
+\begin{equation}
+\begin{aligned}
+& \left[A_{00} + B_{00}/R_i \right] Y_{00} = T_i \\
+& B_{00} = \left[T_i/Y_{00} - A_{00} \right] R_i\\
+\end{aligned}
+\end{equation}
+
+Plugging into the outer boundary:
+
+\begin{equation}
+\begin{aligned}
+& \left[A_{00} + B_{00}/R_o \right] Y_{00} = S_{00} \\
+& \left[A_{00} +  \eta \frac{T_i}{Y_{00}} - A_{00} \eta \right]  Y_{00} = S_{00}\\
+& A_{00} (1-\eta) = \frac{S_{00}}{Y_{00}} - \eta \frac{T_i}{Y_{00}} \\
+& A_{00} (1-\eta) = \frac{S_{00} - \eta T_i}{Y_{00}} \\
+& A_{00} = \frac{S_{00} - \eta T_i}{(1-\eta)Y_{00}} \\
+\end{aligned}
+\end{equation}
+
+Therefore
+
+\begin{equation}
+\begin{aligned}
+& B_{00} = \left[T_i/Y_{00} - \frac{ S_{00} - \eta T_i}{(1-\eta) Y_{00} }  \right] R_i\\
+& B_{00} = \left[\frac{T_i (1-\eta)}{(1-\eta)} - \frac{ S_{00} - \eta T_i}{(1-\eta) }  \right] \frac{R_i}{Y_{00}}\\
+& B_{00} = \left[T_i (1-\eta) - S_{00} + \eta T_i  \right] \frac{R_i}{(1-\eta) Y_{00}}\\
+& B_{00} = \frac{(T_i-S_{00}) R_i}{(1-\eta) Y_{00}}\\
+\end{aligned}
+\end{equation}
+
+We can now plug these in to the general solution for $l=0$:
+
+\begin{equation}
+\begin{aligned}
+T(r, \theta, \phi) &= \left[ \frac{S_{00} - \eta T_i}{(1-\eta)Y_{00}} + \frac{T_i - S_{00}}{(1-\eta)Y_{00}} \frac{R_i}{r} \right] Y_{00} \\
+&= \left[ S_{00} - \eta T_i + (T_i - S_{00}) \frac{R_i}{r} \right] \frac{1}{1-\eta} \\
+&= \left[ S_{00} (1-\frac{R_i}{r}) + T_i ( \frac{R_i}{r} - \eta ) \right] \frac{1}{1-\eta} \\
+\end{aligned}
+\end{equation}
+
+Again, we may verify this by plugging in $R_i$ and $R_o$ to so that it satisfies boundary conditions.
+
+\subsection{Heat flux calculation}
+
+The heat flux through the CMB is calculated with Fourier's law:
+
+\begin{equation}
+q = -k \nabla T \cdot {\bf{r}} = -k \partial T / \partial r
+\end{equation}
+
+where k is the thermal conductivity.  This derivative is evaluated at $R_i$.  First, we calculate the case for $l=0$:
+
+\begin{equation}
+\begin{aligned}
+\partial T/ \partial r = \left[ \frac{ S_{00} R_i }{r^2} - \frac{T_i R_i}{r^2} \right] \frac{1}{1-\eta}
+\end{aligned}
+\end{equation}
+
+Evaluating this at $R_i$ we find:
+
+\begin{equation}
+\begin{aligned}
+q_{cmb} = k \frac{(T_i - S_{00})}{R_i} \frac{1}{1-\eta}
+\end{aligned}
+\end{equation}
+
+For the case of $l \ne 0$ we find:
+
+\begin{equation}
+\begin{aligned}
+\partial T / \partial r = \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} \frac{S_{lm}}{R_o} \left[ \frac{l}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^{l-1} +  \frac{(l+1) \eta^{(2l+1)}}{1-\eta^{(2l+1)}} \left(\frac{r}{R_o}\right)^{-(l+2)} \right] Y_{lm}(\theta,\phi)
+\end{aligned}
+\end{equation}
+
+Again we evaluate this at $R_i$:
+
+\begin{equation}
+\begin{aligned}
+q_{cmb} &= -k  \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} \frac{S_{lm}}{R_o} \left[ \frac{l \eta^{(l-1)}}{1-\eta^{(2l+1)}} +  \frac{(l+1) \eta^{(2l+1)} \eta^{-(l+2)}}{1-\eta^{(2l+1)}} \right] Y_{lm}(\theta,\phi) \\
+&= -k \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} \frac{S_{lm}}{R_o} \left[ \frac{l \eta^{(l-1)}}{1-\eta^{(2l+1)}} +  \frac{(l+1) \eta^{(l-1)} }{1-\eta^{(2l+1)}} \right] Y_{lm}(\theta,\phi) \\
+&= -k \displaystyle \sum_{l=1}^{\infty} \sum_{m=-l}^{l} \frac{S_{lm}}{R_o} \left[ \frac{(2l+1) \eta^{(l-1)}}{1-\eta^{(2l+1)}} \right] Y_{lm}(\theta,\phi) \\
+\end{aligned}
+\end{equation}
+
+Note that the integral of a spherical harmonic over a sphere with $l \ne 0$ is zero, so each of these components of the heat flux to not affect the overall flux, but are merely spatial variations on top of the average flux as calculated with the $l = 0$ term.
+
+
+\end{document}
