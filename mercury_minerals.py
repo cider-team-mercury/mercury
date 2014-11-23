@@ -10,36 +10,10 @@ import numpy as np
 import scipy.integrate as integrate
 from scipy.interpolate import UnivariateSpline
 
+from core_partition import x_to_w, w_to_x
+
 # molar masses of elements
-mFe = 55.845
-mSi = 28.0855
-mS = 32.066
-
-# converting between mol and weight percent
-def w_to_x(w1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mass fraction to mol fraction
-    '''
-    w = np.array(w1)
-    m = np.array(m1)
-    assert len(w) == len(m)
-
-    x = (w / m) / np.sum(w / m)
-    return x
-
-def x_to_w(x1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mol fraction to mass fraction
-    '''
-    x = np.array(x1)
-    m = np.array(m1)
-    assert len(x) == len(m)
-
-    w = (x * m) / np.sum(x * m)
-    return w
-
-def value(x):
-    return x
+from mercury_reference import mFe,mSi,mS
 
 # Core Material Properties
 class gamma_iron(burnman.Mineral):
@@ -140,7 +114,7 @@ class liquid_iron(burnman.Mineral):
             'molar_mass': mFe / 1000.,
             'n': 1,
             'Debye_0': 10., # C_v -> 3R
-            'grueneisen_0': 2.4, # Calculated from alpha using C_v = 3R
+            'grueneisen_0': 2.5, # Calculated from alpha using C_v = 3R
             'q_0': 1.4,
             'eta_s_0': 0. }
 
@@ -216,7 +190,7 @@ class liquid_iron_sulfide20(burnman.Mineral):
             'G_0': 0.,
             'Gprime_0': 0.,
             'molar_mass': molar_mass,
-            'n': 1,
+            'n': 1, 
             'Debye_0': 10., # C_v -> 3R
             'grueneisen_0': gamma20, 
             'q_0': 1.4,
@@ -339,7 +313,7 @@ class  ironSilicideAlloy(burnman.HelperSolidSolution):
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
 # liquid "alloys"
-class  ironSulfurSilicideLiquid(burnman.HelperSolidSolution):
+class  ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
     def __init__(self, mole_frac_S,mole_frac_Si):
         # Fe, FeS and FeSi endmembers
         base_materials = \

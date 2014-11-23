@@ -21,6 +21,7 @@ import burnman.composite as composite
 
 import inspect
 
+from core_partition import w_to_x, x_to_w
 
 # constants
 G = 6.67e-11
@@ -62,16 +63,27 @@ class cm_Planet(object):
         self.boundary_temperatures = temperatures
         self.Nlayer = len(masses)
 
+#         if methods is None:
+#             meths = ['slb3'] * self.Nlayer
+#         else:
+#             meths = methods
+
+#         for m, comp in zip(meths,self.compositions):
+#              comp.set_method(m)
+
+        self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
+        self.update_massBelowBoundary()
+
+    def set_compositions(self,compositions,methods=None):
+        self.compositions = compositions
+
         if methods is None:
             meths = ['slb3'] * self.Nlayer
         else:
             meths = methods
 
         for m, comp in zip(meths,self.compositions):
-            comp.set_method(m)
-
-        self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
-        self.update_massBelowBoundary()
+             comp.set_method(m)
 
 
     def update_massBelowBoundary(self):
@@ -511,7 +523,7 @@ class corePlanet(cm_Planet):
         # Make sure the number of layers is consistent with having a growing core
         assert self.Nlayer >= 3
 
-    def set_liquidus_model(self,liquidus)
+    def set_liquidus_model(self,liquidus):
         self.liquidus_model = liquidus()
 
     def liquidus(self,pressure):
@@ -519,20 +531,20 @@ class corePlanet(cm_Planet):
         Hack because the liquidus_model only works for a single value.
         '''
 
-        assert inspect.isfunction(self.liquidus_model.T_SP), "Liquidus is not a valid function"
+#         assert inspect.isfunction(self.liquidus_model.T_SP), "Liquidus is not a valid function"
 
         try:
-            liquidus_at_P = lambda p: self.liquidus_model.T_SP(self.wS_l,p)
+            liquidus_at_P = lambda p: self.liquidus_model.T_SP(self.w_l[0],p)
         except:
             ValueError('wS_l not set.')
 
         try:
-            return np.array([ self.liquidus_at_P(p) for p in pressure ])
+            return np.array([ liquidus_at_P(p) for p in pressure ])
         except:
             try:
-                return self.liquidus_at_P(pressure)
+                return liquidus_at_P(pressure)
             except:
-                raise TypeError('self.liquidus_at_P is not a valid function')
+                raise TypeError('liquidus is not a valid function')
 
 
     def find_icb_temp(self,idx=0):
@@ -591,6 +603,8 @@ class corePlanet(cm_Planet):
         return self.get_layer(1)
     def mantle(self):
         return -self.inner_core() - self.outer_core()
+    def core(self):
+        return self.inner_core() + self.outer_core()
 
     def icb(self):
         x = len(self.int_mass) 

@@ -14,13 +14,15 @@ import burnman.composite as composite
 
 # from liquidus_model import Solver as Liquidus
 from liquidus_model import Solver_no14 as FeSLiquidusModel
+# from liquidus_model import Solver as FeSLiquidusModel
 
 from build_planet import cm_Planet, corePlanet
 
-from core_partition import partition, density_coexist
+from core_partition import partition, density_coexist,w_to_x,x_to_w
 
 # Material Properties
-from mercury_minerals import *
+from mercury_minerals import olivine,orthopyroxene,\
+        ironSilicideAlloy,ironSulfideSilicideLiquid
 
 # Constants
 import mercury_reference as ref
@@ -103,26 +105,26 @@ class mercuryModel(corePlanet):
         self.w_l = np.array([ w_outer[0],w_outer[1],1.-w_outer[0]-w_outer[1]] )
         self.x_l = w_to_x(self.w_l)
 
-        assert np.sum(self.w_l) == 1)
+        assert np.sum(self.w_l) == 1.
         assert np.all(self.w_l >= 0.)
-        assert np.sum(self.x_l) == 1)
+        assert np.sum(self.x_l) == 1.
         assert np.all(self.x_l >= 0.)
 
         liquidFeSSi = ironSulfideSilicideLiquid(self.x_l[0],self.x_l[1]) # ternary solution
 
         self.w_s = np.array([ w_inner[0],w_inner[1],1.-w_inner[0]-w_inner[1]] )
-        self.x_s = w_to_x(sesf.w_s)
+        self.x_s = w_to_x(self.w_s)
 
         assert self.x_s[0] == 0. # DS has to be zero for the current burnman solution model!!!
-        assert np.sum(self.w_s) == 1)
+        assert np.sum(self.w_s) == 1.
         assert np.all(self.w_s >= 0.)
-        assert np.sum(self.x_s) == 1)
+        assert np.sum(self.x_s) == 1.
         assert np.all(self.x_s >= 0.)
 
         solidFeSi = ironSilicideAlloy(self.x_s[1]) # solid solution of Si in Fe
 
         # set compositions to the burnman minerals of corresponding composition
-        self.compositions = [solidFeSi,liquidFeSSi,rock]
+        self.set_compositions([solidFeSi,liquidFeSSi,rock])
 
         # build planet!
 #         self.planet = corePlanet([self.M_inner,self.M_outer,self.M_mantle],
@@ -162,34 +164,35 @@ class mercuryModel(corePlanet):
 
     def show_profiles(self):
             # testing detection of snowing layers
-            print self.planet.detect_snow()
-            print self.planet.adiabat_steeper()
+            print self.detect_snow()
+            print self.adiabat_steeper()
 
-            outer_core = self.planet.outer_core()
-            p_oc = self.planet.pressure[outer_core]
-            r_oc = self.planet.radius[outer_core]
-            liq_oc = self.planet.liquidus(p_oc)
+            outer_core = self.outer_core()
+            core = self.core()
+            p_c = self.pressure[core]
+            r_c = self.radius[core]
+            liq_c = self.liquidus(p_c)
 
             if True:
                 # Plot 
                 plt.subplot(141)
-                plt.plot(self.planet.radial_profile()/1.e3, self.planet.density_profile())
+                plt.plot(self.radial_profile()/1.e3, self.density_profile())
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Density [$kg/m^3$]")
 
                 plt.subplot(142)
-                plt.plot(self.planet.radial_profile()/1.e3, self.planet.gravity_profile())
+                plt.plot(self.radial_profile()/1.e3, self.gravity_profile())
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Gravity [$m/s^2$]")
 
                 plt.subplot(143)
-                plt.plot(self.planet.radial_profile()/1.e3, self.planet.pressure_profile()/1.e9)
+                plt.plot(self.radial_profile()/1.e3, self.pressure_profile()/1.e9)
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Pressure [$Pa$]")
 
                 plt.subplot(144)
-                plt.plot(self.planet.radial_profile()/1.e3, self.planet.temperature_profile())
-                plt.plot(r_oc/1.e3,liq_oc,'r')
+                plt.plot(self.radial_profile()/1.e3, self.temperature_profile())
+                plt.plot(r_c/1.e3,liq_c,'r')
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Temperature [$K$]")
 
@@ -198,13 +201,14 @@ class mercuryModel(corePlanet):
 
 
 class model_suite(object):
-    def __init__(self,inner_Mfracs,**kwargs):
+    def __init__(self,planet,inner_Mfracs,**kwargs):
         self.inner_Mfracs = inner_Mfracs
+        self.planet = planet
     def get_energetics(self,**kwargs):
 
         row_list = []
         at_eutectic = False
-        for mfrac in inner_Mfracs:
+        for mfrac in self.inner_Mfracs:
 
             print mfrac
 
@@ -232,7 +236,7 @@ class model_suite(object):
         array_to_print = np.vstack(row_list)
         return array_to_print
 
-#     def generate_table(self,inner_Mfracs,data_dir="tables/",test=False,**kwargs):
+#     def generate_table(self,data_dir="tables/",test=False,**kwargs):
 #         '''
 #         Generate a table with values for a parameterized convection code.
 # 
@@ -277,7 +281,7 @@ class model_suite(object):
 #         
 #         row_list = []
 #         at_eutectic = False
-#         for mfrac in inner_Mfracs:
+#         for mfrac in self.inner_Mfracs:
 # 
 #             print mfrac
 # 
@@ -312,7 +316,7 @@ class model_suite(object):
 #             w_Si = self.wSi_l
 # 
 #             rho_icb_s, rho_icb_l = density_coexist([self.wS_l,self.wSi_l,self.wFe_l],\
-#                     [self.DS,self.DSi],P_icb,T_icb)
+#                     [self.DS,self.DSi],P_icb,T_icb,ironSilicideAlloy,ironSulfideSilicideLiquid)
 #             rho_diff = rho_icb_s - rho_icb_l 
 #             print rho_icb_s, rho_icb_l,rho_diff
 # 
@@ -346,11 +350,12 @@ class model_suite(object):
 
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercury_model(0.63,.00,.00)
+    merc = mercuryModel(0.63,.00,.00)
 
 #     a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
-
 #     a1 = merc.get_energetics(np.linspace(0.,.5,6))
 
     merc.generate_profiles(0.1)
     merc.show_profiles()
+
+    liq = merc.compositions[1]
