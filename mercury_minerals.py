@@ -13,7 +13,10 @@ from scipy.interpolate import UnivariateSpline
 from core_partition import x_to_w, w_to_x
 
 # molar masses of elements
-from mercury_reference import mFe,mSi,mS
+from mercury_reference import mFe,mSi,mS,LFe
+
+# iron latent heat of fusion
+iron_latent_heat = lambda P, T, w : LFe
 
 # Core Material Properties
 class gamma_iron(burnman.Mineral):

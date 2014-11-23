@@ -43,3 +43,5 @@ fopx = 1. - fol
 DS = 0. # DS has to be zero for the current  solution model!!!
 DSi = 1.0
 
+# Iron Alloy Latent Heat of Fusion
+LFe = 247290. # J / kg

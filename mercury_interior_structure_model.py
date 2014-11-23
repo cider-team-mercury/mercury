@@ -5,12 +5,15 @@ mercury_cm_model.py
 import os, sys
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 
 import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+from scipy.interpolate import UnivariateSpline
+from scipy.misc import derivative
 
 # from liquidus_model import Solver as Liquidus
 from liquidus_model import Solver_no14 as FeSLiquidusModel
@@ -198,8 +201,6 @@ class mercuryModel(corePlanet):
 
                 plt.show()
 
-
-
 class model_suite(object):
     def __init__(self,planet,inner_Mfracs,**kwargs):
         self.inner_Mfracs = inner_Mfracs
@@ -208,154 +209,105 @@ class model_suite(object):
 
         row_list = []
         at_eutectic = False
+        self.labels = ['m_frac','r_frac','r_icb','r_cmb','r_surf','T_icb','T_cmb',\
+                'T_avg_ic','T_av_oc','Eg_r','L_r','Eg_m','L_m','Cp_ic','Cp_oc']
         for mfrac in self.inner_Mfracs:
 
-            print mfrac
+            print 'Core mass fraction:', mfrac
 
             if at_eutectic: # stop if eutectic has been reached
                 print 'Eutectic encountered'
                 break
 
-            self.set_innerCore(mfrac) 
+#             try:
+            self.planet.set_innerCore(mfrac) 
 
-            self.integrate(verbose=False,**kwargs)
+            self.planet.integrate(verbose=False,**kwargs)
+
+
+            T_icb = self.planet.boundary_temperatures[0]
+            T_cmb = self.planet.boundary_temperatures[1]
+
+            m_ic = self.planet.masses[0]
+            m_oc = self.planet.masses[1]
 
             r_icb = self.planet.boundaries[0]
             r_cmb = self.planet.boundaries[1]
             r_surf = self.planet.boundaries[-1]
             rfrac = r_icb / r_cmb
 
-            dEg_cmb = self.planet.Eg_over_r
-            Eg = self.planet.gravitational_energy
-            Eg_core = self.planet.core_gravitational_energy
+            Cp_avg = self.planet.average_heat_capacity()
+            T_avg = self.planet.average_temperature()
 
-            row = np.array([mfrac,r_icb,dEg_cmb,Eg,Eg_core])
+            Eg_m = self.planet.specific_gravitational_energy()
+            Eg_r = self.planet.gravitational_energy_over_r()
+
+            L_r = self.planet.latent_heat_over_r()
+            L_m = self.planet.specific_latent_heat()
+
+
+            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
+                    T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1]])
+            print row
                 
             row_list.append(row)
+#             except:
+#                 print 'Problem encountered, skipping step without adding data'
 
-        array_to_print = np.vstack(row_list)
-        return array_to_print
+        print row_list
+        self.data = pd.DataFrame(row_list)
+        self.data.columns = self.labels
+        self.T_max = self.data.T_icb.max()
+        self.T_min = self.data.T_icb.min()
+        
+    def saveData(self,file_name):
+        self.data.save(file_name)
+    def loadData(self,file_name):
+        pd.load(file_name)
+    def printData(self):
+        print self.data
+    def func_of_Ticb(self,label):
+        y = self.data[label]
+        x = self.data.T_icb
 
-#     def generate_table(self,data_dir="tables/",test=False,**kwargs):
-#         '''
-#         Generate a table with values for a parameterized convection code.
-# 
-#         inner core mass fraction and radius fraction:
-#         mfrac, rfrac
-# 
-#         radii (m):
-#         r_slb,r_rib,r_surf,
-# 
-#         Pressure(Pa):
-#         P_slb
-#         
-#         Temperatures (K):
-#         Ti_avg,Tc_avg,Tm_avg,T_center,T_slb,T_rib,T_surf,
-#         
-#         Gravitational Energy:
-#         E_g,
-# 
-#         Composition of the liquid (wt. %)
-#         w_S,w_Si,
-# 
-#         Density difference of coexisting solid and liquid:
-#         rho_diff
-# 
-#         moment of inertias:
-#         C_MR2, Cm_C
-#         
-#         Whether calculation has reached the eutectic:
-#         at_eutectic,
-# 
-#         Note: The burnman solid solution models dont allow light element concentrations
-#         above a certain amount (so the sulfur content especially will exceed this for
-#         thin fluid shells).
-#         '''
-# 
-#         assert os.path.isdir(data_dir)
-# 
-#         toPct = lambda x: str(int(x*100.))
-# 
-#         fname='merc_{}_{}_{}.csv'.format(toPct(self.core_Mfrac),toPct(self.wS),toPct(self.wSi) )
-#         target = os.path.join(data_dir,fname)
-#         
-#         row_list = []
-#         at_eutectic = False
-#         for mfrac in self.inner_Mfracs:
-# 
-#             print mfrac
-# 
-#             if at_eutectic: # stop if eutectic has been reached
-#                 print 'Eutectic encountered'
-#                 break
-# 
-# #             try:
-#             self.set_innerCore(mfrac) 
-# 
-#             self.integrate(verbose=False,**kwargs)
-# 
-#             r_icb = self.planet.boundaries[0]
-#             r_cmb = self.planet.boundaries[1]
-#             r_surf = self.planet.boundaries[-1]
-#             rfrac = r_icb / r_cmb
-# 
-#             P_icb = self.planet.pressure[self.planet.outer_core()][0]
-# 
-#             T_center = self.planet.temperature[0]
-#             T_icb = self.planet.boundary_temperatures[0]
-#             T_cmb = self.planet.boundary_temperatures[1]
-#             T_surf = self.planet.boundary_temperatures[-1]
-# 
-#             Ti_avg = np.mean(self.planet.temperature[self.planet.inner_core()] )
-#             Tc_avg = np.mean(self.planet.temperature[self.planet.outer_core()] )
-#             Tm_avg = np.mean(self.planet.temperature[self.planet.mantle()] )
-# 
-#             E_g = 0. # placeholder
-# 
-#             w_S = self.wS_l
-#             w_Si = self.wSi_l
-# 
-#             rho_icb_s, rho_icb_l = density_coexist([self.wS_l,self.wSi_l,self.wFe_l],\
-#                     [self.DS,self.DSi],P_icb,T_icb,ironSilicideAlloy,ironSulfideSilicideLiquid)
-#             rho_diff = rho_icb_s - rho_icb_l 
-#             print rho_icb_s, rho_icb_l,rho_diff
-# 
-#             C_MR2 = self.planet.moment_over_mr2()
-#             Cm_C = self.planet.moment_of_inertia_list()[-1] / self.planet.moment_of_inertia()
-# 
-#             at_eutectic = not self.liq_w.is_Fe_rich(self.wS_l,
-#                     self.planet.pressure[self.planet.inner_core()][0] )
-# 
-#             row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,P_icb,T_center,T_icb,T_cmb,T_surf,
-#                 Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,Cm_C,float(at_eutectic)])
-#             row_list.append(row)
-# 
-#             print w_S,at_eutectic
-# #             except:
-# #                 print 'Problem encountered, skipping step without adding to table'
-# 
-#         csv_header = 'Model of mercury with growing inner core:\n'\
-#                 + 'M_core/M= '+str(self.M_core/self.M_planet)\
-#                 + ', wS= '+str(self.wS)+', wSi= '+str(self.wSi)+'\n'\
-#                 + 'mfrac,rfrac,r_slb,r_rib,r_surf,P_slb,T_center,T_slb,T_rib,'\
-#                 + 'T_surf,Ti_avg,Tc_avg,Tm_avg,E_g,w_S,w_Si,rho_diff,C_MR2,'\
-#                 + 'Cm_C,at_eutectic'
-# 
-#         array_to_print = np.vstack(row_list)
-#         print target
-#         if not test:
-#             np.savetxt(target, array_to_print,delimiter=',',
-#                 header=csv_header)
-#         return array_to_print
+        return UnivariateSpline(x,y)
 
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercuryModel(0.63,.00,.00)
 
-#     a1 = merc.generate_table(np.linspace(0.,.8,8*4+1))
-#     a1 = merc.get_energetics(np.linspace(0.,.5,6))
+#     merc.generate_profiles(0.5)
+#     merc.show_profiles()
 
-    merc.generate_profiles(0.1)
-    merc.show_profiles()
+    model1 = model_suite(merc,[0.1,0.2,0.3,0.4,0.5])
+    model1.get_energetics()
+    model1.printData()
+    model1.saveData('tables/energetics_63_00_00.dat')
+    model1.loadData('tables/energetics_63_00_00.dat')
+    model1.printData()
 
-    liq = merc.compositions[1]
+    r_func = model1.func_of_Ticb('r_icb')
+    Eg_r_func = model1.func_of_Ticb('Eg_r')
+    L_r_func = model1.func_of_Ticb('L_r')
+    Eg_m_func = model1.func_of_Ticb('Eg_m')
+    L_m_func = model1.func_of_Ticb('L_m')
+
+    t = np.linspace(model1.T_min,model1.T_max,50)
+
+    f1 = plt.figure()
+    ax1= plt.subplot(111)
+    ax1.plot(t,r_func(t))
+
+    # check units on these
+    f2 = plt.figure()
+    ax2 = plt.subplot(111)
+    ax2.plot(t,Eg_r_func(t))
+    ax2.plot(t,L_r_func(t))
+
+    f3 = plt.figure()
+    ax3 = plt.subplot(111)
+    ax3.plot(t,Eg_m_func(t))
+    ax3.plot(t,L_m_func(t))
+
+    plt.show()
+

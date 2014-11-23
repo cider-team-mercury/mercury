@@ -22,9 +22,12 @@ import burnman.composite as composite
 import inspect
 
 from core_partition import w_to_x, x_to_w
+from mercury_minerals import iron_latent_heat
+
+import mercury_reference as ref
 
 # constants
-G = 6.67e-11
+G = ref.G
 
 class cm_Planet(object):
     """
@@ -211,6 +214,8 @@ class cm_Planet(object):
 
         # iterate over layers
         last = -1.
+
+        import mercury_reference as ref
         for bound,comp,T0 in zip(self.massBelowBoundary,self.compositions,self.boundary_temperatures):
             layer =  (self.int_mass > last) & ( self.int_mass <= bound)
             mrange = self.int_mass[ layer ]
@@ -280,24 +285,6 @@ class cm_Planet(object):
             trange = burnman.geotherm.adiabatic(prange,np.array([T0]),comp)
             self.temperature[layer] = trange
 
-    def compute_Eg(self):
-        '''
-        Directly compute gravitational energy from the current profiles
-        '''
-
-        r_func = UnivariateSpline(self.int_mass,self.radius)
-        
-        dE_dm = lambda y, m: - G * m / r_func(m)
-
-#         Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.masses[-1] ))
-        Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.int_mass ))
-
-        # save the total gravitational energy
-        self.Eg = Eg
-        self.gravitational_energy = Eg[-1]
-
-        # save the gravitational energy over the core alone
-#         self.core_gravitational_energy = Eg[self.cmb()]
 
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
@@ -455,7 +442,87 @@ class cm_Planet(object):
         Returns the total moment of inertia divided by MR^2
         '''
         return self.moment_of_inertia() / self.mass() / self.radius[-1] /self.radius[-1]
-           
+
+    def average_temperature(self):
+        '''
+        Compute average temperature for each layer.
+        '''
+        t_avg = []
+        for layer in self.get_layers():
+            t_layer = self.temperature[layer]
+            t_avg.append(np.mean(t_layer))
+        return np.array(t_avg)
+
+    def average_heat_capacity(self):
+        '''
+        Compute an average heat capacity for the inner and outer core.
+
+        returns a heat capcity for the inner and outer core. (J/K/kg)
+
+        Note: cant figure out how to calculate C_p for minerals
+        '''
+        C_avg = []
+        for i,layer in enumerate(self.get_layers()):
+            p_layer = self.pressure[layer]
+            t_layer = self.temperature[layer]
+            phase = self.compositions[i]
+        
+            C=[]
+            for p,t in zip(p_layer,t_layer):
+                phase.set_state(p,t)
+                try:
+                    C.append(phase.C_p * phase.molar_mass() )
+                except:
+                    C.append(0.)
+            C_avg.append(np.mean(C) )
+
+        return np.array(C_avg)
+
+    def total_thermal_energy(self):
+        '''
+        Computes the total thermal energy in each layer.
+        
+        Note: cant figure out how to calculate C_p for minerals
+        '''
+        E_th = []
+        dm = np.diff(np.hstack((0.,self.int_mass)))
+        for i,layer in enumerate(self.get_layers()):
+            p_layer = self.pressure[layer]
+            t_layer = self.temperature[layer]
+            dm_layer = dm[layer]
+            phase = self.compositions[i]
+        
+            E_th_layer = []
+            for p,t,m in zip(p_layer,t_layer,dm_layer):
+                phase.set_state(p,t)
+                try:
+                    E_th_layer.append(phase.C_p * phase.molar_mass() * m)
+                except:
+                    E_th_layer.append(0.)
+            E_th.append(np.sum(np.array(E_th_layer)) )
+        return np.array(E_th)
+
+
+    def total_gravitational_energy(self):
+        '''
+        Directly compute gravitational energy contained in each layer.
+
+        Note: This lookes like it isn't converging
+        '''
+
+        E_g = []
+        for i,layer in enumerate(self.get_layers()):
+            m_layer = self.int_mass[layer]
+            r_layer = self.radius[layer]
+            r_func = UnivariateSpline(m_layer,r_layer)
+            
+            dE_dm = lambda y, m: - G * m / r_func(m)
+
+            E_g_layer =  np.ravel(integrate.odeint( dE_dm, 0.0, m_layer )) 
+            E_g.append(np.sum(E_g_layer))
+
+        return np.array(E_g)
+
     def get_layer(self,idx):
         '''
         Return an index range correpsonding to a single layer.
@@ -468,6 +535,12 @@ class cm_Planet(object):
 
         layer = (self.int_mass > lbound) & (self.int_mass <= ubound)
         return layer
+
+    def get_layers(self):
+        layers = []
+        for i in range(self.Nlayer):
+            layers.append(self.get_layer(i))
+        return layers
 
     # access functions for all profiles (this is kind of redundant)
     def radial_profile(self):
@@ -625,15 +698,14 @@ class corePlanet(cm_Planet):
         print self.int_mass[i],self.radius[i],self.density[i],self.gravity[i],
         print self.pressure[i],self.temperature[i]
 
-    def compute_Eg_over_r(self):
+    def gravitational_energy_over_r(self):
         '''
-        Calculate the Eg per volume change in the core
+        Calculate the Eg per change in core radius.
         
         Delta Eg = int ( [ (rho_l - rho_s)*g*4pi*r^2 ] dr )
 
         Returns the bracketed parameter.
         '''
-
 
         for c in self.compositions:
             assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
@@ -652,18 +724,37 @@ class corePlanet(cm_Planet):
         rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
                 np.array([p_icb]), np.array([t_icb]) )
 
-        # Save Eg / dr
-        self.Eg_over_r = (rho_l - rho_s) * g_icb * 4. * np.pi * r_icb**2.
+        # return Eg / dr
+        return (rho_l - rho_s) * g_icb * 4. * np.pi * r_icb**2.
 
-    def compute_Eg(self):
+    def specific_gravitational_energy(self):
         '''
-        Directly compute gravitational energy from the current profiles
+        Calculate the gravitational energy released per unit mass at the icb.
         '''
+        rho = self.density[self.inner_core()][-1]
+        r = self.boundaries[0]
+        dm_dr = rho * 4. * np.pi * r**2
+        return self.gravitational_energy_over_r() / dm_dr
 
-        super(corePlanet,self).compute_Eg()
+    def latent_heat_over_r(self):
+        '''
+        Compute latent heat released per growth of inner core radius
+        '''
+        p = self.pressure[self.icb()]
+        t = self.temperature[self.icb()]
+        rho = self.density[self.icb()]
+        r = self.boundaries[0]
+        dm_dr = rho * 4. * np.pi * r**2
+        return iron_latent_heat(p,t,self.w_l) * dm_dr
 
-        # save the gravitational energy over the core alone
-        self.core_gravitational_energy = self.Eg[self.cmb()]
+    def specific_latent_heat(self):
+        '''
+        Compute latent heat per change in mass
+        '''
+        p = self.pressure[self.icb()]
+        t = self.temperature[self.icb()]
+        return iron_latent_heat(p,t,self.w_l)
+
 
     def detect_snow(self):
         '''
@@ -820,8 +911,6 @@ class corePlanet(cm_Planet):
         self.adiabat_steeper()
 
         # compute quantaties for energy/entropy budget
-        self.compute_Eg()
-        self.compute_Eg_over_r()
 
         # print diagnostiscs for last iteration
         if verbose:
