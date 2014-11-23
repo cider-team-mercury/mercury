@@ -4,12 +4,34 @@ core_partition.py
 
 import numpy as np
 from scipy import integrate
-from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
+# from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
 
 # molar masses
-mFe = 55.845
-mSi = 28.0855
-mS = 32.066
+from mercury_reference import mFe,mSi,mS
+
+# converting between mol and weight percent
+def w_to_x(w1,m1=[mS,mSi,mFe]):
+    '''
+    Convert from mass fraction to mol fraction
+    '''
+    w = np.array(w1)
+    m = np.array(m1)
+    assert len(w) == len(m)
+
+    x = (w / m) / np.sum(w / m)
+    return x
+
+def x_to_w(x1,m1=[mS,mSi,mFe]):
+    '''
+    Convert from mol fraction to mass fraction
+    '''
+    x = np.array(x1)
+    m = np.array(m1)
+    assert len(x) == len(m)
+
+    w = (x * m) / np.sum(x * m)
+    return w
+
 
 def partition(w_total1,D1,f_solid):
     '''
@@ -56,8 +78,8 @@ def partition(w_total1,D1,f_solid):
     return w(mliq)[:-1], w(msol)[:-1]
 
 
-def density_coexist(w_liquid1,D1,P,T,mat_solid=ironSilicideAlloy, \
-        mat_liquid=ironSulfideSilicideLiquid):
+def density_coexist(w_liquid1,D1,P,T,mat_solid, \
+        mat_liquid):
     '''
     Apply partitioning rule to find the composition of a solid coexisting with the
     liquid.
@@ -81,25 +103,4 @@ def density_coexist(w_liquid1,D1,P,T,mat_solid=ironSilicideAlloy, \
     # return densities
     return solid.density(), liquid.density()
 
-def w_to_x(w1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mass fraction to mol fraction
-    '''
-    w = np.array(w1)
-    m = np.array(m1)
-    assert len(w) == len(m)
-
-    x = (w / m) / np.sum(w / m)
-    return x
-
-def x_to_w(x1,m1=[mS,mSi,mFe]):
-    '''
-    Convert from mol fraction to mass fraction
-    '''
-    x = np.array(x1)
-    m = np.array(m1)
-    assert len(x) == len(m)
-
-    w = (x * m) / np.sum(x * m)
-    return w
 

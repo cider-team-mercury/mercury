@@ -13,11 +13,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 from scipy.interpolate import UnivariateSpline
+from scipy.misc import derivative
 
 import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
 
+import inspect
+
+from core_partition import w_to_x, x_to_w
 
 # constants
 G = 6.67e-11
@@ -45,11 +49,9 @@ class cm_Planet(object):
             in compositions, default: 'slb'
         """
 
-        for c in compositions:
-            assert( isinstance(c,burnman.Material) )
-
-#         for i,b in enumerate(boundaries):
-#             assert( i == 0 or b >= boundaries[i-1])
+        # Delay this test until it has to be used.
+#         for c in compositions:
+#             assert( isinstance(c,burnman.Material) )
 
         assert( len(masses) == len(compositions) )
 
@@ -61,22 +63,36 @@ class cm_Planet(object):
         self.boundary_temperatures = temperatures
         self.Nlayer = len(masses)
 
+#         if methods is None:
+#             meths = ['slb3'] * self.Nlayer
+#         else:
+#             meths = methods
+
+#         for m, comp in zip(meths,self.compositions):
+#              comp.set_method(m)
+
+        self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
+        self.update_massBelowBoundary()
+
+    def set_compositions(self,compositions,methods=None):
+        self.compositions = compositions
+
         if methods is None:
             meths = ['slb3'] * self.Nlayer
         else:
             meths = methods
 
         for m, comp in zip(meths,self.compositions):
-            comp.set_method(m)
+             comp.set_method(m)
 
-        self.massBelowBoundary = np.zeros(len(masses)) #integrated mass up to the ith layer
+
+    def update_massBelowBoundary(self):
         msum = 0.
-        for i,m in enumerate(masses):
+        for i,m in enumerate(self.masses):
             msum += m
             self.massBelowBoundary[i] = msum
 
         assert self.massBelowBoundary[-1] == np.sum(self.masses)
-
 
 
 
@@ -89,6 +105,9 @@ class cm_Planet(object):
 
 #         assert(self.radius[-1] == self.boundaries[-1] and self.radius[0] == 0. )
 
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         # iterate over layers
         last = -1.
@@ -187,6 +206,9 @@ class cm_Planet(object):
 
         assert( len(self.boundary_temperatures) == self.Nlayer )
 
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
         # iterate over layers
         last = -1.
         for bound,comp,T0 in zip(self.massBelowBoundary,self.compositions,self.boundary_temperatures):
@@ -204,6 +226,9 @@ class cm_Planet(object):
                 using isothermal profiles.
         """
         assert( len(self.boundary_temperatures) == self.Nlayer )
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
 
         # iterate over layers
         last = -1.
@@ -239,6 +264,9 @@ class cm_Planet(object):
         is for calculating up from the lower boundary.
         '''
 
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
         comp = self.compositions[idx]
         layer = self.get_layer(idx)
 
@@ -251,6 +279,25 @@ class cm_Planet(object):
         else:
             trange = burnman.geotherm.adiabatic(prange,np.array([T0]),comp)
             self.temperature[layer] = trange
+
+    def compute_Eg(self):
+        '''
+        Directly compute gravitational energy from the current profiles
+        '''
+
+        r_func = UnivariateSpline(self.int_mass,self.radius)
+        
+        dE_dm = lambda y, m: - G * m / r_func(m)
+
+#         Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.masses[-1] ))
+        Eg = np.ravel(integrate.odeint( dE_dm, 0.0, self.int_mass ))
+
+        # save the total gravitational energy
+        self.Eg = Eg
+        self.gravitational_energy = Eg[-1]
+
+        # save the gravitational energy over the core alone
+#         self.core_gravitational_energy = Eg[self.cmb()]
 
     def display_input(self,n_slices,P0,n_iter,profile_type):
         print 'Computing interior structure with layers:\n'
@@ -266,7 +313,7 @@ class cm_Planet(object):
         print '\tIntial guess for central pressure:',P0,'\n'
 
 
-    def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
+    def integrate(self,n_slices,P0,n_iter,profile_type='adiabatic',plot=False,
             verbose=True):
         """
         Iteratively determine the pressure, density temperature and gravity profiles
@@ -386,6 +433,10 @@ class cm_Planet(object):
         '''
         Returns a list of moments of inertia of the planet [kg m^2]
         '''
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
         moments = np.empty( len(self.compositions) )
         rhofunc = UnivariateSpline(self.radius, self.density )
         for i,layer in enumerate(self.compositions):
@@ -467,9 +518,34 @@ class corePlanet(cm_Planet):
         super(corePlanet,self).__init__(masses, compositions, temperatures,**kwargs)
 
         # liquidus model
-        self.liquidus = liquidus
+        self.liquidus_model = liquidus()
 
+        # Make sure the number of layers is consistent with having a growing core
         assert self.Nlayer >= 3
+
+    def set_liquidus_model(self,liquidus):
+        self.liquidus_model = liquidus()
+
+    def liquidus(self,pressure):
+        '''
+        Hack because the liquidus_model only works for a single value.
+        '''
+
+#         assert inspect.isfunction(self.liquidus_model.T_SP), "Liquidus is not a valid function"
+
+        try:
+            liquidus_at_P = lambda p: self.liquidus_model.T_SP(self.w_l[0],p)
+        except:
+            ValueError('wS_l not set.')
+
+        try:
+            return np.array([ liquidus_at_P(p) for p in pressure ])
+        except:
+            try:
+                return liquidus_at_P(pressure)
+            except:
+                raise TypeError('liquidus is not a valid function')
+
 
     def find_icb_temp(self,idx=0):
         '''
@@ -527,6 +603,20 @@ class corePlanet(cm_Planet):
         return self.get_layer(1)
     def mantle(self):
         return -self.inner_core() - self.outer_core()
+    def core(self):
+        return self.inner_core() + self.outer_core()
+
+    def icb(self):
+        x = len(self.int_mass) 
+#         layer = np.linspace(0,x-1,x)[self.inner_core()]
+        layer = np.arange(x)[self.inner_core()]
+        return layer[-1]
+        
+    def cmb(self):
+        x = len(self.int_mass) 
+#         layer = np.linspace(0,x-1,x)[self.outer_core()]
+        layer = np.arange(x)[self.outer_core()]
+        return layer[-1]
 
     def print_state(self,i=150):
         '''
@@ -534,6 +624,78 @@ class corePlanet(cm_Planet):
         '''
         print self.int_mass[i],self.radius[i],self.density[i],self.gravity[i],
         print self.pressure[i],self.temperature[i]
+
+    def compute_Eg_over_r(self):
+        '''
+        Calculate the Eg per volume change in the core
+        
+        Delta Eg = int ( [ (rho_l - rho_s)*g*4pi*r^2 ] dr )
+
+        Returns the bracketed parameter.
+        '''
+
+
+        for c in self.compositions:
+            assert( isinstance(c,burnman.Material) ), "Expected burnman.Material object"
+
+        # Parameters at the inner core boundary
+        idx_icb = self.icb()
+        p_icb = self.pressure[idx_icb]
+        rho_icb = self.density[idx_icb]
+        g_icb = self.gravity[idx_icb]
+        r_icb = self.radius[idx_icb]
+        t_icb = self.temperature[idx_icb]
+
+        rho_s,vp, vs, vphi, K, G =  burnman.velocities_from_rock(self.compositions[0],
+                np.array([p_icb]), np.array([t_icb]) )
+
+        rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
+                np.array([p_icb]), np.array([t_icb]) )
+
+        # Save Eg / dr
+        self.Eg_over_r = (rho_l - rho_s) * g_icb * 4. * np.pi * r_icb**2.
+
+    def compute_Eg(self):
+        '''
+        Directly compute gravitational energy from the current profiles
+        '''
+
+        super(corePlanet,self).compute_Eg()
+
+        # save the gravitational energy over the core alone
+        self.core_gravitational_energy = self.Eg[self.cmb()]
+
+    def detect_snow(self):
+        '''
+        Test whether points in the liquid outer core are above the liquidus.
+
+        This is a very simple check and doesn't consider how liquidus should
+        perturb the adiabat
+        '''
+        p_oc = self.pressure[self.outer_core()]
+        t_oc = self.temperature[self.outer_core()]
+
+        t_liq = self.liquidus(p_oc)
+        
+        # Boolean. True if temperature is below the liquidus (snowing)
+        snow = t_liq > t_oc
+        self.has_snow = snow.any()
+
+        return snow
+
+    def adiabat_steeper(self):
+        '''
+        Checks whether the adiabat is steeper than the liquidus. Ultimately this
+        should be part of determining the adiabat in the snow regime.
+        '''
+
+        p_oc = self.pressure[self.outer_core()]
+        t_oc = self.temperature[self.outer_core()]
+
+        t_func = UnivariateSpline(p_oc,t_oc)
+
+        return derivative(t_func,p_oc) > derivative(self.liquidus,p_oc)
+        
 
 
     def integrate(self,n_slices,P0,n_iter=5,profile_type='adiabatic',plot=False,
@@ -653,6 +815,14 @@ class corePlanet(cm_Planet):
         self.diff_bounds = self.boundaries - self.last_boundaries
         self.diff_icb_temp = self.boundary_temperatures[0] - self.last_icb_temp
 
+        # Check if snow encountered
+        self.detect_snow()
+        self.adiabat_steeper()
+
+        # compute quantaties for energy/entropy budget
+        self.compute_Eg()
+        self.compute_Eg_over_r()
+
         # print diagnostiscs for last iteration
         if verbose:
             print 'Change during last iteration:'
@@ -663,6 +833,8 @@ class corePlanet(cm_Planet):
 
         if plot==True:
             plt.show()
+
+
 
 def max_magnitude(x,**kwargs):
     '''
