@@ -26,7 +26,7 @@ T_ref  = 1600.0 # - K
 T_surf = 440.0  # - K
 
 k_regolith = 0.2 # - W m^-1 K^-1 - Regolith Thermal Conductivity
-k_mantle   = 4.0   # - W m^-1 K^-1 - Mantle Thermal Conductivity
+k_mantle   = 4.0 # - W m^-1 K^-1 - Mantle Thermal Conductivity
 
 mantle_diffusivity = 1.0e-6 # - m^s s^-1
 
@@ -53,7 +53,7 @@ core_radius = 2050.0 # - km - 1840 km to 2050 km
 T_upper_mantle_initial = 2000.0 # - K - 1650 K to 2000 K
 T_core_excess = 300.0 # - K - 0 K to 300 K
 k_crust = 4.0 # - W m^-1 K^-1 - 1.5 to 4
-viscosity_ref = 1.0e22 # - Pa s - 10^19 to 10^22
+mantle_viscosity_ref = 1.0e22 # - Pa s - 10^19 to 10^22
 regolith_thickness = 5.0e3 # - m - 0 to 5*10^3 m 
 mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 # ------------------------------------------------------- #
@@ -72,6 +72,14 @@ mantle_params = {
     'gas_constant' : R,
     'activation_energy' : A,
     'empirical_spherical_stagnant_lid_param' : Theta,
-    'thermal_expansivity' : alpha_mantle
+    'thermal_expansivity' : alpha_mantle,
+    'surface_gravity' : gravity, 
+    'reference_viscosity' : mantle_viscosity_ref,
+    'reference_temperature': T_ref,
+    'surface_temperature' : T_surf,
+    'thermal_diffusivity' : mantle_diffusivity,
+    'factor_pressure_dependent_viscosity' : 1.0, # Not sure what to put here for now.
+    'thermal_conductivity' : k_mantle,
+
     }
 

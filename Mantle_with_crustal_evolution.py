@@ -17,6 +17,11 @@ Grasset, O., & Parmentier, E. M. (1998). Thermal convection in a volumetrically 
 infinite Prandtl number fluid with strongly temperature-dependent viscosity: Implications
 for planetary thermal evolution. Journal of Geophysical Research: Solid Earth (1978-2012),
 103(B8), 18171-18181.
+
+Deschamps, Frédéric, and Christophe Sotin. "Thermal convection in the outer shell  large
+icy satellites." Journal of Geophysical Research: Planets 991-2012) 106.E3 (2001): 5107-5121.
+
+Richter, Frank M. "Mantle convection models." Ann Rev of Earth and Planetary Sciences (1978).
 '''
 
 
@@ -74,40 +79,49 @@ class mantle_layer(planetary_energetcs.Layer):
         '''
         return self.params['density']*self.params['heat_capacity']*self.params['epsilon']*self.volume
 
-    def upper_boundary_layer_thickness(self, stagnant_lid_thickness):
+    def calculate_viscosity(self, temperature):
         '''
-        Thickness of the boundary layer at the top of the convecting mantle, equation (12) in
-        Morschhauser et al 2011. 
+        Temperature Dependent Viscosity, equation (7) in Morschhauser et al 2011. 
 
-        The thickness of this boundary is calcualted using the Nusselt-Rayleigh relation and 
-        critical boundary layer theory, see Turcotte and Schubert 2002.
+        We use the Arrhenius relationship to relate the viscosity at some reference temperature
+        (T_ref) to the current upper mantle temperature. The reference viscosity for Mercury is
+        unknown and varied by 3 orders of magnitude in Grott et al. 2011, from 10^19 to 10^22 Pa-s.
         '''
-        return (self.thickness - stagnant_lid_thickness)*(self.params['Ra_crit']/Ra)^(1./3.)
+        temperature_ref = self.params['reference_temperature']
+        A = self.params['activation_energy']
+        R = self.params['gas_constant']
+        T_normalized = (temperature_ref-temperature)/(temperature_ref*temperature)
+        return self.params['reference_viscosity']*np.exp(A*T_normalized/R)
 
-    def lower_boundary_layer_thickness(self, stagnant_lid_thickness):
+    def calculate_rayleigh_number(self, T_upper_mantle, stagnant_lid_thickness):
         '''
-        Thickness of the boundary layer at the base of the convecting mantle, equation (13) in
-        Morschhauser et al 2011. 
+        The Mantle Rayleigh Number, equation (6) in Morschhauser et al 2011.  
         '''
-        return  (self.thickness - stagnant_lid_thickness)*(self.params['Ra_crit']/Ra)^(1./3.)
+        coef = self.params['thermal_expansivity']*self.params['density']*self.params['surface_gravity']
+        mu = self.calculate_viscosity( T_upper_mantle)
+        return coef*np.power(self.thickness-stagnant_lid_thickness, 3.)/(self.params['thermal_diffusivity']*mu)
     
-    def upper_heat_flux(self, T_upper_mantle, stagnant_lid_thickness):
+    def calculate_critical_internal_rayleigh_number(self, T_upper_mantle, T_cmb):
         '''
-        Heat flow out of the mantle, equation (10) in Morschhhauser et al 2011.
+        Critical Internal Rayleigh Number, equations (14,15) Morschhauser et al 2011.
 
-        The temperature at the base of the Stagnant lid is found using the formulation
-        of Grasset and Parmentier et al 1998, adapted to spherical geometry, equation (8)
-        in Morschhauser et al 2011. 
+        It was found that the local critical Rayleigh Number, for the lower boundary layer
+        should be calculated using the Critical Internal Rayleigh Number, see Deschamps and 
+        Sotin 2001.
+
+        This empricial relation between the Internal Rayleigh Number and the Critical Rayleigh Number,
+        is a power-law relation involving two fitting parameters:
+                    Ra_i,crit = 0.28*(Ra_i)^0.21
         '''
-        
-        T_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)  
-        Ra = self.calculate_rayleigh_number(T_upper_mantle, stagnant_lid_thickness)
-        upper_boundary_layer_thickness = self.upper_boundary_layer_thickness( T_upper_mantle, stagnant_lid_thickness)
-        return "" 
-
-    def rayleigh_number(self, T_upper_mantle, stagnant_lid_thickness):
-        pass
-
+        hard_coded_coef = 0.28
+        hard_coded_exponent = 0.21
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, stagnant_lid_thickness)
+        delta_T_internal = T_upper_mantle-self.params['surface_temperature']+T_cmb-temperature_base_mantle
+        viscosity = self.calculate_viscosity(T_upper_mantle)
+        coef = self.params['thermal_expansivity']*self.params['surface_gravity']*self.params['density']
+        Ra_internal = coef*delat_T_internal*np.power(self.thickness, 3.)/(self.params['thermal_diffusivity']*viscosity)
+        return hard_coded_coef*np.power(Ra_internal,hard_coded_exponent)
+    
     def calculate_temperature_base_stagnant_lid(self, T_upper_mantle):
         '''
         Temperature at the base of the Stagnant Lid, equation (8) in Morschhauser et al 2011. 
@@ -133,8 +147,64 @@ class mantle_layer(planetary_energetcs.Layer):
         lower_boundary_layer_thickness = self.lower_mantle_thickness(T_upper_mantle, stagnant_lid_thickness)
         thickness_of_convecting_mantle = self.thickness-stagnant_lid_thickness-upper_boundary_layer_thickness\
                                         -lower_boundary_layer_thickness
-        alpha = self.params['thermal_expansivity']
-        g = self.params['surface_gravity']
+        g = self.params['surface_gravity'] # Is the Surface gravity the correct gravity here
+        adiabatic_temperature_increase = self.params['thermal_expansivity']*g*thickness_convecting_mantle*T_upper_mantle/self.params['heat_capacity']
+        return T_upper_mantle+adiabatic_temperature_increase
+    
+    def calculate_upper_boundary_layer_thickness(self, stagnant_lid_thickness):
+        '''
+        Thickness of the boundary layer at the top of the convecting mantle, equation (12) in
+        Morschhauser et al 2011. 
+
+        The thickness of this boundary is calcualted using the Nusselt-Rayleigh relation and 
+        critical boundary layer theory, see Turcotte and Schubert 2002.
+        '''
+        Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        return (self.thickness - stagnant_lid_thickness)*np.power(self.params['Ra_crit']/Ra,1./3.)
+
+    def calculate_lower_boundary_layer_thickness(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
+        '''
+        Thickness of the boundary layer at the base of the convecting mantle, equation (13) in
+        Morschhauser et al 2011.
+
+        Due to the temperature dependent viscosity this boundary layer is calculated using a
+        "Local Critical Rayleigh Number" and the viscosity at the average temperature in the 
+        boundary layer, see Richter et al 1978. 
+        '''
+        Ra_i_crit = self.calculate_critical_internal_rayleigh_number(T_upper_mantle, T_cmb)
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, stagnant_lid_thickness)
+        average_boundary_temperature = (temperature_base_mantle+T_cmb)/2.0
+        mu_crit =  self.calculate_viscosity(average_boundary_temperature)
+        delta_T = T_cmb - temperature_base_mantle
+        numerator = self.params['thermal_diffusivity']*self.params['factor_pressure_dependent_viscosity']*\
+                *mu_crit*Ra_i_crit
+        denominator = self.params['thermal_expansivity']*self.params['density']*gravity_cmb*delta_T
+        return np.power(numerator/denominator, 1./3.)
+    
+    def calculate_upper_heat_flux(self, T_upper_mantle, stagnant_lid_thickness):
+        '''
+        Heat flow out of the mantle, equation (10) in Morschhhauser et al 2011.
+
+        The temperature at the base of the Stagnant lid is found using the formulation
+        of Grasset and Parmentier et al 1998, adapted to spherical geometry, equation (8)
+        in Morschhauser et al 2011. 
+        '''
+        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)  
+        upper_boundary_layer_thickness = self.calculate_upper_boundary_layer_thickness(T_upper_mantle, stagnant_lid_thickness)
+        return self.params['thermal_conductivity']*(T_upper_mantle - temperature_base_stagnant_lid)/upper_boundary_layer_thickness
+
+    def calculate_lower_heat_flux(self, T_upper_mantle, stagnant_lid_thickness):
+        '''
+        Heat flow out of the mantle, equation (10) in Morschhhauser et al 2011.
+
+        The temperature at the base of the Stagnant lid is found using the formulation
+        of Grasset and Parmentier et al 1998, adapted to spherical geometry, equation (8)
+        in Morschhauser et al 2011. 
+        '''
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, stagnant_lid_thickness)  
+        lower_boundary_layer_thickness = self.calculate_lower_boundary_layer_thickness(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+        return self.params['thermal_conductivity']*(T_cmb - temperature_base_mantle)/lower_boundary_layer_thickness
+
         
 
 
