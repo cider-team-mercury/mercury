@@ -6,9 +6,11 @@ import spherical_harmonics
 #Spherical harmonic coefficients from Aharonson et al., 2004,
 #which are themselves pseudo-fits to the thermal model of 
 #Vasavada et. al. 1999.  The reported values go up to l=4,
-#but the plots look like they are truncated at l=2.  I cannot
-#think of a way to justify an l=4 temperature structure given
-#the symmetries, so I too will truncate at l=2
+#but the plots look like they are truncated at l=2.  I am not 
+#sure why this is the case, but it does make a slight difference.
+#We can zero out the l=4 coefficients to investigate the difference.
+#The main offending coefficient is the Y40 coefficient, so my inclination
+#is to zero that out.
 surface_temperature_coeffs = [ [1230., ],     #l=0
            [0., 0., 0.], #l=1
            [0., 0., -131., 0., 81.], #l=2
