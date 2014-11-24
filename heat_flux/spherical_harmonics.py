@@ -43,7 +43,7 @@ def spherical_harmonic_transform( func, lmax ):
 
 def plot_spherical_harmonic_expansion( coeffs, func = None):
     
-    res = 20
+    res = 40
     lats = np.linspace(0.,np.pi, res)
     lons = np.linspace(0.,2.*np.pi, 2*res)
     LONS, LATS = np.meshgrid(lons, lats)
@@ -66,6 +66,7 @@ def plot_spherical_harmonic_expansion( coeffs, func = None):
 
     minval = np.min(T)
     maxval = np.max(T)
+    print "Minimum: ", minval, "Maximum: ", maxval, "Variation: ", (maxval-minval)/minval
 
     if( func == None):
         map.pcolor(x, y, T, cmap='Spectral_r')
