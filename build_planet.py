@@ -21,8 +21,7 @@ import burnman.composite as composite
 
 import inspect
 
-from core_partition import w_to_x, x_to_w
-from mercury_minerals import iron_latent_heat
+from core_partition import w_to_x, x_to_w, density_coexist, iron_latent_heat
 
 import mercury_reference as ref
 
@@ -402,17 +401,6 @@ class cm_Planet(object):
             ax1.legend()
             plt.show()
 
-#     def mass_list(self):
-#         '''
-#         Returns a list of masses of the planet [kg]
-#         '''
-#         masses = np.empty( len(self.compositions) )
-#         rhofunc = UnivariateSpline(self.radius, self.density )
-#         for i,layer in enumerate(self.compositions):
-#             masses[i] = integrate.quad( lambda r : 4.0*np.pi*r*r*rhofunc(r) ,
-#                                      (0.0 if i==0 else self.boundaries[i-1]), self.boundaries[i] )[0]
-#         return masses
-  
     def mass(self):
         return self.massBelowBoundary[-1]
   
@@ -477,6 +465,27 @@ class cm_Planet(object):
             C_avg.append(np.mean(C) )
 
         return np.array(C_avg)
+
+    def specific_thermal_energy(self):
+        '''
+        Returns the average Cp * T for each layer. (J/kg)
+        '''
+        CT_avg = []
+        for i,layer in enumerate(self.get_layers()):
+            p_layer = self.pressure[layer]
+            t_layer = self.temperature[layer]
+            phase = self.compositions[i]
+        
+            CT=[]
+            for p,t in zip(p_layer,t_layer):
+                phase.set_state(p,t)
+                try:
+                    CT.append(phase.C_p * phase.molar_mass() * t)
+                except:
+                    CT.append(0.)
+            CT_avg.append(np.mean(CT) )
+
+        return np.array(CT_avg)
 
     def total_thermal_energy(self):
         '''
@@ -568,7 +577,7 @@ class cm_Planet(object):
 
 
 class corePlanet(cm_Planet):
-    def __init__(self,  masses, compositions, temperatures, liquidus=None,**kwargs):
+    def __init__(self,  masses, compositions, temperatures, liquidus=None,materials=None,**kwargs):
         """
         Parameters
         ----------
@@ -592,6 +601,8 @@ class corePlanet(cm_Planet):
 
         # liquidus model
         self.liquidus_model = liquidus()
+
+        self.materials = materials
 
         # Make sure the number of layers is consistent with having a growing core
         assert self.Nlayer >= 3
@@ -715,17 +726,21 @@ class corePlanet(cm_Planet):
         p_icb = self.pressure[idx_icb]
         rho_icb = self.density[idx_icb]
         g_icb = self.gravity[idx_icb]
-        r_icb = self.radius[idx_icb]
+        r_icb = self.boundaries[0]
         t_icb = self.temperature[idx_icb]
 
-        rho_s,vp, vs, vphi, K, G =  burnman.velocities_from_rock(self.compositions[0],
-                np.array([p_icb]), np.array([t_icb]) )
+        # is this necessary? or is taking rho_ic[-1] - rho_oc[0] sufficient?
+#         rho_s,vp, vs, vphi, K, G =  burnman.velocities_from_rock(self.compositions[0],
+#                 np.array([p_icb]), np.array([t_icb]) )
+# 
+#         rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
+#                 np.array([p_icb]), np.array([t_icb]) )
 
-        rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
-                np.array([p_icb]), np.array([t_icb]) )
+        rho_s,rho_l = density_coexist(self.w_l,[self.DS,self.DSi],p_icb,t_icb,\
+                self.materials[0],self.materials[1])
 
         # return Eg / dr
-        return (rho_l - rho_s) * g_icb * 4. * np.pi * r_icb**2.
+        return (rho_s - rho_l) * g_icb * r_icb * 4. * np.pi * r_icb**2.
 
     def specific_gravitational_energy(self):
         '''
@@ -742,7 +757,7 @@ class corePlanet(cm_Planet):
         '''
         p = self.pressure[self.icb()]
         t = self.temperature[self.icb()]
-        rho = self.density[self.icb()]
+        rho = self.density[self.inner_core()][-1]
         r = self.boundaries[0]
         dm_dr = rho * 4. * np.pi * r**2
         return iron_latent_heat(p,t,self.w_l) * dm_dr
