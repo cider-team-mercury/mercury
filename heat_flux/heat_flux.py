@@ -18,13 +18,14 @@ def surface_temperature(theta, phi):
                        0., 90., 180., 270.,\
                        0., 90., 180., 270.,\
                        0., 90., 180., 270.])
-#    lats = np.array([85., 45., 0., -45., -85. ] )
+    lats = np.array([85., 45., 0., -45., -85. ] )
 #    lons = np.array([0.,90.,180.,270.])
-    temperature = np.array([  175., 175., 175., 175., \
-                             400., 310., 400., 310.,\
-                             430., 330., 430., 330.,\
-                             400., 310., 400., 310.,\
-                             175., 175., 175., 175.])
+#    temperature = np.array([  175., 175., 175., 175., \
+#                             400., 310., 400., 310.,\
+#                             430., 330., 430., 330.,\
+#                             400., 310., 400., 310.,\
+
+#                             175., 175., 175., 175.])
 #    temperature = np.asarray([[  175., 175., 175., 175.], \
 #                           [  400., 310., 400., 310.],\
 #                           [  430., 330., 430., 330.],\
@@ -33,8 +34,7 @@ def surface_temperature(theta, phi):
     lats = np.pi/2. - lats *np.pi/180.
     lons = lons * np.pi/180.
     points = np.vstack([lats, lons])
-#    func = interp.RectSphereBivariateSpline( lats,lons, temperature)
-    func = interp.NearestNDInterpolator( points.T, temperature)
+    func = interp.RectSphereBivariateSpline( lats,lons, temperature)
     
     x = 0.
     if theta < np.pi/2.:
@@ -42,17 +42,18 @@ def surface_temperature(theta, phi):
     elif theta >= np.pi/2.:
         x =  np.sqrt( (np.pi-theta)/(np.pi/2.))*200. + 150. +100.*np.cos(2.*phi)    
  
-    print theta, phi, x
     return x
 
     return func(theta, phi)
 
 
 def pattern( theta, phi ):
-    x = np.cos(theta)*10.
-    print x
+    x = np.cos(theta)*10. + np.sin(phi)*5
+#    x = spherical_harmonics.real_spherical_harmonic(theta, phi, 3, 1 )
     return x
 
-coeffs = spherical_harmonics.spherical_harmonic_transform( pattern, 2 )
-spherical_harmonics.plot_spherical_harmonic_expansion( coeffs)    
+coeffs = spherical_harmonics.spherical_harmonic_transform( surface_temperature, 5 )
+#coeffs = [ np.asarray(c)/2. for c in coeffs]
+print coeffs
+spherical_harmonics.plot_spherical_harmonic_expansion( coeffs, surface_temperature)    
                        
