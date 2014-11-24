@@ -1,5 +1,9 @@
 '''
 core_partition.py
+
+Contains functions for dealing with the partitioning of light elements
+between a growing solid inner core and liquid outer core, and the 
+latent heat released by inner core growth.
 '''
 
 import numpy as np
@@ -7,7 +11,7 @@ from scipy import integrate
 # from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
 
 # molar masses
-from mercury_reference import mFe,mSi,mS
+from mercury_reference import mFe,mSi,mS,LFe
 
 # converting between mol and weight percent
 def w_to_x(w1,m1=[mS,mSi,mFe]):
@@ -32,6 +36,8 @@ def x_to_w(x1,m1=[mS,mSi,mFe]):
     w = (x * m) / np.sum(x * m)
     return w
 
+# iron latent heat of fusion
+iron_latent_heat = lambda P, T, w : LFe
 
 def partition(w_total1,D1,f_solid):
     '''

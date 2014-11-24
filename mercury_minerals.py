@@ -2,6 +2,8 @@
 mercury_minerals.py
 
 Contains model material properties for a mercurian mantle and core.
+
+Minerals are define using the
 '''
 
 import burnman
@@ -14,6 +16,7 @@ from core_partition import x_to_w, w_to_x
 
 # molar masses of elements
 from mercury_reference import mFe,mSi,mS
+
 
 # Core Material Properties
 class gamma_iron(burnman.Mineral):
