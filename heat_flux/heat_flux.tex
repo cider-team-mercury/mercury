@@ -141,11 +141,10 @@ Plugging into the outer boundary:
 
 \begin{equation}
 \begin{aligned}
-& \left[A_{00} + B_{00}/R_o \right] Y_{00} = S_{00} \\
-& \left[A_{00} +  \eta \frac{T_i}{Y_{00}} - A_{00} \eta \right]  Y_{00} = S_{00}\\
-& A_{00} (1-\eta) = \frac{S_{00}}{Y_{00}} - \eta \frac{T_i}{Y_{00}} \\
-& A_{00} (1-\eta) = \frac{S_{00} - \eta T_i}{Y_{00}} \\
-& A_{00} = \frac{S_{00} - \eta T_i}{(1-\eta)Y_{00}} \\
+& \left[A_{00} + B_{00}/R_o \right] Y_{00} = S_{00} Y_{00}\\
+& \left[A_{00} + T_i\eta/Y_{00} -A_{00}\eta \right] = S_{00}\\
+& A_{00} (1-\eta) + T_i\eta/Y_{00} = S_{00}\\
+& A_{00} =  \frac{S_{00} - T_i\eta/Y_{00} }{1-\eta} \\
 \end{aligned}
 \end{equation}
 
@@ -153,10 +152,10 @@ Therefore
 
 \begin{equation}
 \begin{aligned}
-& B_{00} = \left[T_i/Y_{00} - \frac{ S_{00} - \eta T_i}{(1-\eta) Y_{00} }  \right] R_i\\
-& B_{00} = \left[\frac{T_i (1-\eta)}{(1-\eta)} - \frac{ S_{00} - \eta T_i}{(1-\eta) }  \right] \frac{R_i}{Y_{00}}\\
-& B_{00} = \left[T_i (1-\eta) - S_{00} + \eta T_i  \right] \frac{R_i}{(1-\eta) Y_{00}}\\
-& B_{00} = \frac{(T_i-S_{00}) R_i}{(1-\eta) Y_{00}}\\
+& B_{00} = \left[T_i/Y_{00} - \frac{ S_{00} Y_{00} - \eta T_i}{(1-\eta) Y_{00} }  \right] R_i\\
+& B_{00} = \left[\frac{T_i (1-\eta)}{(1-\eta)} - \frac{ S_{00}Y_{00} - \eta T_i}{(1-\eta) }  \right] \frac{R_i}{Y_{00}}\\
+& B_{00} = \left[T_i (1-\eta) - S_{00}Y_{00} + \eta T_i  \right] \frac{R_i}{(1-\eta) Y_{00}}\\
+& B_{00} = \frac{(T_i-S_{00}Y_{00}) R_i}{(1-\eta) Y_{00}}\\
 \end{aligned}
 \end{equation}
 
@@ -164,13 +163,14 @@ We can now plug these in to the general solution for $l=0$:
 
 \begin{equation}
 \begin{aligned}
-T(r, \theta, \phi) &= \left[ \frac{S_{00} - \eta T_i}{(1-\eta)Y_{00}} + \frac{T_i - S_{00}}{(1-\eta)Y_{00}} \frac{R_i}{r} \right] Y_{00} \\
-&= \left[ S_{00} - \eta T_i + (T_i - S_{00}) \frac{R_i}{r} \right] \frac{1}{1-\eta} \\
-&= \left[ S_{00} (1-\frac{R_i}{r}) + T_i ( \frac{R_i}{r} - \eta ) \right] \frac{1}{1-\eta} \\
+T(r, \theta, \phi) &= \left[ \frac{S_{00}Y_{00} - \eta T_i}{(1-\eta)Y_{00}} + \frac{T_i - S_{00}Y_{00}}{(1-\eta)Y_{00}} \frac{R_i}{r} \right] Y_{00} \\
+&= \left[ S_{00}Y_{00} - \eta T_i + (T_i - S_{00}Y_{00}) \frac{R_i}{r} \right] \frac{1}{1-\eta} \\
+&= \left[ S_{00} Y_{00}(1-\frac{R_i}{r}) + T_i ( \frac{R_i}{r} - \eta ) \right] \frac{1}{1-\eta} \\
 \end{aligned}
 \end{equation}
 
 Again, we may verify this by plugging in $R_i$ and $R_o$ to so that it satisfies boundary conditions.
+Furthermore, we may note that $S_{00}Y_{00}$ is the average surface temperature $T_o$.
 
 \subsection{Heat flux calculation}
 
@@ -184,7 +184,7 @@ where k is the thermal conductivity.  This derivative is evaluated at $R_i$.  Fi
 
 \begin{equation}
 \begin{aligned}
-\partial T/ \partial r = \left[ \frac{ S_{00} R_i }{r^2} - \frac{T_i R_i}{r^2} \right] \frac{1}{1-\eta}
+\partial T/ \partial r = \left[ \frac{ T_o R_i }{r^2} - \frac{T_i R_i}{r^2} \right] \frac{1}{1-\eta}
 \end{aligned}
 \end{equation}
 
@@ -192,7 +192,7 @@ Evaluating this at $R_i$ we find:
 
 \begin{equation}
 \begin{aligned}
-q_{cmb} = k \frac{(T_i - S_{00})}{R_i} \frac{1}{1-\eta}
+q_{cmb} = k \frac{(T_i - T_o)}{R_i} \frac{1}{1-\eta}
 \end{aligned}
 \end{equation}
 
