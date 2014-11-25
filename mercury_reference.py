@@ -44,4 +44,7 @@ DS = 0. # DS has to be zero for the current  solution model!!!
 DSi = 1.0
 
 # Iron Alloy Latent Heat of Fusion
-LFe = 247291. # J / kg
+LFe = 247291. # J / kg (Desai 1986 +/- 300 )
+
+# Iron melting temperature from Anzellini
+Tm_anzellini = lambda p :  1991.*((p - 5.2e9)/27.39e9 + 1.)**(1./2.38)

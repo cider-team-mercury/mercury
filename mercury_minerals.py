@@ -103,21 +103,27 @@ class liquid_iron(burnman.Mineral):
         
         Parameters for liquid Fe are taken from Anderson and Ahrens (1994);
 
-        Gruneisen parameter from alpha
+        Gruneisen parameter from low alpha and C_v = 3R
         85.4 GPa * 9.2e-5 K^-1 * 7.957 cm^3/mol / (3 R) = 2.506
+
+        Gruneisen from low alpha and C_p from Desai1986
+        85.4 GPa * 9.2e-5 K^-1 * 7.957 cm^3/mol / (36.216 J / mol / K) = 1.7262138
+
+        Gruneisen from high alpha and C_p from Desai1986
+        85.4 GPa * 13.2e-5 K^-1 * 7.957 cm^3/mol / (25.190 J / mol / K) = 3.5608444
         '''
         self.params = {
             'equation_of_state':'slb3',
             'T_0': 1811.,
             'V_0': 7.957e-06, 
             'K_0': 85.3e9,
-            'Kprime_0': 5.9,
+            'Kprime_0': 5.9, #5.9,
             'G_0': 0.,
             'Gprime_0': 0.,
             'molar_mass': mFe / 1000.,
             'n': 1,
             'Debye_0': 10., # C_v -> 3R
-            'grueneisen_0': 2.5, # Calculated from alpha using C_v = 3R
+            'grueneisen_0': 1.7, # Calculated from alpha using C_v = 3R
             'q_0': 1.4,
             'eta_s_0': 0. }
 
@@ -148,7 +154,7 @@ class liquid_iron_sulfide10(burnman.Mineral):
             'molar_mass': molar_mass,
             'n': 1,
             'Debye_0': 10., # C_v -> 3R
-            'grueneisen_0': 2.4, # Calculated from alpha using C_v = 3R
+            'grueneisen_0': 1.7, # Calculated from alpha using C_v = 3R
             'q_0': 1.4,
             'eta_s_0': 0. ,
             'mole_fraction' : x[0],
@@ -349,32 +355,80 @@ if __name__ == "__main__":
 
     w = [.1,0.,.9]
     x = w_to_x(w)
-    lFeS_ext = ironSulfurSilicideLiquid(x[0],0.)
+    lFeS_ext = ironSulfideSilicideLiquid(x[0],0.)
 
-    # Testing densities along isotherm
-    p = np.linspace(0.,50.,101.) * 1.e9 # Pa
-    t0 = 1773.
-    fig1 = plt.figure()
-    ax1 = plt.subplot(111)
-    for phase in [ lFe,lFeS10,lFeS_ext,lFeS20]:
-        t = np.ones_like(p) * t0
-        phase.set_method('slb3')
-        rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(phase, p, t)
-        ax1.plot(p,rho)
+#     # Testing densities along isotherm
+#     p = np.linspace(0.,50.,101.) * 1.e9 # Pa
+#     t0 = 1773.
+#     fig1 = plt.figure()
+#     ax1 = plt.subplot(111)
+#     for phase in [ lFe,lFeS10,lFeS_ext,lFeS20]:
+#         t = np.ones_like(p) * t0
+#         phase.set_method('slb3')
+#         rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(phase, p, t)
+#         ax1.plot(p,rho)
+# 
+#     # Testing densities along adiabat
+#     t0 = 1000.
+#     fig2 = plt.figure()
+#     ax2 = plt.subplot(111)
+# 
+#     fig3 = plt.figure()
+#     ax3 = plt.subplot(111)
+#     for phase in [ lFe,lFeS10,lFeS_ext,lFeS20, iron,alloy]:
+#         phase.set_method('slb3')
+#         t =burnman.geotherm.adiabatic(p,np.array([t0]),phase)
+#         rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(phase, p, t)
+#         ax2.plot(p,rho)
+# #         ax3.plot(p,t)
 
-    # Testing densities along adiabat
-    t0 = 1000.
-    fig2 = plt.figure()
-    ax2 = plt.subplot(111)
 
-    fig3 = plt.figure()
-    ax3 = plt.subplot(111)
-    for phase in [ lFe,lFeS10,lFeS_ext,lFeS20, iron,alloy]:
+    # creating a compoarison of dT/dP a la Williams 2009
+#     from liquidus_model import Solver_no14 as FeSLiquidusModel
+    from liquidus_model import Solver as FeSLiquidusModel
+    from mercury_reference import Tm_anzellini
+    p = np.linspace(0.,40.,101.) * 1.e9
+    liquidus_at_P = lambda p: FeSLiquidusModel().T_SP(0.,p)
+    liq = np.array([ liquidus_at_P(x) for x in p ])
+    liq_anzellini = Tm_anzellini(p)
+    dT_dP_liq = np.gradient(liq)/np.gradient(p) * 1.e9
+    dT_dP_anzellini = np.gradient(liq_anzellini)/np.gradient(p) * 1.e9
+
+    lFe_high = liquid_iron()
+    lFe_high.params['grueneisen_0'] = 3.6
+    lFe_low = liquid_iron()
+    lFe_low.params['grueneisen_0'] = 1.7
+    for ph in [lFe,lFe_high,lFe_low]: ph.set_method('slb3')
+
+    # plot T of melting versus adiabats
+    fig4 = plt.figure()
+    ax4 = plt.subplot(111)
+    thigh =burnman.geotherm.adiabatic(p,np.array([1700]),lFe_high)
+    tlow  = burnman.geotherm.adiabatic(p,np.array([1900]),lFe_low)
+    t  = burnman.geotherm.adiabatic(p,np.array([1800]),lFe)
+    ax4.plot(p,liq,'k--') 
+    ax4.plot(p,liq_anzellini,'k',lw=2) 
+    ax4.plot(p,thigh,'g')
+    ax4.plot(p,tlow,'r')
+    ax4.plot(p,t,'b')
+
+    # plot dT/dP of clapeyron slope versus adiabats
+    fig5 = plt.figure()
+    ax5 = plt.subplot(111)
+    ax5.plot(p,dT_dP_liq,'k--') 
+    ax5.plot(p,dT_dP_anzellini,'k',lw=2) 
+    for phase,t0 in zip([lFe,lFe_high,lFe_low],[1800.,1700.,1900.]):
         phase.set_method('slb3')
         t =burnman.geotherm.adiabatic(p,np.array([t0]),phase)
-        rho, vp, vs, vphi, K, G = burnman.velocities_from_rock(phase, p, t)
-        ax2.plot(p,rho)
-        ax3.plot(p,t)
+        dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+        ax5.plot(p,dT_dP_ad)
+    phase = lFe_high; lFe_high.params['Kprime_0'] = 7.
+    t =burnman.geotherm.adiabatic(p,np.array([1700.]),phase)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p,dT_dP_ad,'g--')
+    phase = lFe_high; lFe_high.params['Kprime_0'] = 4.6
+    t =burnman.geotherm.adiabatic(p,np.array([1700.]),phase)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p,dT_dP_ad,'g-.')
 
     plt.show()
-
