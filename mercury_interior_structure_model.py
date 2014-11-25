@@ -353,7 +353,7 @@ class model_suite(object):
         CpT_avg_ic_func = self.func_of_Ticb('CpT_avg_ic')
         CpT_avg_oc_func = self.func_of_Ticb('CpT_avg_oc')
         Eth_ic = lambda t : derivative(CpT_avg_ic_func,t) * m_ic_func(t)
-        Eth_oc = lambda t : derivative(CpT_avg_ic_func,t) * m_oc_func(t)
+        Eth_oc = lambda t : derivative(CpT_avg_oc_func,t) * m_oc_func(t)
         return Eth_ic, Eth_oc
 
 if __name__ == "__main__":
