@@ -671,15 +671,21 @@ class corePlanet(cm_Planet):
         else:
             self.compute_isotherm_layer(1,t_icb,fromLowerBound=True)
 
+        last_temp = self.temperature[self.get_layer(1)][-1]
+        self.boundary_temperatures[0] = t_icb
+        self.boundary_temperatures[1] = last_temp
+
         if not mantle_isotherm:
             for i in range(2,self.Nlayer):
-                self.compute_adiabat_layer(i,self.boundary_temperatures[i])
+                self.compute_adiabat_layer(i,last_temp,fromLowerBound=True)
+                last_temp = self.temperature[self.get_layer(i) ][-1]
+                self.boundary_temperatures[i] = last_temp
 
         else:
             for i in range(2,self.Nlayer):
-                self.compute_isotherm_layer(i,self.boundary_temperatures[i])
-
-        self.boundary_temperatures[0] = t_icb
+                self.compute_isotherm_layer(i,last_temp,fromLowerBound=True)
+                last_temp = self.temperature[self.get_layer(i) ][-1]
+                self.boundary_temperatures[i] = last_temp
 
     def inner_core(self):
         return self.get_layer(0)
