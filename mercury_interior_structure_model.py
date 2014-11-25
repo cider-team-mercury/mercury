@@ -16,8 +16,9 @@ from scipy.interpolate import UnivariateSpline
 from scipy.misc import derivative
 
 # from liquidus_model import Solver as Liquidus
-from liquidus_model import Solver_no14 as FeSLiquidusModel
+# from liquidus_model import Solver_no14 as FeSLiquidusModel
 # from liquidus_model import Solver as FeSLiquidusModel
+from liquidus_model import Dumberry_liquidus as FeSLiquidusModel
 
 from build_planet import cm_Planet, corePlanet
 
@@ -361,11 +362,11 @@ if __name__ == "__main__":
     merc = mercuryModel(0.63,.00,.00)
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
-#     merc.generate_profiles(0.5)
-#     merc.show_profiles()
+    merc.generate_profiles(0.5)
+    merc.show_profiles()
 
     ### Test 2: Tabulate and plot energetics for a mercuryModel
-    model1 = model_suite(merc,[0.1,0.2,0.3,0.4,0.5])
+    model1 = model_suite(merc,[0.,0.1,0.2,0.3,0.4,0.5])
     model1.get_energetics()
     model1.printData()
     model1.saveData('tables/energetics_63_00_00.dat')
@@ -412,3 +413,4 @@ if __name__ == "__main__":
     plt.show()
 
     ### Test 3: Plot dT / dP a la Williams ( )
+

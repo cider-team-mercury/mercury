@@ -14,6 +14,9 @@ import burnman.composite as composite
 from scipy.interpolate import RectBivariateSpline
 from scipy.interpolate import UnivariateSpline
 
+from core_partition import w_to_x,x_to_w
+
+from mercury_reference import Tm_anzellini
 
 class Solver:
     def __init__(self):
@@ -243,3 +246,31 @@ class Solver_no14(Solver):
             Pfit = [3.,10.,21.,23.,30.,40.]
             Tfit = [self.T_p3h(S),self.T_p10h(S),self.T_p21h(S),self.T_p23h(S),self.T_p30h(S),self.T_p40h(S)]
             return float(UnivariateSpline(Pfit,Tfit,k=1,s=0)(P))
+
+class Dumberry_liquidus(object):
+    def __init(self):
+        pass
+    def eutectic(self,p):
+        w = 0.11 + 0.187 * np.exp ( -0.065 * p / 1.e9 )
+        if p < 14.e9:
+            t = 1265. - 11.15 * ( p/1.e9 - 3.) 
+        elif p < 21.e9:
+            t = 1143. + 29. * ( p/1.e9 - 14.)
+        else:
+            t = 1346. + 13. * (p/1.e9 - 21.)
+        return t,w
+    def iron_melting_curve(self,p):
+        return Tm_anzellini(p)
+
+    def T_SP(self,w,p):
+        '''
+        Finds solidus temperature, given a sulfur wt% and pressure
+        args:
+                S: sulfur weight percent (0.0 to 1.0)
+                P: pressure (Pa)
+        '''
+
+        T0 = self.iron_melting_curve(p)
+        Teut,weut = self.eutectic(p)
+
+        return T0 - (T0 - Teut)/weut*w
