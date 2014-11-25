@@ -338,6 +338,16 @@ class model_suite(object):
 
         return UnivariateSpline(x,y)
     
+    def func_of_Tcmb(self,label):
+        '''
+        Fit a function as of a given quantity w. r. t. the inner core
+        boundary temperature.
+        '''
+        y = self.data[label][::-1] 
+        x = self.data.T_cmb[::-1] # Note x must be increasing for Univariatespline
+
+        return UnivariateSpline(x,y)
+
     def func_of_data(self,xlabel,ylabel):
         if self.data[xlabel][0] > self.data[xlabel][-1]:
             y = self.data[ylabel][::-1] 
@@ -349,10 +359,10 @@ class model_suite(object):
         return UnivariateSpline(x,y)
 
     def thermal_energy_change(self):
-        m_ic_func = self.func_of_Ticb('m_ic')
-        m_oc_func = self.func_of_Ticb('m_oc')
-        CpT_avg_ic_func = self.func_of_Ticb('CpT_avg_ic')
-        CpT_avg_oc_func = self.func_of_Ticb('CpT_avg_oc')
+        m_ic_func = self.func_of_Tcmb('m_ic')
+        m_oc_func = self.func_of_Tcmb('m_oc')
+        CpT_avg_ic_func = self.func_of_Tcmb('CpT_avg_ic')
+        CpT_avg_oc_func = self.func_of_Tcmb('CpT_avg_oc')
         Eth_ic = lambda t : derivative(CpT_avg_ic_func,t) * m_ic_func(t)
         Eth_oc = lambda t : derivative(CpT_avg_oc_func,t) * m_oc_func(t)
         return Eth_ic, Eth_oc
@@ -373,11 +383,11 @@ if __name__ == "__main__":
     model1.loadData('tables/energetics_63_00_00.dat')
     model1.printData()
 
-    r_func = model1.func_of_Ticb('r_icb')
-    Eg_r_func = model1.func_of_Ticb('Eg_r')
-    L_r_func = model1.func_of_Ticb('L_r')
-    Eg_m_func = model1.func_of_Ticb('Eg_m')
-    L_m_func = model1.func_of_Ticb('L_m')
+    r_func = model1.func_of_Tcmb('r_icb')
+    Eg_r_func = model1.func_of_Tcmb('Eg_r')
+    L_r_func = model1.func_of_Tcmb('L_r')
+    Eg_m_func = model1.func_of_Tcmb('Eg_m')
+    L_m_func = model1.func_of_Tcmb('L_m')
 
     dEth_ic, dEth_oc = model1.thermal_energy_change()
 
@@ -412,5 +422,5 @@ if __name__ == "__main__":
 
     plt.show()
 
-    ### Test 3: Plot dT / dP a la Williams ( )
+  ### Test 3: Plot dT / dP a la Williams ( )
 
