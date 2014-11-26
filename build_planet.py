@@ -757,6 +757,15 @@ class corePlanet(cm_Planet):
         dm_dr = rho * 4. * np.pi * r**2
         return self.gravitational_energy_over_r() / dm_dr
 
+    def light_element_release_over_r(self):
+        '''
+        Calculate the mass of light element released per change in core radius. (kg)
+        '''
+        rho = self.density[self.inner_core()][-1]
+        r = self.boundaries[0]
+        dm_dr = rho * 4. * np.pi * r**2
+        return np.sum(self.w_l[:-1]) * dm_dr
+
     def latent_heat_over_r(self):
         '''
         Compute latent heat released per growth of inner core radius

@@ -342,6 +342,26 @@ class  ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
 
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
+
+def williams_adiabat(t0):
+    t0 = 1500.
+    phase = liquid_iron()
+    phase.set_state(p[0],t0)
+    rho0 = phase.density()
+    K0 = phase.K_T
+    def williams_func(P,T):
+        alpha0 = 13.2e-5
+        Cp = 46.632 # J / mol / K
+        phase.set_shate(P,T)
+        rho = phase.density()
+        K = phase.K_T
+        return alpha0 * K0 / K * T / rho / Cp
+    #   return alpha0 * K0 / K * ( rho / rho0)**0.5*T/rho/Cp
+    ad = np.ravel(integrate.odeint(williams_func,t0,p))
+    return ad
+
+
+
 if __name__ == "__main__":
 
     import matplotlib.pyplot as plt

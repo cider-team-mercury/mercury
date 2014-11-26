@@ -258,13 +258,14 @@ class model_suite(object):
                     layer (J/K/kg)
             'CpT_avg_ic','CpT_avg_oc': Average Cp*T for each layer (J/K)
             'm_ic','m_oc': mass of inner and outer core (kg)
+            'c_r': Mass of light element released per change in core radius (kg/m)
         '''
 
         row_list = []
         at_eutectic = False
         self.labels = ['m_frac','r_frac','r_icb','r_cmb','r_surf','T_icb','T_cmb',\
                 'T_avg_ic','T_av_oc','Eg_r','L_r','Eg_m','L_m','Cp_ic','Cp_oc',\
-                'CpT_avg_ic','CpT_avg_oc','m_ic','m_oc']
+                'CpT_avg_ic','CpT_avg_oc','m_ic','m_oc','c_r']
         for mfrac in self.inner_Mfracs:
 
             print 'Core mass fraction:', mfrac
@@ -300,10 +301,11 @@ class model_suite(object):
                 L_r = self.planet.latent_heat_over_r()
                 L_m = self.planet.specific_latent_heat()
 
+                c_r = self.planet.light_element_release_over_r()
 
                 row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
                         T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
-                        CpT_avg[0],CpT_avg[1],m_ic,m_oc])
+                        CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r])
                 print row
                     
                 row_list.append(row)
@@ -313,8 +315,8 @@ class model_suite(object):
         print row_list
         self.data = pd.DataFrame(row_list)
         self.data.columns = self.labels
-        self.T_max = self.data.T_icb.max()
-        self.T_min = self.data.T_icb.min()
+#         self.T_max = self.data.T_icb.max()
+#         self.T_min = self.data.T_icb.min()
         
     def saveData(self,file_name):
         '''
@@ -325,7 +327,7 @@ class model_suite(object):
         '''
         Load tabulated data for a set of runs from a file
         '''
-        pd.load(file_name)
+        self.data = pd.load(file_name)
     def printData(self):
         print self.data
     def func_of_Ticb(self,label):
@@ -351,7 +353,7 @@ class model_suite(object):
     def func_of_data(self,xlabel,ylabel):
         if self.data[xlabel][0] > self.data[xlabel][-1]:
             y = self.data[ylabel][::-1] 
-            x = self.data[xlabel::-1] # Note x must be increasing for Univariatespline
+            x = self.data[xlabel][::-1] # Note x must be increasing for Univariatespline
         else:
             y = self.data[ylabel]
             x = self.data[xlabel]
@@ -361,54 +363,80 @@ class model_suite(object):
     def thermal_energy_change(self):
         m_ic_func = self.func_of_Tcmb('m_ic')
         m_oc_func = self.func_of_Tcmb('m_oc')
-        CpT_avg_ic_func = self.func_of_Tcmb('CpT_avg_ic')
+        CpT_avg_ic_func = self.func_of_Tcmb('CpT_avg_ic') # J / kg
         CpT_avg_oc_func = self.func_of_Tcmb('CpT_avg_oc')
-        Eth_ic = lambda t : derivative(CpT_avg_ic_func,t) * m_ic_func(t)
-        Eth_oc = lambda t : derivative(CpT_avg_oc_func,t) * m_oc_func(t)
+        Eth_ic = lambda t : CpT_avg_ic_func.derivative()(t) * m_ic_func(t) # J / K
+        Eth_oc = lambda t : CpT_avg_oc_func.derivative()(t) * m_oc_func(t)
         return Eth_ic, Eth_oc
+
 
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercuryModel(0.63,.00,.00)
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
-    merc.generate_profiles(0.5)
-    merc.show_profiles()
+#     merc.generate_profiles(0.5)
+#     merc.show_profiles()
 
     ### Test 2: Tabulate and plot energetics for a mercuryModel
-    model1 = model_suite(merc,[0.,0.1,0.2,0.3,0.4,0.5])
-    model1.get_energetics()
-    model1.printData()
-    model1.saveData('tables/energetics_63_00_00.dat')
-    model1.loadData('tables/energetics_63_00_00.dat')
+    model1 = model_suite(merc,np.linspace(0.,0.5,11))
+#     model1.get_energetics()
+#     model1.printData()
+#     model1.saveData('tables/energetics_63_00_00.dat')
+    model1.loadData('tables/energetics_63_00_00_11step.dat')
     model1.printData()
 
-    r_func = model1.func_of_Tcmb('r_icb')
-    Eg_r_func = model1.func_of_Tcmb('Eg_r')
-    L_r_func = model1.func_of_Tcmb('L_r')
+    r_func = model1.func_of_Tcmb('r_icb') # m
+    dr_icb_dT_cmb = r_func.derivative() # m / K
+    Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
+    L_r_func = model1.func_of_Tcmb('L_r') # J / m
     Eg_m_func = model1.func_of_Tcmb('Eg_m')
     L_m_func = model1.func_of_Tcmb('L_m')
 
     dEth_ic, dEth_oc = model1.thermal_energy_change()
 
-    t = np.linspace(model1.T_min,model1.T_max,50)
+    t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
+    t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
+
 
     f1 = plt.figure()
     ax1= plt.subplot(111)
-    ax1.plot(t,r_func(t))
+#     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
+#     ax1.plot(t_cmb,r_func(t_cmb))
+    ax1.plot(t_cmb,r_func(t_cmb))
+    ax1.set_xlabel('T_cmb (K)')
+    ax1.set_ylabel('dR_icb (m)')
+
 
     # check units on these
     f2 = plt.figure()
     ax2 = plt.subplot(111)
-    ax2.plot(t,Eg_r_func(t))
-    ax2.plot(t,L_r_func(t))
-    ax2.plot(t,dEth_ic(t))
-    ax2.plot(t,dEth_oc(t))
+    ax2.plot(t_cmb,Eg_r_func(t_cmb))
+    ax2.plot(t_cmb,L_r_func(t_cmb))
+#     ax2.plot(t_cmb,dEth_ic(t_cmb))
+#     ax2.plot(t_cmb,dEth_oc(t_cmb))
+    ax2.set_xlabel('T_cmb (K)')
+    ax2.set_ylabel('dE/dR_icb (J/m)')
 
     f3 = plt.figure()
     ax3 = plt.subplot(111)
-    ax3.plot(t,Eg_m_func(t))
-    ax3.plot(t,L_m_func(t))
+    ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+    ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+    ax3.plot(t_cmb,dEth_ic(t_cmb))
+    ax3.plot(t_cmb,dEth_oc(t_cmb))
+    ax3.set_xlabel('T_cmb (K)')
+    ax3.set_ylabel('dE/dT_cmb (J/K)')
+
+    f4 = plt.figure()
+    ax4 = plt.subplot(111)
+    ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
+    ax4.set_xlabel('T_cmb (K)')
+    ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
+
+#     f3 = plt.figure()
+#     ax3 = plt.subplot(111)
+#     ax3.plot(t_cmb,Eg_m_func(t_cmb))
+#     ax3.plot(t_cmb,L_m_func(t_cmb))
 
 #     f4 = plt.figure()
 #     ax4 = plt.subplot(111)
