@@ -270,47 +270,40 @@ class model_suite(object):
 
             print 'Core mass fraction:', mfrac
 
-            if at_eutectic: # stop if eutectic has been reached
-                print 'Eutectic encountered'
-                break
+            self.planet.set_innerCore(mfrac) 
 
-            try:
-                self.planet.set_innerCore(mfrac) 
-
-                self.planet.integrate(verbose=False,**kwargs)
+            self.planet.integrate(verbose=False,**kwargs)
 
 
-                T_icb = self.planet.boundary_temperatures[0]
-                T_cmb = self.planet.boundary_temperatures[1]
+            T_icb = self.planet.boundary_temperatures[0]
+            T_cmb = self.planet.boundary_temperatures[1]
 
-                m_ic = self.planet.masses[0]
-                m_oc = self.planet.masses[1]
+            m_ic = self.planet.masses[0]
+            m_oc = self.planet.masses[1]
 
-                r_icb = self.planet.boundaries[0]
-                r_cmb = self.planet.boundaries[1]
-                r_surf = self.planet.boundaries[-1]
-                rfrac = r_icb / r_cmb
+            r_icb = self.planet.boundaries[0]
+            r_cmb = self.planet.boundaries[1]
+            r_surf = self.planet.boundaries[-1]
+            rfrac = r_icb / r_cmb
 
-                Cp_avg = self.planet.average_heat_capacity()
-                T_avg = self.planet.average_temperature()
-                CpT_avg = self.planet.specific_thermal_energy()
+            Cp_avg = self.planet.average_heat_capacity()
+            T_avg = self.planet.average_temperature()
+            CpT_avg = self.planet.specific_thermal_energy()
 
-                Eg_m = self.planet.specific_gravitational_energy()
-                Eg_r = self.planet.gravitational_energy_over_r()
+            Eg_m = self.planet.specific_gravitational_energy()
+            Eg_r = self.planet.gravitational_energy_over_r()
 
-                L_r = self.planet.latent_heat_over_r()
-                L_m = self.planet.specific_latent_heat()
+            L_r = self.planet.latent_heat_over_r()
+            L_m = self.planet.specific_latent_heat()
 
-                c_r = self.planet.light_element_release_over_r()
+            c_r = self.planet.light_element_release_over_r()
 
-                row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
-                        T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
-                        CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r])
-                print row
+            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
+                    T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
+                    CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r])
+            print row
                     
-                row_list.append(row)
-            except:
-                print 'Problem encountered, skipping step without adding data'
+            row_list.append(row)
 
         print row_list
         self.data = pd.DataFrame(row_list)
@@ -330,7 +323,7 @@ class model_suite(object):
         self.data = pd.load(file_name)
     def printData(self):
         print self.data
-    def func_of_Ticb(self,label):
+    def func_of_Ticb(self,label, **kwargs):
         '''
         Fit a function as of a given quantity w. r. t. the inner core
         boundary temperature.
@@ -338,9 +331,9 @@ class model_suite(object):
         y = self.data[label][::-1] 
         x = self.data.T_icb[::-1] # Note x must be increasing for Univariatespline
 
-        return UnivariateSpline(x,y)
+        return UnivariateSpline(x,y, **kwargs)
     
-    def func_of_Tcmb(self,label):
+    def func_of_Tcmb(self,label, **kwargs):
         '''
         Fit a function as of a given quantity w. r. t. the inner core
         boundary temperature.
@@ -348,7 +341,7 @@ class model_suite(object):
         y = self.data[label][::-1] 
         x = self.data.T_cmb[::-1] # Note x must be increasing for Univariatespline
 
-        return UnivariateSpline(x,y)
+        return UnivariateSpline(x,y, **kwargs)
 
     def func_of_data(self,xlabel,ylabel):
         if self.data[xlabel][0] > self.data[xlabel][-1]:
@@ -380,13 +373,13 @@ if __name__ == "__main__":
 
     ### Test 2: Tabulate and plot energetics for a mercuryModel
     model1 = model_suite(merc,np.linspace(0.,0.5,11))
-#     model1.get_energetics()
-#     model1.printData()
-#     model1.saveData('tables/energetics_63_00_00.dat')
+#    model1.get_energetics()
+#    model1.printData()
+#    model1.saveData('tables/energetics_63_00_00.dat')
     model1.loadData('tables/energetics_63_00_00_11step.dat')
-    model1.printData()
+#    model1.printData()
 
-    r_func = model1.func_of_Tcmb('r_icb') # m
+    r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
     dr_icb_dT_cmb = r_func.derivative() # m / K
     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
     L_r_func = model1.func_of_Tcmb('L_r') # J / m
