@@ -3,7 +3,7 @@
 # Grott et al 2011.
 #
 # - Currently implements temperature dependent viscosity mantle convection in the 
-# Stagnat Lid regeime, in addition to accounting for crustal growth, and partial melting.
+# Stagnant Lid regime, in addition to accounting for crustal growth, and partial melting.
 #
 # - Citations:
 #
@@ -30,7 +30,8 @@ import numpy as np
 # from scipy.misc import derivative
 from planetary_energetics import Layer
 from mercury_parameters import mantle_params
-
+import mercury_mantle_melt_model as melt_model
+import matplotlib.pyplot as plt
 
 class MantleLayer(Layer):
     """
@@ -230,5 +231,51 @@ class MantleLayer(Layer):
                                                                                        gravity_cmb)
         return self.params['thermal_conductivity'] * (T_cmb - temperature_base_mantle) / lower_boundary_layer_thickness
 
+    def stagnant_lid_thermal_profile(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        Q = mantle_heat_production
+        k = self.params['thermal_conductivity']
+        temp_surface = self.params['surface_temperature']
+        radius_surface = self.outer_radius
+        temp_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+        print temp_base_stagnant_lid
+        radius_stagnant_lid = radius_surface - stagnant_lid_thickness
+        coef1 = ( temp_surface - temp_base_stagnant_lid + Q/(6.*k)*( np.power(radius_surface, 2.) -
+                                                                     np.power(radius_stagnant_lid, 2.))
+                )/(1./radius_surface - 1./radius_stagnant_lid)
+        coef2 = temp_surface - coef1/radius_surface + Q*np.power(radius_surface , 2)/(6.*k)
 
-mercury_mantle = MantleLayer(1500, 2800)
+        temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
+        return temperature_profile_as_function_of_radius
+
+radius_planet = 2440e3
+stagnant_lid_thickness = 200e3
+radius_stagnant_lid = radius_planet - stagnant_lid_thickness
+
+radius_cmb = 2020e3
+temp_cmb = 1800
+crustal_thickness = 12e3
+mantle_heat_production = 0
+mercury_mantle = MantleLayer(radius_cmb, radius_planet)
+temp_func = mercury_mantle.stagnant_lid_thermal_profile(temp_cmb, stagnant_lid_thickness, mantle_heat_production)
+density = mercury_mantle.params['density']
+gravity = mercury_mantle.params['surface_gravity']
+r_solution = np.linspace(radius_stagnant_lid, radius_planet, 1000)
+t = np.empty_like(r_solution)
+t_peridotite_solidus = np.empty_like(r_solution)
+t_solidus = np.empty_like(r_solution)
+t_liquidus = np.empty_like(r_solution)
+
+for i, r in enumerate(r_solution):
+    pressure = (radius_planet-r)*density*gravity
+    t[i] = temp_func(r)
+    t_solidus[i] = melt_model.mantle_solidus(pressure, crustal_thickness, radius_cmb, radius_planet)
+    t_liquidus[i] = melt_model.peridotite_liquidus(pressure)
+    t_peridotite_solidus[i] = melt_model.peridotite_solidus(pressure)
+
+
+plt.plot(r_solution,t, label='Temperature Profile')
+plt.plot(r_solution,t_solidus,label="Depleted Mantle Solidus")
+plt.plot(r_solution,t_peridotite_solidus, label="Peridotite Solidus")
+plt.plot(r_solution,t_liquidus, label="Peridotite Liquiduis")
+plt.legend()
+plt.show()
