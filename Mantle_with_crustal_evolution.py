@@ -203,7 +203,7 @@ class MantleLayer(Layer):
 
     def calculate_upper_heat_flux(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
         """
-        Heat flow out of the mantle, equation (10) in Morschhhauser et al 2011.
+        Heat flow from the convecting mantle into the stagnant lid, equation (10) in Morschhhauser et al 2011.
 
         The temperature at the base of the Stagnant lid is found using the formulation
         of Grasset and Parmentier et al 1998, adapted to spherical geometry, equation (8)
@@ -263,7 +263,7 @@ class MantleLayer(Layer):
         temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
         return temperature_profile_as_function_of_radius
 
-    def calculate_thermal_gradient_base_stagnat_lid(self, stagnant_lid_thickness, mantle_heat_production):
+    def calculate_thermal_gradient_base_stagnat_lid(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
         """
         Calculate the thermal gradient at the base of the stagnant lid by solving the radial heat conduction
         equation in the stagnant lid, equation (5), and evaluating its derivative at the base of the stagnant.
@@ -271,7 +271,7 @@ class MantleLayer(Layer):
         :param mantle_heat_production:
         :return:
         """
-        temp_profile =self.get_stagnant_lid_thermal_profile(stagnant_lid_thickness,mantle_heat_production)
+        temp_profile =self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
         radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
         return derivative(temp_profile , radius_stagnant_lid, dx=1e-1 )
 
@@ -326,6 +326,8 @@ class MantleLayer(Layer):
         for radius, value in zip(meltzone_radii, meltzone_values):
             if(T_liq(radius)-T(radius)< 0):
                 print "Mantle Temperature Exceeds Liquidus" # This should probably not ever happen...
+            if(self.convert_radius_to_hydrostatic_pressure(r)>6e9):
+                print "Pressure Exceeds 6 GPa"
             dV = 4.0*np.pi*np.power(radius,2.)*dr
             integral_value = integral_value + value*dV#np.min([value*dV, 1.]) #I'm pretty sure the max should be 1...
             melt_volume = melt_volume + dV
@@ -363,7 +365,8 @@ class MantleLayer(Layer):
         St = (L/cm)*(meltzone_volume/Vl)*dma_dTm
         return St
 
-    def get_rate_of_crustal_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production):
+    def get_rate_of_crustal_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
+                                   mantle_heat_production):
         """
         Calculate the rate of crustal growth, equation (21) Morschhauser et al (2011).
 
@@ -382,10 +385,40 @@ class MantleLayer(Layer):
         Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
         Ra_crit = self.params['critical_rayleigh_number']
         beta = 1. / 3.
-        degree_melting, melt_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        degree_melting, melt_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness,
+                                                                               mantle_heat_production)
         mantle_convection_velocity = u0*np.power(Ra/Ra_crit, 2*beta)
         dDcrust_dt = mantle_convection_velocity*degree_melting*melt_volume/(4.*np.pi*np.power(self.outer_radius,3.))
         return dDcrust_dt
+
+    def get_rate_of_stagnant_lid_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
+                                        mantle_heat_production):
+        """
+        The growth of the stagnant lid is determined by the energy balance at the base of the stagnant lid,
+        equation (4) Morschhauser et al (2011).
+        :param T_upper_mantle:
+        :param T_cmb:
+        :param stagnant_lid_thickness:
+        :param gravity_cmb:
+        :param mantle_heat_production:
+        :return:
+        """
+        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+        delta_T = T_upper_mantle - temperature_base_stagnant_lid
+        lhs_coef = self.params['density']*self.params['heat_capacity']*delta_T
+
+        flux_thermal_gradient = -self.params['heat_capacity']*self.calculate_thermal_gradient_base_stagnat_lid(
+            T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        crustal_growth_rate = self. get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness,
+                                                               gravity_cmb, mantle_heat_production)
+        volcanic_heat_piping = self.params['crustal_density']*crustal_growth_rate*\
+                               (self.params['latent_heat_melting_crust'] + self.params['crustal_heat_capacity']*delta_T)
+        upper_heat_flux = -self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+
+        dDlid_dt = (upper_heat_flux + volcanic_heat_piping + flux_thermal_gradient)/lhs_coef
+        return dDlid_dt
+
+
 
 
 
