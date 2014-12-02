@@ -80,6 +80,4 @@ def mantle_solidus(pressure_in_pascals, crustal_thickness, inner_mantle_radius, 
                                   /np.power(outer_mantle_radius, 2.)
     return peridotite_solidus_temperature + (crustal_thickness/reference_crustal_thickness) * delta_solidus_temperature
 
-#def volumetric_degree_melting():
-
 

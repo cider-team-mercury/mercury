@@ -27,7 +27,7 @@ import numpy as np
 # import matplotlib.pyplot as plt
 # import scipy.integrate as integrate
 # import scipy.optimize as opt
-# from scipy.misc import derivative
+from scipy.misc import derivative
 from planetary_energetics import Layer
 from mercury_parameters import mantle_params
 import mercury_mantle_melt_model as melt_model
@@ -178,7 +178,7 @@ class MantleLayer(Layer):
         """
         beta = 1. / 3.
         Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
-        return (self.thickness - stagnant_lid_thickness) * np.power(self.params['Ra_crit'] / Ra, beta)
+        return (self.thickness - stagnant_lid_thickness) * np.power(self.params['critical_rayleigh_number'] / Ra, beta)
 
     def calculate_lower_boundary_layer_thickness(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
         """
@@ -231,13 +231,29 @@ class MantleLayer(Layer):
                                                                                        gravity_cmb)
         return self.params['thermal_conductivity'] * (T_cmb - temperature_base_mantle) / lower_boundary_layer_thickness
 
-    def stagnant_lid_thermal_profile(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+    def convert_radius_to_hydrostatic_pressure(self, radius):
+        """
+        Convert radius to hydrostatic pressure using P = rho*g*z
+        :param radius:
+        :return:
+        """
+        return (self.outer_radius-radius)*self.params['density']*self.params['surface_gravity']
+
+    def get_stagnant_lid_thermal_profile(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Get the radial conductive temperature profile of the stagnant lid, equation (5) Morschhauser et al (2011).
+
+        Will replace with the two layer eventually...
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
         Q = mantle_heat_production
         k = self.params['thermal_conductivity']
         temp_surface = self.params['surface_temperature']
         radius_surface = self.outer_radius
         temp_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
-        print temp_base_stagnant_lid
         radius_stagnant_lid = radius_surface - stagnant_lid_thickness
         coef1 = ( temp_surface - temp_base_stagnant_lid + Q/(6.*k)*( np.power(radius_surface, 2.) -
                                                                      np.power(radius_stagnant_lid, 2.))
@@ -247,16 +263,113 @@ class MantleLayer(Layer):
         temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
         return temperature_profile_as_function_of_radius
 
+    def calculate_thermal_gradient_base_stagnat_lid(self, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Calculate the thermal gradient at the base of the stagnant lid by solving the radial heat conduction
+        equation in the stagnant lid, equation (5), and evaluating its derivative at the base of the stagnant.
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        temp_profile =self.get_stagnant_lid_thermal_profile(stagnant_lid_thickness,mantle_heat_production)
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        return derivative(temp_profile , radius_stagnant_lid, dx=1e-1 )
+
+    def get_mantle_solidus(self, crustal_thickness):
+        """
+        Calculate the solidus temperature of peridotite as a cubic function of radius,
+        equation (16) in Morschhauser et al (2011). Also accounts for the increase in
+        mantle solidus due to the depletion of crustal components, equations (18, 19).
+
+        We assume the pressure in the stagnant lid is hydrostatic.
+
+        :param pressure:
+        :param crustal_thickness:
+        :return:
+        """
+
+        solidus_as_function_of_radius = lambda r: \
+            melt_model.mantle_solidus(self.convert_radius_to_hydrostatic_pressure(r), crustal_thickness,
+                                      self.inner_radius, self.outer_radius)
+        return solidus_as_function_of_radius
+
+    def get_mantle_liquidus(self):
+        """
+        Calculate the solidus temperature of peridotite as a cubic function of radius,
+        equation (17) in Morschhauser et al (2011).
+
+        We assume the pressure in the stagnant is lid is hydrostatic.
+        :return:
+        """
+        liquidus_as_function_of_radius = lambda r: \
+            melt_model.peridotite_liquidus(self.convert_radius_to_hydrostatic_pressure(r))
+        return liquidus_as_function_of_radius
+
+    def calculate_volumetric_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        The Volumeterically averaged degree of melting, equation (20) Morschhauser et al (2011).
+        """
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        radius_planet_surface = self.outer_radius
+        T = self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        T_sol = self.get_mantle_solidus(crustal_thickness)
+        T_liq = self.get_mantle_liquidus()
+        r_solution = np.linspace(radius_stagnant_lid, radius_planet_surface, 1e5)
+        dr = r_solution[1] - r_solution[0]
+        integrand_values = (T(r_solution) - T_sol(r_solution))/(T_liq(r_solution) - T_sol(r_solution))
+        in_meltzone = integrand_values>=0
+        meltzone_values = integrand_values[in_meltzone]
+        meltzone_radii  = r_solution[in_meltzone]
+        integral_value = 0.0
+        melt_volume = 0.0
+        # This is a really bad way to do this.
+        for radius, value in zip(meltzone_radii, meltzone_values):
+            if(T_liq(radius)-T(radius)< 0):
+                print "Mantle Temperature Exceeds Liquidus" # This should probably not ever happen...
+            dV = 4.0*np.pi*np.power(radius,2.)*dr
+            integral_value = integral_value + value*dV#np.min([value*dV, 1.]) #I'm pretty sure the max should be 1...
+            melt_volume = melt_volume + dV
+        melt_degree = integral_value/melt_volume
+        rmax = np.max(meltzone_radii)
+        rmin = np.min(meltzone_radii)
+        return melt_degree, melt_volume
+
+    def get_rate_of_crustal_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production):
+        """
+
+        :param T_upper_mantle:
+        :param T_cmb:
+        :param stagnant_lid_thickness:
+        :param gravity_cmb:
+        :param mantle_heat_production:
+        :return:
+        """
+        u0 = self.params['mantle_convection_speed_scale']
+        Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+        Ra_crit = self.params['critical_rayleigh_number']
+        beta = 1. / 3.
+        degree_melting, melt_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        mantle_convection_velocity = u0*np.power(Ra/Ra_crit, 2*beta)
+        dDcrust_dt = mantle_convection_velocity*degree_melting*melt_volume/(4.*np.pi*np.power(self.outer_radius,3.))
+        return dDcrust_dt
+
+
+
+
+
+
 radius_planet = 2440e3
 stagnant_lid_thickness = 200e3
 radius_stagnant_lid = radius_planet - stagnant_lid_thickness
 
 radius_cmb = 2020e3
-temp_cmb = 1800
+T_upper_mantle = 2000
 crustal_thickness = 12e3
-mantle_heat_production = 0
+mantle_heat_production = 0.000001
 mercury_mantle = MantleLayer(radius_cmb, radius_planet)
-temp_func = mercury_mantle.stagnant_lid_thermal_profile(temp_cmb, stagnant_lid_thickness, mantle_heat_production)
+temp_func = mercury_mantle.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+liquidus_func = mercury_mantle.get_mantle_liquidus()
+solidus_func  = mercury_mantle.get_mantle_solidus(crustal_thickness)
 density = mercury_mantle.params['density']
 gravity = mercury_mantle.params['surface_gravity']
 r_solution = np.linspace(radius_stagnant_lid, radius_planet, 1000)
@@ -264,18 +377,25 @@ t = np.empty_like(r_solution)
 t_peridotite_solidus = np.empty_like(r_solution)
 t_solidus = np.empty_like(r_solution)
 t_liquidus = np.empty_like(r_solution)
+int = np.empty_like(r_solution)
 
 for i, r in enumerate(r_solution):
     pressure = (radius_planet-r)*density*gravity
     t[i] = temp_func(r)
-    t_solidus[i] = melt_model.mantle_solidus(pressure, crustal_thickness, radius_cmb, radius_planet)
-    t_liquidus[i] = melt_model.peridotite_liquidus(pressure)
+    t_solidus[i] = solidus_func(r)
+    t_liquidus[i] = liquidus_func(r)
     t_peridotite_solidus[i] = melt_model.peridotite_solidus(pressure)
+    int[i] = (t[i]-t_solidus[i])/(t_liquidus[i]-t_solidus[i])
 
-
+plt.figure()
 plt.plot(r_solution,t, label='Temperature Profile')
 plt.plot(r_solution,t_solidus,label="Depleted Mantle Solidus")
 plt.plot(r_solution,t_peridotite_solidus, label="Peridotite Solidus")
 plt.plot(r_solution,t_liquidus, label="Peridotite Liquiduis")
 plt.legend()
-plt.show()
+
+plt.figure()
+plt.plot(r_solution, int)
+#plt.show()
+
+degree, dv = mercury_mantle.volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
