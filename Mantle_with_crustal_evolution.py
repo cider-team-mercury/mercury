@@ -25,7 +25,7 @@
 
 import numpy as np
 # import matplotlib.pyplot as plt
-# import scipy.integrate as integrate
+import scipy.integrate as integrate
 # import scipy.optimize as opt
 from scipy.misc import derivative
 from planetary_energetics import Layer
@@ -305,7 +305,7 @@ class MantleLayer(Layer):
             melt_model.peridotite_liquidus(self.convert_radius_to_hydrostatic_pressure(r))
         return liquidus_as_function_of_radius
 
-    def calculate_volumetric_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+    def calculate_volumetric_degree_melting_mark_two(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
         """
         The Volumeterically averaged degree of melting, equation (20) Morschhauser et al (2011).
         """
@@ -314,26 +314,25 @@ class MantleLayer(Layer):
         T = self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
         T_sol = self.get_mantle_solidus(crustal_thickness)
         T_liq = self.get_mantle_liquidus()
-        r_solution = np.linspace(radius_stagnant_lid, radius_planet_surface, 1.e5)
-        dr = r_solution[1] - r_solution[0]
-        integrand_values = (T(r_solution) - T_sol(r_solution))/(T_liq(r_solution) - T_sol(r_solution))
-        in_meltzone = integrand_values>=0
-        meltzone_values = integrand_values[in_meltzone]
-        meltzone_radii  = r_solution[in_meltzone]
-        integral_value = 0.0
-        melt_volume = 0.0
-        # This is a really bad way to do this.
-        for radius, value in zip(meltzone_radii, meltzone_values):
-            if(T_liq(radius)-T(radius)< 0):
-                print "Mantle Temperature Exceeds Liquidus" # This should probably not ever happen...
-            if(self.convert_radius_to_hydrostatic_pressure(r)>6.e9):
-                print "Pressure Exceeds 6 GPa"
-            dV = 4.0*np.pi*np.power(radius,2.)*dr
-            integral_value = integral_value + value*dV#np.min([value*dV, 1.]) #I'm pretty sure the max should be 1...
-            melt_volume = melt_volume + dV
-        melt_degree = integral_value/melt_volume
-        rmax = np.max(meltzone_radii)
-        rmin = np.min(meltzone_radii)
+
+        do_we_have_melt = lambda r : ( 1.0 if T(r) > T_sol(r) else 0.0 )
+        are_we_less_than_six_GPa = lambda r : (1.0 if self.convert_radius_to_hydrostatic_pressure(r) < 6.e9 else 0.0 ) 
+ 
+        def melt_fraction_integrand(r):
+            melt_fraction = (T(r) - T_sol(r))/( T_liq(r) - T_sol(r) )
+            if ( T(r) > T_liq(r) ):
+                melt_fraction = 1.0
+            melt_fraction = melt_fraction*do_we_have_melt(r)*are_we_less_than_six_GPa(r)
+            return melt_fraction
+
+        def melt_volume_integrand(r):
+            return 1.0 * do_we_have_melt(r)*are_we_less_than_six_GPa(r)
+
+         
+        fraction,_ = integrate.quad( lambda r : 4.0*np.pi*melt_fraction_integrand(r)*r*r, radius_stagnant_lid, radius_planet_surface)
+        melt_volume,_ = integrate.quad( lambda r : 4.0*np.pi*melt_volume_integrand(r)*r*r, radius_stagnant_lid, radius_planet_surface)
+
+        melt_degree = fraction/melt_volume
         return melt_degree, melt_volume
 
     def get_derivative_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
