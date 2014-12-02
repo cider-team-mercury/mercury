@@ -258,7 +258,7 @@ class MantleLayer(Layer):
         coef1 = ( temp_surface - temp_base_stagnant_lid + Q/(6.*k)*( np.power(radius_surface, 2.) -
                                                                      np.power(radius_stagnant_lid, 2.))
                 )/(1./radius_surface - 1./radius_stagnant_lid)
-        coef2 = temp_surface - coef1/radius_surface + Q*np.power(radius_surface , 2)/(6.*k)
+        coef2 = temp_surface - coef1/radius_surface + Q*np.power(radius_surface , 2.)/(6.*k)
 
         temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
         return temperature_profile_as_function_of_radius
@@ -314,7 +314,7 @@ class MantleLayer(Layer):
         T = self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
         T_sol = self.get_mantle_solidus(crustal_thickness)
         T_liq = self.get_mantle_liquidus()
-        r_solution = np.linspace(radius_stagnant_lid, radius_planet_surface, 1e5)
+        r_solution = np.linspace(radius_stagnant_lid, radius_planet_surface, 1.e5)
         dr = r_solution[1] - r_solution[0]
         integrand_values = (T(r_solution) - T_sol(r_solution))/(T_liq(r_solution) - T_sol(r_solution))
         in_meltzone = integrand_values>=0
@@ -326,7 +326,7 @@ class MantleLayer(Layer):
         for radius, value in zip(meltzone_radii, meltzone_values):
             if(T_liq(radius)-T(radius)< 0):
                 print "Mantle Temperature Exceeds Liquidus" # This should probably not ever happen...
-            if(self.convert_radius_to_hydrostatic_pressure(r)>6e9):
+            if(self.convert_radius_to_hydrostatic_pressure(r)>6.e9):
                 print "Pressure Exceeds 6 GPa"
             dV = 4.0*np.pi*np.power(radius,2.)*dr
             integral_value = integral_value + value*dV#np.min([value*dV, 1.]) #I'm pretty sure the max should be 1...
@@ -345,7 +345,7 @@ class MantleLayer(Layer):
         """
         degree_melting_funcion_of_T = lambda T: self.calculate_volumetric_degree_melting(T, stagnant_lid_thickness,
                                                                                          mantle_heat_production)[0]
-        return derivative(degree_melting_funcion_of_T, T_upper_mantle, dx=1e-1)
+        return derivative(degree_melting_funcion_of_T, T_upper_mantle, dx=1.e-1)
 
     def calculate_stefan_number(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
         """
@@ -465,6 +465,6 @@ plt.legend()
 
 plt.figure()
 plt.plot(r_solution, int)
-#plt.show()
+plt.show()
 
-degree, dv = mercury_mantle.volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+degree, dv = mercury_mantle.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)

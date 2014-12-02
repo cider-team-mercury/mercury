@@ -80,8 +80,8 @@ mantle_params = {
     'thermal_diffusivity' : mantle_diffusivity,
     'factor_pressure_dependent_viscosity' : 1.0, # Not sure what to put here for now.
     'thermal_conductivity' : k_mantle,
-    'mantle_convection_speed_scale', convection_speed_scale,
-    'critical_rayleigh_number', Ra_crit
-    'latent_heat_melting_crust', latent_heat_melting_crust
+    'mantle_convection_speed_scale': convection_speed_scale,
+    'critical_rayleigh_number': Ra_crit,
+    'latent_heat_melting_crust': latent_heat_melting_crust
     }
 
