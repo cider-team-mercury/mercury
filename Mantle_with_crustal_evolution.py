@@ -334,9 +334,43 @@ class MantleLayer(Layer):
         rmin = np.min(meltzone_radii)
         return melt_degree, melt_volume
 
+    def get_derivative_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        degree_melting_funcion_of_T = lambda T: self.calculate_volumetric_degree_melting(T, stagnant_lid_thickness,
+                                                                                         mantle_heat_production)[0]
+        return derivative(degree_melting_funcion_of_T, T_upper_mantle, dx=1e-1)
+
+    def calculate_stefan_number(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Calculate the Stefan Number from the average degree of melting, equation (2) Morschhauser et al (2011).
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        L = self.params['latent_heat_melting_crust']
+        cm = self.params['heat_capactiy']
+        Rl = self.outer_radius-stagnant_lid_thickness
+        Vl = 4./3.*np.pi*(np.power(Rl,3.)-np.power(self.inner_radius,3.))
+        meltzone_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness,
+                                                                   mantle_heat_production)[1]
+        dma_dTm = self.get_derivative_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        St = (L/cm)*(meltzone_volume/Vl)*dma_dTm
+        return St
+
     def get_rate_of_crustal_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production):
         """
+        Calculate the rate of crustal growth, equation (21) Morschhauser et al (2011).
 
+        We assume that the crust will be distributed uniformally on the planetary surface and that the timescale for
+        melt extraction is limited by the rate at which undepleted mantle can be supplied to the meltzone, which
+        occurs at the rate of mantle convection velocity scale.
+        velocity
         :param T_upper_mantle:
         :param T_cmb:
         :param stagnant_lid_thickness:
@@ -352,6 +386,8 @@ class MantleLayer(Layer):
         mantle_convection_velocity = u0*np.power(Ra/Ra_crit, 2*beta)
         dDcrust_dt = mantle_convection_velocity*degree_melting*melt_volume/(4.*np.pi*np.power(self.outer_radius,3.))
         return dDcrust_dt
+
+
 
 
 
