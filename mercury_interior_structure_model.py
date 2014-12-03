@@ -306,7 +306,10 @@ class model_suite(object):
                 row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
                         T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
                         CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r])
-                print row
+
+                
+                at_eutectic = not self.planet.liquidus_model.is_Fe_rich(self.planet.w_l[0],\
+                       self.planet.pressure[self.planet.icb()])
                     
                 row_list.append(row)
             except:
@@ -330,7 +333,7 @@ class model_suite(object):
         self.data = pd.load(file_name)
     def printData(self):
         print self.data
-    def func_of_Ticb(self,label):
+    def func_of_Ticb(self,label,**kwargs):
         '''
         Fit a function as of a given quantity w. r. t. the inner core
         boundary temperature.
@@ -338,9 +341,9 @@ class model_suite(object):
         y = self.data[label][::-1] 
         x = self.data.T_icb[::-1] # Note x must be increasing for Univariatespline
 
-        return UnivariateSpline(x,y)
+        return UnivariateSpline(x,y,**kwargs)
     
-    def func_of_Tcmb(self,label):
+    def func_of_Tcmb(self,label,**kwargs):
         '''
         Fit a function as of a given quantity w. r. t. the inner core
         boundary temperature.
@@ -348,7 +351,7 @@ class model_suite(object):
         y = self.data[label][::-1] 
         x = self.data.T_cmb[::-1] # Note x must be increasing for Univariatespline
 
-        return UnivariateSpline(x,y)
+        return UnivariateSpline(x,y,**kwargs)
 
     def func_of_data(self,xlabel,ylabel):
         if self.data[xlabel][0] > self.data[xlabel][-1]:
@@ -379,14 +382,14 @@ if __name__ == "__main__":
 #     merc.show_profiles()
 
     ### Test 2: Tabulate and plot energetics for a mercuryModel
-    model1 = model_suite(merc,np.linspace(0.,0.5,11))
-#     model1.get_energetics()
-#     model1.printData()
-#     model1.saveData('tables/energetics_63_00_00.dat')
-    model1.loadData('tables/energetics_63_00_00_11step.dat')
+    model1 = model_suite(merc,np.linspace(0.6,0.8,5))
+    model1.get_energetics()
     model1.printData()
+    model1.saveData('tables/energetics_63_00_00.dat')
+#     model1.loadData('tables/energetics_63_00_00_11step.dat')
+#     model1.printData()
 
-    r_func = model1.func_of_Tcmb('r_icb') # m
+    r_func = model1.func_of_Tcmb('r_icb',s=1.e30) # m
     dr_icb_dT_cmb = r_func.derivative() # m / K
     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
     L_r_func = model1.func_of_Tcmb('L_r') # J / m
@@ -450,5 +453,5 @@ if __name__ == "__main__":
 
     plt.show()
 
-  ### Test 3: Plot dT / dP a la Williams ( )
+### Test 3: Plot dT / dP a la Williams ( )
 
