@@ -3,7 +3,7 @@
 # Grott et al 2011.
 #
 # - Currently implements temperature dependent viscosity mantle convection in the 
-# Stagnat Lid regeime, in addition to accounting for crustal growth, and partial melting.
+# Stagnant Lid regime, in addition to accounting for crustal growth, and partial melting.
 #
 # - Citations:
 #
@@ -25,12 +25,13 @@
 
 import numpy as np
 # import matplotlib.pyplot as plt
-# import scipy.integrate as integrate
+import scipy.integrate as integrate
 # import scipy.optimize as opt
-# from scipy.misc import derivative
+from scipy.misc import derivative
 from planetary_energetics import Layer
 from mercury_parameters import mantle_params
-
+import mercury_mantle_melt_model as melt_model
+import matplotlib.pyplot as plt
 
 class MantleLayer(Layer):
     """
@@ -105,9 +106,12 @@ class MantleLayer(Layer):
         temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness,
                                                                          gravity_cmb)
         temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
-        delta_temp = T_upper_mantle - temperature_base_stagnant_lid + T_cmb - temperature_base_mantle
-        return coef * delta_temp * np.power(self.thickness - stagnant_lid_thickness, 3.) / (
-            self.params['thermal_diffusivity'] * mu)
+        delta_temp = (T_upper_mantle - temperature_base_stagnant_lid) + (T_cmb - temperature_base_mantle)
+  
+        Ra =  coef * delta_temp * np.power(self.thickness - stagnant_lid_thickness, 3.) / (
+              self.params['thermal_diffusivity'] * mu)
+        assert( Ra > 0. )
+        return Ra
 
     def calculate_critical_internal_rayleigh_number(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
         """
@@ -154,14 +158,15 @@ class MantleLayer(Layer):
         the boundary layers at the base of the mantle and the boundary layer at the base of the Stagnant Lid/top
         of the convecting mantle.
         """
-        upper_boundary_layer_thickness = self.calculate_upper_boundary_layer_thickness(T_upper_mantle, T_cmb,
-                                                                                       stagnant_lid_thickness,
-                                                                                       gravity_cmb)
-        lower_boundary_layer_thickness = self.calculate_lower_boundary_layer_thickness(T_upper_mantle, T_cmb,
-                                                                                       stagnant_lid_thickness,
-                                                                                       gravity_cmb)
-        thickness_convecting_mantle = self.thickness - stagnant_lid_thickness - upper_boundary_layer_thickness \
-                                      - lower_boundary_layer_thickness
+        #TODO Should we iterate over upper_boundary_layer_thickness, etc?
+#        upper_boundary_layer_thickness = self.calculate_upper_boundary_layer_thickness(T_upper_mantle, T_cmb,
+#                                                                                       stagnant_lid_thickness,
+#                                                                                       gravity_cmb)
+#        lower_boundary_layer_thickness = self.calculate_lower_boundary_layer_thickness(T_upper_mantle, T_cmb,
+#                                                                                       stagnant_lid_thickness,
+#                                                                                       gravity_cmb)
+        thickness_convecting_mantle = self.thickness - stagnant_lid_thickness# - upper_boundary_layer_thickness \
+ #                                     - lower_boundary_layer_thickness
         g = self.params['surface_gravity']  # Is the Surface gravity the correct gravity here
         adiabatic_temperature_increase = self.params['thermal_expansivity'] * g * thickness_convecting_mantle * \
                                          T_upper_mantle / self.params['heat_capacity']
@@ -177,7 +182,7 @@ class MantleLayer(Layer):
         """
         beta = 1. / 3.
         Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
-        return (self.thickness - stagnant_lid_thickness) * np.power(self.params['Ra_crit'] / Ra, beta)
+        return (self.thickness - stagnant_lid_thickness) * np.power(self.params['critical_rayleigh_number'] / Ra, beta)
 
     def calculate_lower_boundary_layer_thickness(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
         """
@@ -202,7 +207,7 @@ class MantleLayer(Layer):
 
     def calculate_upper_heat_flux(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb):
         """
-        Heat flow out of the mantle, equation (10) in Morschhhauser et al 2011.
+        Heat flow from the convecting mantle into the stagnant lid, equation (10) in Morschhhauser et al 2011.
 
         The temperature at the base of the Stagnant lid is found using the formulation
         of Grasset and Parmentier et al 1998, adapted to spherical geometry, equation (8)
@@ -230,5 +235,277 @@ class MantleLayer(Layer):
                                                                                        gravity_cmb)
         return self.params['thermal_conductivity'] * (T_cmb - temperature_base_mantle) / lower_boundary_layer_thickness
 
+    def convert_radius_to_hydrostatic_pressure(self, radius):
+        """
+        Convert radius to hydrostatic pressure using P = rho*g*z
+        :param radius:
+        :return:
+        """
+        return (self.outer_radius-radius)*self.params['density']*self.params['surface_gravity']
 
-mercury_mantle = MantleLayer(1500, 2800)
+    def get_stagnant_lid_thermal_profile(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Get the radial conductive temperature profile of the stagnant lid, equation (5) Morschhauser et al (2011).
+
+        Will replace with the two layer eventually...
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        Q = mantle_heat_production
+        k = self.params['thermal_conductivity']
+        temp_surface = self.params['surface_temperature']
+        radius_surface = self.outer_radius
+        temp_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+        radius_stagnant_lid = radius_surface - stagnant_lid_thickness
+        coef1 = ( temp_surface - temp_base_stagnant_lid + Q/(6.*k)*( np.power(radius_surface, 2.) -
+                                                                     np.power(radius_stagnant_lid, 2.))
+                )/(1./radius_surface - 1./radius_stagnant_lid)
+        coef2 = temp_surface - coef1/radius_surface + Q*np.power(radius_surface , 2.)/(6.*k)
+
+        temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
+        return temperature_profile_as_function_of_radius
+
+    def calculate_thermal_gradient_base_stagnat_lid(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Calculate the thermal gradient at the base of the stagnant lid by solving the radial heat conduction
+        equation in the stagnant lid, equation (5), and evaluating its derivative at the base of the stagnant.
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        temp_profile =self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        return derivative(temp_profile , radius_stagnant_lid, dx=1e-1 )
+
+    def get_mantle_solidus(self, crustal_thickness):
+        """
+        Calculate the solidus temperature of peridotite as a cubic function of radius,
+        equation (16) in Morschhauser et al (2011). Also accounts for the increase in
+        mantle solidus due to the depletion of crustal components, equations (18, 19).
+
+        We assume the pressure in the stagnant lid is hydrostatic.
+
+        :param pressure:
+        :param crustal_thickness:
+        :return:
+        """
+
+        solidus_as_function_of_radius = lambda r: \
+            melt_model.mantle_solidus(self.convert_radius_to_hydrostatic_pressure(r), crustal_thickness,
+                                      self.inner_radius, self.outer_radius)
+        return solidus_as_function_of_radius
+
+    def get_mantle_liquidus(self):
+        """
+        Calculate the solidus temperature of peridotite as a cubic function of radius,
+        equation (17) in Morschhauser et al (2011).
+
+        We assume the pressure in the stagnant is lid is hydrostatic.
+        :return:
+        """
+        liquidus_as_function_of_radius = lambda r: \
+            melt_model.peridotite_liquidus(self.convert_radius_to_hydrostatic_pressure(r))
+        return liquidus_as_function_of_radius
+
+    def calculate_volumetric_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        The Volumeterically averaged degree of melting, equation (20) Morschhauser et al (2011).
+        """
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        radius_planet_surface = self.outer_radius
+        T = self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        T_sol = self.get_mantle_solidus(crustal_thickness)
+        T_liq = self.get_mantle_liquidus()
+
+        do_we_have_melt = lambda r : ( 1.0 if T(r) > T_sol(r) else 0.0 )
+        are_we_less_than_six_GPa = lambda r : (1.0 if self.convert_radius_to_hydrostatic_pressure(r) < 6.e9 else 0.0 ) 
+ 
+        def melt_fraction_integrand(r):
+            melt_fraction = (T(r) - T_sol(r))/( T_liq(r) - T_sol(r) )
+            if ( T(r) > T_liq(r) ):
+                melt_fraction = 1.0
+            melt_fraction = melt_fraction*do_we_have_melt(r)*are_we_less_than_six_GPa(r)
+            return melt_fraction
+
+        def melt_volume_integrand(r):
+            return 1.0 * do_we_have_melt(r)*are_we_less_than_six_GPa(r)
+
+         
+        fraction,_ = integrate.quad( lambda r : 4.0*np.pi*melt_fraction_integrand(r)*r*r, radius_stagnant_lid, radius_planet_surface)
+        melt_volume,_ = integrate.quad( lambda r : 4.0*np.pi*melt_volume_integrand(r)*r*r, radius_stagnant_lid, radius_planet_surface)
+
+        melt_degree = fraction/melt_volume
+        return melt_degree, melt_volume
+
+    def get_derivative_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        degree_melting_funcion_of_T = lambda T: self.calculate_volumetric_degree_melting(T, stagnant_lid_thickness,
+                                                                                         mantle_heat_production)[0]
+        return derivative(degree_melting_funcion_of_T, T_upper_mantle, dx=1.e-1)
+
+    def calculate_stefan_number(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
+        """
+        Calculate the Stefan Number from the average degree of melting, equation (2) Morschhauser et al (2011).
+        :param T_upper_mantle:
+        :param stagnant_lid_thickness:
+        :param mantle_heat_production:
+        :return:
+        """
+        L = self.params['latent_heat_melting_crust']
+        cm = self.params['heat_capacity']
+        Rl = self.outer_radius-stagnant_lid_thickness
+        Vl = 4./3.*np.pi*(np.power(Rl,3.)-np.power(self.inner_radius,3.))
+        meltzone_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness,
+                                                                   mantle_heat_production)[1]
+        dma_dTm = self.get_derivative_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        St = (L/cm)*(meltzone_volume/Vl)*dma_dTm
+        return St
+
+    def get_rate_of_crustal_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
+                                   mantle_heat_production):
+        """
+        Calculate the rate of crustal growth, equation (21) Morschhauser et al (2011).
+
+        We assume that the crust will be distributed uniformally on the planetary surface and that the timescale for
+        melt extraction is limited by the rate at which undepleted mantle can be supplied to the meltzone, which
+        occurs at the rate of mantle convection velocity scale.
+        velocity
+        :param T_upper_mantle:
+        :param T_cmb:
+        :param stagnant_lid_thickness:
+        :param gravity_cmb:
+        :param mantle_heat_production:
+        :return:
+        """
+        u0 = self.params['mantle_convection_speed_scale']
+        Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+        Ra_crit = self.params['critical_rayleigh_number']
+        beta = 1. / 3.
+        degree_melting, melt_volume = self.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness,
+                                                                               mantle_heat_production)
+        mantle_convection_velocity = u0*np.power(Ra/Ra_crit, 2*beta)
+        dDcrust_dt = mantle_convection_velocity*degree_melting*melt_volume/(4.*np.pi*np.power(self.outer_radius,3.))
+        return dDcrust_dt
+
+    def get_rate_of_stagnant_lid_growth(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
+                                        mantle_heat_production):
+        """
+        The growth of the stagnant lid is determined by the energy balance at the base of the stagnant lid,
+        equation (4) Morschhauser et al (2011).
+        :param T_upper_mantle:
+        :param T_cmb:
+        :param stagnant_lid_thickness:
+        :param gravity_cmb:
+        :param mantle_heat_production:
+        :return:
+        """
+        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+        delta_T = T_upper_mantle - temperature_base_stagnant_lid
+        lhs_coef = self.params['density']*self.params['heat_capacity']*delta_T
+
+        flux_thermal_gradient = self.params['heat_capacity']*self.calculate_thermal_gradient_base_stagnat_lid(
+            T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        crustal_growth_rate = self.get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness,
+                                                               gravity_cmb, mantle_heat_production)
+        volcanic_heat_piping = self.params['crustal_density']*crustal_growth_rate*\
+                               (self.params['latent_heat_melting_crust'] + self.params['magma_heat_capacity']*delta_T)
+        upper_heat_flux = self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+
+        dDlid_dt = (-upper_heat_flux + volcanic_heat_piping - flux_thermal_gradient)/lhs_coef
+        return dDlid_dt
+
+    def energy_conservation_mantle(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
+                                        mantle_heat_production):
+        """
+
+        :param T_upper_mantle:
+        :param T_cmb:
+        :param stagnant_lid_thickness:
+        :param gravity_cmb:
+        :param mantle_heat_production:
+        :return:
+        """
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        stefan_number = self.calculate_stefan_number(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        surface_area_base_stagnant_lid = 4.*np.pi*radius_stagnant_lid
+        volume_stagnant_lid = 4./3.*np.pi*(np.power(radius_stagnant_lid,3.) - np.power(self.inner_radius,3.))
+        print "Stefan Number is: "+str(stefan_number)
+        lhs_coef = self.params['density']*self.params['heat_capacity']*(1. + stefan_number)
+        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+        delta_T = T_upper_mantle - temperature_base_stagnant_lid
+
+        crustal_growth_rate = self.get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness,
+                                                               gravity_cmb, mantle_heat_production)
+
+        volcanic_heat_piping = self.params['crustal_density']*crustal_growth_rate*\
+                               (self.params['latent_heat_melting_crust'] + self.params['magma_heat_capacity']*delta_T)
+        upper_heat_flux = self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+        lower_heat_flux = self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb)
+
+        dDlid_dt = ((upper_heat_flux + volcanic_heat_piping)*surface_area_base_stagnant_lid +
+                    lower_heat_flux*self.inner_surface_area + mantle_heat_production*volume_stagnant_lid)/lhs_coef
+        return dDlid_dt
+
+
+
+
+
+
+
+
+
+
+
+radius_planet = 2440e3
+stagnant_lid_thickness = 200e3
+radius_stagnant_lid = radius_planet - stagnant_lid_thickness
+
+radius_cmb = 2020e3
+T_upper_mantle = 2000
+T_cmb = 3000
+
+crustal_thickness = 12e3
+mantle_heat_production = 0.000001
+mercury_mantle = MantleLayer(radius_cmb, radius_planet)
+temp_func = mercury_mantle.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+liquidus_func = mercury_mantle.get_mantle_liquidus()
+solidus_func  = mercury_mantle.get_mantle_solidus(crustal_thickness)
+density = mercury_mantle.params['density']
+gravity = mercury_mantle.params['surface_gravity']
+gravity_cmb = mercury_mantle.params['surface_gravity']
+r_solution = np.linspace(radius_stagnant_lid, radius_planet, 1000)
+t = np.empty_like(r_solution)
+t_peridotite_solidus = np.empty_like(r_solution)
+t_solidus = np.empty_like(r_solution)
+t_liquidus = np.empty_like(r_solution)
+int = np.empty_like(r_solution)
+
+for i, r in enumerate(r_solution):
+    pressure = (radius_planet-r)*density*gravity
+    t[i] = temp_func(r)
+    t_solidus[i] = solidus_func(r)
+    t_liquidus[i] = liquidus_func(r)
+    t_peridotite_solidus[i] = melt_model.peridotite_solidus(pressure)
+    int[i] = (t[i]-t_solidus[i])/(t_liquidus[i]-t_solidus[i])
+
+plt.figure()
+plt.plot(r_solution,t, label='Temperature Profile')
+plt.plot(r_solution,t_solidus,label="Depleted Mantle Solidus")
+plt.plot(r_solution,t_peridotite_solidus, label="Peridotite Solidus")
+plt.plot(r_solution,t_liquidus, label="Peridotite Liquiduis")
+plt.legend()
+
+plt.figure()
+plt.plot(r_solution, int)
+plt.show()
+dDcrust_dt = mercury_mantle.get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production)
+dDlid_dt = mercury_mantle.get_rate_of_stagnant_lid_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production)
+dTm_dt = mercury_mantle.energy_conservation_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,mantle_heat_production)
+degree, dv = mercury_mantle.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
