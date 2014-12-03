@@ -501,10 +501,7 @@ plt.legend()
 plt.figure()
 plt.plot(r_solution, int)
 #plt.show()
-dDcrust_dt = mercury_mantle.get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
-                                   mantle_heat_production)
-dDlid_dt = mercury_mantle.get_rate_of_stagnant_lid_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
-                                                   mantle_heat_production)
-dTm_dt = mercury_mantle.energy_conservation_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
-                                                   mantle_heat_production)
-degree, dv = mercury_mantle.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+dDcrust_dt = mercury_mantle.get_rate_of_crustal_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production)
+#dDlid_dt = mercury_mantle.get_rate_of_stagnant_lid_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb, mantle_heat_production)
+#dTm_dt = mercury_mantle.energy_conservation_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,mantle_heat_production)
+#degree, dv = mercury_mantle.calculate_volumetric_degree_melting(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
