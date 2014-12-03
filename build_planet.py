@@ -744,8 +744,9 @@ class corePlanet(cm_Planet):
 
         rho_s,rho_l = density_coexist(self.w_l,[self.DS,self.DSi],p_icb,t_icb,\
                 self.materials[0],self.materials[1])
+        print rho_s - rho_l
 
-        # return Eg / dr
+        # return dEg / dr
         return (rho_s - rho_l) * g_icb * r_icb * 4. * np.pi * r_icb**2.
 
     def specific_gravitational_energy(self):

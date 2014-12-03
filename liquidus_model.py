@@ -259,6 +259,7 @@ class Dumberry_liquidus(object):
         else:
             t = 1346. + 13. * (p/1.e9 - 21.)
         return t,w
+
     def iron_melting_curve(self,p):
         return Tm_anzellini(p)
 
@@ -274,3 +275,32 @@ class Dumberry_liquidus(object):
         Teut,weut = self.eutectic(p)
 
         return T0 - (T0 - Teut)/weut*w
+
+    def check_solid(self,S,P,T):
+        '''
+        checks whether point in S,P,T space is above or below solidus
+        args:
+                S: sulfur weight percent (0.0 to 1.0)
+                P: pressure (Pa)
+                T: temperature (K)
+        '''
+        return bool(self.T_SP(S,P) > T)
+
+    def dTdP_SP(self,S,P,h=.005*1.e9):
+        '''
+        Estimates the clapeyron slope at a givin pressure and composition
+        for comparison. Uses a central finite difference method.
+        args:
+                S: sulfur weight percent (0.0 to 1.0)
+                P: pressure (Pa)
+        '''
+        return (self.T_SP(S,P+h) - self.T_SP(S,P-h))/(2.*h)
+
+    def is_Fe_rich(self,S,P,dS=.001):
+        '''
+        Returns True if on the Fe-rich side of the eutectic.
+        '''
+        if self.T_SP(S+dS,P) < self.T_SP(S,P):
+            return True
+        else:
+            return False

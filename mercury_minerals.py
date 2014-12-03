@@ -343,23 +343,23 @@ class  ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
 
-def williams_adiabat(t0):
-    t0 = 1500.
-    phase = liquid_iron()
+def williams_adiabat(phase,t0,p):
+#     t0 = 1500.
+#     phase = liquid_iron()
+    phase.set_method('slb3')
     phase.set_state(p[0],t0)
-    rho0 = phase.density()
+    rho0 = 1. / phase.V
     K0 = phase.K_T
-    def williams_func(P,T):
+    def williams_func(T,P):
         alpha0 = 13.2e-5
         Cp = 46.632 # J / mol / K
-        phase.set_shate(P,T)
-        rho = phase.density()
+        phase.set_state(P,T)
+        rho = 1. / phase.V
         K = phase.K_T
         return alpha0 * K0 / K * T / rho / Cp
-    #   return alpha0 * K0 / K * ( rho / rho0)**0.5*T/rho/Cp
+#         return alpha0 * K0 / K * ( rho / rho0)**0.5*T/rho/Cp
     ad = np.ravel(integrate.odeint(williams_func,t0,p))
     return ad
-
 
 
 if __name__ == "__main__":
@@ -450,5 +450,16 @@ if __name__ == "__main__":
     t =burnman.geotherm.adiabatic(p,np.array([1700.]),phase)
     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
     ax5.plot(p,dT_dP_ad,'g-.')
+
+    
+    # plot Williams form of the adiabat
+    lFe_high = liquid_iron()
+    lFe_high.params['grueneisen_0'] = 3.6
+    lFe_high.params['Kprime_0'] = 7.
+    t = williams_adiabat(lFe_high,1700.,p)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax4.plot(p,t,'c')
+    ax5.plot(p,dT_dP_ad,'c')
+
 
     plt.show()
