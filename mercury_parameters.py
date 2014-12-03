@@ -82,6 +82,7 @@ mantle_params = {
     'thermal_conductivity' : k_mantle,
     'mantle_convection_speed_scale': convection_speed_scale,
     'critical_rayleigh_number': Ra_crit,
-    'latent_heat_melting_crust': latent_heat_melting_crust
+    'latent_heat_melting_crust': latent_heat_melting_crust,
+    'magma_heat_capacity' : magma_heat_capacity
     }
 
