@@ -1,0 +1,57 @@
+\documentclass[a4paper,12pt]{article}
+% \usepackage{times,fancyhdr}
+\pagestyle{empty}           
+%
+%\topmargin=-1.5cm
+%\headheight=1.0cm
+%\headsep=0.0cm
+%\oddsidemargin=-0.14cm
+\usepackage[top=2cm, bottom=1.5cm, left=2cm, right=2cm]{geometry}
+
+%\textwidth=17cm
+%\textheight=26cm
+\parindent=0cm
+\parskip=12pt
+
+\usepackage{natbib}
+\usepackage{fancyhdr}
+\usepackage{siunitx}
+
+\begin{document}
+\frenchspacing
+\begin{center}
+{\large{\bf Quantities needed for entropy calculations}} 
+\end{center}
+\vspace{-0.5cm}
+
+My entropy calculations use the formulation described in Francis Nimmo's treatise article - I've referred to some relevant equations in that paper in case you want a bit more detail about certain quantities. \begin{enumerate}
+\item{Present-day CMB radius (I'm not including an FeS layer (solid or liquid) in the models at the moment) : $r_{cmb}$},  \si{m}
+\item{Present-day ICB radius : $r_{icb}$}, \si{m}
+\item{Concentration of light element, $c$, (wt\%) \\I'll concentrate on sulphur only for now, but the code can include Si too/instead.
+If the inner core excludes all light element, then the light element concentration required is that of the liquid (since it's zero in the solid). If some of the light element partitions into the solid, then I will need both the light element concentration in the solid and in the liquid, because the quantity of interest is actually the fraction of light element in the liquid. I would also need the partition coefficient in this case.}
+\item{Density at the centre of the planet : $\rho_{cen}$, \si{kg. m^{-3}}\\
+The density at $r=0$, which can be extracted from the density profiles. It is used in equations 41-45, 47 and 51 to determine some length scales, mass of the core and the density, pressure and gravity radial profiles. Presumably, this will be at the correct pressure and temperature, since all of the profiles are self-consistent. Is this the case?}
+\item{Density of an FeS liquid of the appropriate light element concentration at zero pressure : $\rho_0$, \si{kg.m^{-3}}
+This is essentially the density of an equivalent FeS liquid at the planetary surface. You can do this by either interpolating between the zero pressure densities of end member liquid Fe and FeS, or by extrapolating your density profile for Mercury to zero pressure. Again, I'm not sure why temperature should come into play here...} 
+\item{Pressure at the CMB : $P_{cmb}$, \si{\pascal}\\}
+\item{Specific heat capacity of the core : $c_p$, \si{\joule. kg^{-1} \kelvin^{-1}}. Assumed constant.}
+\item{Bulk modulus of the core at zero pressure : $K_0$, \si{\pascal}
+Usually taken as the liquid pure Fe value in Earth calculations. If your code calculates bulk modulus as a function of pressure, you could extrapolate that curve to zero pressure and give me that value if your prefer. This is assumed constant in Nimmo's formulation.}
+\item{Latent heat, $L_H$, \si{\joule. \kilogram^{-1}}}
+\item{Melting parameters : $T_{m0}$ (\si{\kelvin}), $T_{m1}$ (\si{\pascal^{-1}}), $T_{m2}$ (\si{\pascal^{-2}})\\
+These are the constants required to fit your melting curve with a quadratic in pressure (equation 53 of Nimmo). If you give me a melting curve for the FeS liquid of the appropriate composition, then the constant $T_{m0}$ will have taken into account the depression of the melting point and no additional value is needed for the depression. However, if you give me a melting curve for pure Fe, the quadratic fit will not take into account the depression of the melting point by the light element (as in equation 4 of Williams et al, 2007) and a separate value is required. I  either need $T_m(P)$ for pure Fe or $T_m(P)$ for FeS of a specified composition, from which the constants can be calculated (and depression if needed). I'm happy for you to just give me the constants rather than the curves themselves, but please tell me which melting curve they come from.}
+\item{Depression of the melting point by the light element, \si{\joule. kg^{-1}}\\
+See above notes}
+\item{Coefficient of thermal expansivity : $\alpha_T$, \si{\kelvin^{-1}}\\
+Usually taken as the liquid pure Fe value at the planet's centre in Earth calculations. See section 4.3.2 of Nimmo for more details on this.}
+\item{Coefficient of compositional expansivity : $\alpha_c$, no units.}
+\item{Thermal conductivity of the core : $k_c$, \si{\watt.m.\kelvin}\\
+Equation 68 - I'll need to find out what the characteristic length scale is and get back to you on this.}
+\item{Present-day temperature at the CMB : $T_{cmb}$, \si{\kelvin}}
+\item{Present-day CMB heat flux : $Q_{cmb}$, \si{\watt}}
+%\item{Heat of reaction (I will ignore this quantity for now, but we might want to include it later)}
+\end{enumerate}
+A few notes: table 2 of Nimmo's chapter gives a list of values used in Earth calculations. \\My code doesn't use an equation of state - it needs values of certain thermodynamic quantities at specified pressures, radii etc as input, but there's no interpolation to an equation like Birch-Murnahagn etc.
+
+
+\end{document}
