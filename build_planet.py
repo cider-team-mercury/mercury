@@ -736,15 +736,9 @@ class corePlanet(cm_Planet):
         t_icb = self.temperature[idx_icb]
 
         # is this necessary? or is taking rho_ic[-1] - rho_oc[0] sufficient?
-#         rho_s,vp, vs, vphi, K, G =  burnman.velocities_from_rock(self.compositions[0],
-#                 np.array([p_icb]), np.array([t_icb]) )
-# 
-#         rho_l, vp, vs, vphi, K, G = burnman.velocities_from_rock(self.compositions[1],
-#                 np.array([p_icb]), np.array([t_icb]) )
-
         rho_s,rho_l = density_coexist(self.w_l,[self.DS,self.DSi],p_icb,t_icb,\
                 self.materials[0],self.materials[1])
-        print rho_s - rho_l
+#         print rho_s - rho_l
 
         # return dEg / dr
         return (rho_s - rho_l) * g_icb * r_icb * 4. * np.pi * r_icb**2.

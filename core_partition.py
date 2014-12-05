@@ -8,6 +8,9 @@ latent heat released by inner core growth.
 
 import numpy as np
 from scipy import integrate
+from scipy.misc import derivative
+from scipy.interpolate import UnivariateSpline
+
 # from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
 
 # molar masses
@@ -109,4 +112,34 @@ def density_coexist(w_liquid1,D1,P,T,mat_solid, \
     # return densities
     return solid.density(), liquid.density()
 
+def coeff_comp_expansivity(solution,w_spec,P,T,component=0,wmax=0.2,n=50,\
+        method='slb3'):
+    '''
+    Find the compositional analogue of the coeff. of thermal expansion. (1/wt %)
 
+    1/V * (dV/dw) 
+    '''
+
+    w_arr = np.linspace(0.,wmax,50)
+    w_eval = w_spec[component]
+
+    assert w_eval >= 0.
+    assert w_eval <= wmax
+    
+    v_list = []
+    for w in w_arr:
+        if component==0:
+            x1 = w_to_x([w,w_spec[1],1.-w_spec[1]-w])[0]
+            x2 = w_to_x([w,w_spec[1],1.-w_spec[1]-w])[1]
+        elif component==1:
+            x1 = w_to_x([w_spec[0],w,1.-w_spec[0]-w])[0]
+            x2 = w_to_x([w_spec[0],w,1.-w_spec[0]-w])[1]
+        phase = solution(x1,x2)
+        phase.set_method(method)
+        phase.set_state(P,T)
+        v_list.append(phase.V)
+
+    v_arr = np.array(v_list)
+    vfunc = UnivariateSpline(w_arr,v_arr)
+
+    return derivative(vfunc,w_eval) / vfunc(w_eval)

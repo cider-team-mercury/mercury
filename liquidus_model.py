@@ -296,11 +296,11 @@ class Dumberry_liquidus(object):
         '''
         return (self.T_SP(S,P+h) - self.T_SP(S,P-h))/(2.*h)
 
-    def is_Fe_rich(self,S,P,dS=.001):
+    def is_Fe_rich(self,S,P):
         '''
         Returns True if on the Fe-rich side of the eutectic.
         '''
-        if self.T_SP(S+dS,P) < self.T_SP(S,P):
+        if S < self.eutectic(P)[1]:
             return True
         else:
             return False

@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from numpy.testing import assert_approx_equal 
+
 import burnman
 import burnman.minerals as minerals
 import burnman.composite as composite
@@ -22,7 +24,8 @@ from liquidus_model import Dumberry_liquidus as FeSLiquidusModel
 
 from build_planet import cm_Planet, corePlanet
 
-from core_partition import partition, density_coexist,w_to_x,x_to_w
+from core_partition import partition, density_coexist,w_to_x,x_to_w,\
+        coeff_comp_expansivity
 
 # Material Properties
 from mercury_minerals import olivine,orthopyroxene,\
@@ -131,9 +134,9 @@ class mercuryModel(corePlanet):
         self.w_l = np.array([ w_outer[0],w_outer[1],1.-w_outer[0]-w_outer[1]] )
         self.x_l = w_to_x(self.w_l)
 
-        assert np.sum(self.w_l) == 1.
+        assert_approx_equal( np.sum(self.w_l) , 1.)
         assert np.all(self.w_l >= 0.)
-        assert np.sum(self.x_l) == 1.
+        assert_approx_equal( np.sum(self.x_l) , 1.)
         assert np.all(self.x_l >= 0.)
 
 
@@ -141,9 +144,9 @@ class mercuryModel(corePlanet):
         self.x_s = w_to_x(self.w_s)
 
         assert self.x_s[0] == 0. # DS has to be zero for the current burnman solution model!!!
-        assert np.sum(self.w_s) == 1.
+        assert_approx_equal(np.sum(self.w_s) , 1.)
         assert np.all(self.w_s >= 0.)
-        assert np.sum(self.x_s) == 1.
+        assert_approx_equal(np.sum(self.x_s) , 1.)
         assert np.all(self.x_s >= 0.)
 
         # set compositions to the burnman minerals of corresponding composition
@@ -246,7 +249,7 @@ class model_suite(object):
             'm_frac' : Fraction of the core mass in the solid inner core.
             'r_frac' : Fraction of the core radius in the solid inner core.
             'r_icb', 'r_cmb', 'r_surf' : boundary radii (m)
-            'T_icb', 'T_cmb' : boundary temperature (K)
+            'T_cen','T_icb', 'T_cmb' : boundary temperature (K)
             'T_avg_ic', 'T_av_oc' : mass averaged temperature (K)
             'Eg_r': Gravitational energy release per change in inner core 
                     radius (J/m)
@@ -259,13 +262,26 @@ class model_suite(object):
             'CpT_avg_ic','CpT_avg_oc': Average Cp*T for each layer (J/K)
             'm_ic','m_oc': mass of inner and outer core (kg)
             'c_r': Mass of light element released per change in core radius (kg/m)
+            'w_bulk': Wt % light element of the bulk core
+            'w_l': Wt % light element in the outer core
+            'rho_cen': density at the center of the planet (kg/m^3)
+                        (at current T_cen)
+            'P_cen','P_icb','P_cmb': pressure at boundaries (Pa)
+            'rho_liq_0': Density of the liquid alloy at P=0 (kg/m^3) 
+                        (at cmb temperature)
+            'K_liq_0': Bulk modulus (Kt) of the core at P=0 (Pa)
+            'alpha_t': Coefficient of thermal expansivity (of liquid at icb) (1/K)
+            'alpha_c': Coefficient of compositional expansivity (of liquid at icb)
+                    (1/K).
         '''
 
         row_list = []
         at_eutectic = False
-        self.labels = ['m_frac','r_frac','r_icb','r_cmb','r_surf','T_icb','T_cmb',\
-                'T_avg_ic','T_av_oc','Eg_r','L_r','Eg_m','L_m','Cp_ic','Cp_oc',\
-                'CpT_avg_ic','CpT_avg_oc','m_ic','m_oc','c_r']
+        self.labels = ['m_frac','r_frac','r_icb','r_cmb','r_surf','T_cen','T_icb',\
+                'T_cmb','T_avg_ic','T_av_oc','Eg_r','L_r','Eg_m','L_m','Cp_ic',\
+                'Cp_oc','CpT_avg_ic','CpT_avg_oc','m_ic','m_oc','c_r','w_bulk','w_l',\
+                'P_cen','P_icb','P_cmb','rho_liq_0','K_liq_0',\
+                'alpha_t','alpha_c']
         for mfrac in self.inner_Mfracs:
 
             print 'Core mass fraction:', mfrac
@@ -274,10 +290,16 @@ class model_suite(object):
                 print "Liquidus encountered. Terminating calculation"
                 break
 
-            self.planet.set_innerCore(mfrac) 
+            try:
+                self.planet.set_innerCore(mfrac) 
+            except:
+                print "Problem encountered with inner core setting, probably "\
+                        +"outside the range of valid material composition"
+                break
 
             self.planet.integrate(verbose=False,**kwargs)
 
+            T_cen = self.planet.temperature[0]
             T_icb = self.planet.boundary_temperatures[0]
             T_cmb = self.planet.boundary_temperatures[1]
 
@@ -301,11 +323,32 @@ class model_suite(object):
 
             c_r = self.planet.light_element_release_over_r()
 
-            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_icb,T_cmb,\
-                    T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
-                    CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r])
+            w_bulk = self.planet.wS + self.planet.wSi
+            w_l = np.sum(self.planet.w_l[:-1])
 
-            
+            P_cen = self.planet.pressure[0]
+            P_icb = self.planet.pressure[self.planet.cmb()]
+            P_cmb = self.planet.pressure[self.planet.icb()]
+
+            liq = self.planet.compositions[1]
+            liq.set_method('slb3')
+            liq.set_state(0.,T_cmb)
+
+            rho_liq_0 = liq.density()
+            K_liq_0 = liq.K_T
+
+            liq.set_state(P_icb,T_icb)
+            alpha_t = liq.alpha
+
+            mat = self.planet.materials[1]
+            alpha_c = coeff_comp_expansivity(mat,self.planet.w_l,P_icb,T_icb)
+
+            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_cen,T_icb,T_cmb,\
+                    T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
+                    CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r,w_bulk,w_l,\
+                    P_cen,P_icb,P_cmb,rho_liq_0,K_liq_0,\
+                    alpha_t,alpha_c])
+
             at_eutectic = not self.planet.liquidus_model.is_Fe_rich(self.planet.w_l[0],\
                    self.planet.pressure[self.planet.icb()])
 
@@ -349,7 +392,7 @@ class model_suite(object):
 
         return UnivariateSpline(x,y,**kwargs)
 
-    def func_of_data(self,xlabel,ylabel):
+    def func_of_data(self,xlabel,ylabel,**kwargs):
         if self.data[xlabel][0] > self.data[xlabel][-1]:
             y = self.data[ylabel][::-1] 
             x = self.data[xlabel][::-1] # Note x must be increasing for Univariatespline
@@ -357,7 +400,7 @@ class model_suite(object):
             y = self.data[ylabel]
             x = self.data[xlabel]
 
-        return UnivariateSpline(x,y)
+        return UnivariateSpline(x,y,**kwargs)
 
     def thermal_energy_change(self):
         m_ic_func = self.func_of_Tcmb('m_ic')
@@ -371,21 +414,22 @@ class model_suite(object):
 
 if __name__ == "__main__":
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.00,.00)
+    merc = mercuryModel(0.63,.06,.00)
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
 #     merc.generate_profiles(0.5)
 #     merc.show_profiles()
 
     ### Test 2: Tabulate and plot energetics for a mercuryModel
-    model1 = model_suite(merc,np.linspace(0.,0.5,11))
+    model1 = model_suite(merc,np.linspace(0.,0.9,10))
     model1.get_energetics()
     model1.printData()
-#    model1.saveData('tables/energetics_63_00_00.dat')
+    model1.saveData('tables/energetics_63_06_00.dat')
 #     model1.loadData('tables/energetics_63_00_00_11step.dat')
-#    model1.printData()
+#     model1.printData()
 
-    r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
+#     r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
+    r_func = model1.func_of_Tcmb('r_icb',k=2) # m
 
     dr_icb_dT_cmb = r_func.derivative() # m / K
     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
