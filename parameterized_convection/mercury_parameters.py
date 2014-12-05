@@ -56,7 +56,6 @@ k_crust = 4.0 # - W m^-1 K^-1 - 1.5 to 4
 mantle_viscosity_ref = 1.0e22 # - Pa s - 10^19 to 10^22
 regolith_thickness = 5.0e3 # - m - 0 to 5*10^3 m 
 mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
-# ------------------------------------------------------- #
 
 core_params = { 
     'rho' : rho_core,

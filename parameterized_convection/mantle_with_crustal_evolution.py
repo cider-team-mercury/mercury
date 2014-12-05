@@ -32,6 +32,7 @@ from planetary_energetics import Layer
 from mercury_parameters import mantle_params
 import mercury_mantle_melt_model as melt_model
 import matplotlib.pyplot as plt
+from heat_production import uranium235, uranium238, potasium40, thorium232
 
 class MantleLayer(Layer):
     """
@@ -106,6 +107,7 @@ class MantleLayer(Layer):
         temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness,
                                                                          gravity_cmb)
         temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
+
         delta_temp = (T_upper_mantle - temperature_base_stagnant_lid) + (T_cmb - temperature_base_mantle)
   
         Ra =  coef * delta_temp * np.power(self.thickness - stagnant_lid_thickness, 3.) / (
@@ -312,6 +314,14 @@ class MantleLayer(Layer):
     def calculate_volumetric_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
         """
         The Volumeterically averaged degree of melting, equation (20) Morschhauser et al (2011).
+
+        Partial Melting in the mantle, melt extraction, and crustal formation have a been
+        shown to have a large effect on the thermal evolution of Mars and Mercury.
+        These models follow the work of Breuer and Spohn (2003, 2006), but are modified to
+        take into account the solidus increase due to mantle depletion. The presence of
+        partial melt in the mantle depends on the solidus temperature of its constituents,
+        here we assume the first melting mantle component is peridotite and utilize the
+        parameterized solidus from Takahashi (1990).
         """
         radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
         radius_planet_surface = self.outer_radius
@@ -341,6 +351,9 @@ class MantleLayer(Layer):
 
     def get_derivative_degree_melting(self, T_upper_mantle, stagnant_lid_thickness, mantle_heat_production):
         """
+        Calcularte the rate of change of the degreee of melting with change in upper mantle temperature.
+
+        This derivtive primarily used to calculate the Stefan number, equation (2) in Morschhauser et al (2001).
         :param T_upper_mantle:
         :param stagnant_lid_thickness:
         :param mantle_heat_production:
@@ -376,7 +389,6 @@ class MantleLayer(Layer):
         We assume that the crust will be distributed uniformally on the planetary surface and that the timescale for
         melt extraction is limited by the rate at which undepleted mantle can be supplied to the meltzone, which
         occurs at the rate of mantle convection velocity scale.
-        velocity
         :param T_upper_mantle:
         :param T_cmb:
         :param stagnant_lid_thickness:
@@ -399,6 +411,7 @@ class MantleLayer(Layer):
         """
         The growth of the stagnant lid is determined by the energy balance at the base of the stagnant lid,
         equation (4) Morschhauser et al (2011).
+
         :param T_upper_mantle:
         :param T_cmb:
         :param stagnant_lid_thickness:
@@ -424,7 +437,8 @@ class MantleLayer(Layer):
     def energy_conservation_mantle(self, T_upper_mantle, T_cmb, stagnant_lid_thickness, gravity_cmb,
                                         mantle_heat_production):
         """
-
+        Equation (1) in Morschhauser et al (2001),the energy conservation equation in the mantle to
+        be solved to determine the thermal evolution of the planet.
         :param T_upper_mantle:
         :param T_cmb:
         :param stagnant_lid_thickness:
