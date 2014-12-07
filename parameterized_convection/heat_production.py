@@ -45,19 +45,22 @@ class radioactive_species(object):
         :param ppm_given:
         :return:
         """
-        self.mean_mantle_atomic_mass = 21.1 * gram  # kg
+        self.mean_mantle_atomic_mass = 21.1 * gram   # kg 
         self.species_molar_mass = molar_mass
         self.half_life = half_life * Julian_year  # Convert from years to seconds
         self.heat_release = heat_release
+        self.four_and_a_half_Gyr = 4.5*Julian_year*1.e9
         if ppm_given:
             self.bulk_concentration = bulk_concentration * self.species_molar_mass / (
                 1.e6 * self.mean_mantle_atomic_mass)  # convert from ppm to kg/kg
         else:
             self.bulk_concentration = bulk_concentration
+
+        self.initial_bulk_concentration = self.bulk_concentration * np.exp(self.four_and_a_half_Gyr * np.log(2.) / self.half_life)
         self.partition_coefficient = partition_coefficient
 
     def heat_generation_rate(self, time):
-        return self.bulk_concentration * self.heat_release * np.exp(-np.log(2.) * time / self.half_life)
+        return self.initial_bulk_concentration * self.heat_release * np.exp(-np.log(2.) * (time) / self.half_life)
 
     def liquid_partioning(self, F):
         """
@@ -86,7 +89,7 @@ class radiogenic_heating(object):
 
     def heat_production(self, time):
         return self.uranium.heat_generation_rate(time) + self.thorium.heat_generation_rate(time) + \
-               self.potassium.heat_generation_rate(time)
+               self.potassium.heat_generation_rate(time)*0.000119
 
 
 # ------------------------------------------------------------- #
@@ -276,24 +279,30 @@ LF97 = radiogenic_heating(LF97_uranium_params, LF97_thorium_params, LF97_potassi
 
 
 def schubert_spoon_heating_model(time):
-    return 1.7e-7 * np.exp(-1.38e-17 * (time))
+    return 1.7e-7 * np.exp(-1.38e-17 * (time))/3400.
 
-"""
-import matplotlib.pyplot as plt
 
-time = np.linspace(0, Julian_year * 4.5e9, 1000)
-models = [WD94, LF97, CI, TS82]
-fig = plt.figure(figsize=[20, 10])
-for ii, model in enumerate(models):
-    #plt.subplot(1,len(models),ii)
-    heat = model.heat_production(time)
-    plt.plot(time / (1.e9 * Julian_year), heat, label=model.model_name)
-    plt.legend()
-    plt.xlabel(r'Time [Ga]')
-    plt.ylabel(r'Heat Production [W/kg]')
-    #plt.plot(time/(1.e9*Julian_year), schubert_spoon_model(time))
-    plt.title('Heat Production Comparison')
-#plt.gca().invert_xaxis()
-plt.show()
+if __name__ == "__main__":
+  import matplotlib.pyplot as plt
+  import matplotlib.image as mpimg
 
-"""
+  fig1 = mpimg.imread('hauck_phillips.png')
+  plt.imshow(fig1, extent=[0., 4.5,0,6], aspect='auto')
+  plt.xlim(0.,4.5)
+  plt.ylim(0,6.)
+
+  time = np.linspace(0., Julian_year * 4.5e9, 1000)
+  plt.plot(time/(1.e9*Julian_year), schubert_spoon_heating_model(time)/1.e-11, label='Schubert and Spohn')
+  print schubert_spoon_heating_model(time)
+  models = [WD94, LF97, CI, TS82]
+  for ii, model in enumerate(models):
+      #plt.subplot(1,len(models),ii)
+      heat = model.heat_production(time)
+      plt.plot(time / (1.e9 * Julian_year), heat/1.e-11, label=model.model_name)
+  plt.legend()
+  plt.xlabel(r'Time [Ga]')
+  plt.ylabel(r'Heat Production [W/kg]')
+  plt.title('Heat Production Comparison')
+  #plt.gca().invert_xaxis()
+  plt.show()
+
