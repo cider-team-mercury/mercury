@@ -34,6 +34,8 @@ import mercury_mantle_melt_model as melt_model
 import matplotlib.pyplot as plt
 from heat_production import uranium235, uranium238, potasium40, thorium232
 
+radiogenic_nuclides = [uranium235, uranium238, potasium40, thorium232]
+
 class MantleLayer(Layer):
     """
     Mantle layer which includes the crustal evolution as in Morschhauser et al 2011
@@ -466,6 +468,16 @@ class MantleLayer(Layer):
         dDlid_dt = ((upper_heat_flux + volcanic_heat_piping)*surface_area_base_stagnant_lid +
                     lower_heat_flux*self.inner_surface_area + mantle_heat_production*volume_stagnant_lid)/lhs_coef
         return dDlid_dt
+
+    def heat_production(self, nuclides):
+        """
+        The amount of radiogenic heating depends on the bulk concentration of radioactive
+        nuclides and their distribution between the crust and mantle. The extraction of
+        radioactive elements from the mantle is calculated self-consistently assuming
+        accumulted fractional melting.
+        :return:
+        """
+        concentration
 
 
 
