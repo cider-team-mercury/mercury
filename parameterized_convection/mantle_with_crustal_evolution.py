@@ -32,9 +32,7 @@ from planetary_energetics import Layer
 from mercury_parameters import mantle_params
 import mercury_mantle_melt_model as melt_model
 import matplotlib.pyplot as plt
-from heat_production import uranium235, uranium238, potasium40, thorium232
-
-radiogenic_nuclides = [uranium235, uranium238, potasium40, thorium232]
+from heat_production import WD94 as heat_production_model
 
 class MantleLayer(Layer):
     """
@@ -469,7 +467,7 @@ class MantleLayer(Layer):
                     lower_heat_flux*self.inner_surface_area + mantle_heat_production*volume_stagnant_lid)/lhs_coef
         return dDlid_dt
 
-    def heat_production(self, nuclides):
+    def heat_production(self,T_upper_mantle, stagnant_lid_thickness):
         """
         The amount of radiogenic heating depends on the bulk concentration of radioactive
         nuclides and their distribution between the crust and mantle. The extraction of
@@ -477,7 +475,27 @@ class MantleLayer(Layer):
         accumulted fractional melting.
         :return:
         """
-        concentration
+        radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
+        radius_planet_surface = self.outer_radius
+        T = self.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
+        T_sol = self.get_mantle_solidus(crustal_thickness)
+        T_liq = self.get_mantle_liquidus()
+
+        do_we_have_melt = lambda r : ( 1.0 if T(r) > T_sol(r) else 0.0 )
+        are_we_less_than_six_GPa = lambda r : (1.0 if self.convert_radius_to_hydrostatic_pressure(r) < 6.e9 else 0.0 )
+
+        def depth_dependent_melt_fraction(r):
+            melt_fraction = (T(r) - T_sol(r))/( T_liq(r) - T_sol(r) )
+            if ( T(r) > T_liq(r) ):
+                melt_fraction = 1.0
+            melt_fraction = melt_fraction*do_we_have_melt(r)*are_we_less_than_six_GPa(r)
+            return melt_fraction
+
+        F = lambda r : depth_dependent_melt_fraction(r)
+        X_uranium =  lambda r: heat_production_model.uranium.liquid_partioning(depth_dependent_melt_fraction(r))
+        X_potassium = lambda r: heat_production_model.potassium.liquid_partioning(depth_dependent_melt_fraction(r))
+        X_thorium = lambda r: heat_production_model.thorium.liquid_partioning(depth_dependent_melt_fraction(r))
+        fraction,_ = integrate.quad( , radius_stagnant_lid, radius_planet_surface)
 
 
 
