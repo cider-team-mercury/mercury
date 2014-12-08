@@ -8,8 +8,9 @@ latent heat released by inner core growth.
 
 import numpy as np
 from scipy import integrate
-from scipy.misc import derivative
 from scipy.interpolate import UnivariateSpline
+
+from matplotlib import pyplot as plt
 
 # from mercury_minerals import ironSilicideAlloy,ironSulfideSilicideLiquid
 
@@ -142,4 +143,4 @@ def coeff_comp_expansivity(solution,w_spec,P,T,component=0,wmax=0.2,n=50,\
     v_arr = np.array(v_list)
     vfunc = UnivariateSpline(w_arr,v_arr)
 
-    return derivative(vfunc,w_eval) / vfunc(w_eval)
+    return vfunc.derivative()(w_eval) / vfunc(w_eval)

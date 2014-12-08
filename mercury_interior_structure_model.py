@@ -15,7 +15,6 @@ import burnman.minerals as minerals
 import burnman.composite as composite
 
 from scipy.interpolate import UnivariateSpline
-from scipy.misc import derivative
 
 # from liquidus_model import Solver as Liquidus
 # from liquidus_model import Solver_no14 as FeSLiquidusModel
@@ -264,12 +263,14 @@ class model_suite(object):
             'c_r': Mass of light element released per change in core radius (kg/m)
             'w_bulk': Wt % light element of the bulk core
             'w_l': Wt % light element in the outer core
+            'w_s': Wt % light element in the inner core
             'rho_cen': density at the center of the planet (kg/m^3)
                         (at current T_cen)
             'P_cen','P_icb','P_cmb': pressure at boundaries (Pa)
             'rho_liq_0': Density of the liquid alloy at P=0 (kg/m^3) 
-                        (at cmb temperature)
+                        (at average outer core temperature)
             'K_liq_0': Bulk modulus (Kt) of the core at P=0 (Pa)
+                        (at average outer core temperature)
             'alpha_t': Coefficient of thermal expansivity (of liquid at icb) (1/K)
             'alpha_c': Coefficient of compositional expansivity (of liquid at icb)
                     (1/K).
@@ -280,7 +281,7 @@ class model_suite(object):
         self.labels = ['m_frac','r_frac','r_icb','r_cmb','r_surf','T_cen','T_icb',\
                 'T_cmb','T_avg_ic','T_av_oc','Eg_r','L_r','Eg_m','L_m','Cp_ic',\
                 'Cp_oc','CpT_avg_ic','CpT_avg_oc','m_ic','m_oc','c_r','w_bulk','w_l',\
-                'P_cen','P_icb','P_cmb','rho_liq_0','K_liq_0',\
+                'w_s','P_cen','P_icb','P_cmb','rho_cen','rho_liq_0','K_liq_0',\
                 'alpha_t','alpha_c']
         for mfrac in self.inner_Mfracs:
 
@@ -297,64 +298,70 @@ class model_suite(object):
                         +"outside the range of valid material composition"
                 break
 
-            self.planet.integrate(verbose=False,**kwargs)
+            try:
+                self.planet.integrate(verbose=False,**kwargs)
 
-            T_cen = self.planet.temperature[0]
-            T_icb = self.planet.boundary_temperatures[0]
-            T_cmb = self.planet.boundary_temperatures[1]
+                T_cen = self.planet.temperature[0]
+                T_icb = self.planet.boundary_temperatures[0]
+                T_cmb = self.planet.boundary_temperatures[1]
 
-            m_ic = self.planet.masses[0]
-            m_oc = self.planet.masses[1]
+                m_ic = self.planet.masses[0]
+                m_oc = self.planet.masses[1]
 
-            r_icb = self.planet.boundaries[0]
-            r_cmb = self.planet.boundaries[1]
-            r_surf = self.planet.boundaries[-1]
-            rfrac = r_icb / r_cmb
+                r_icb = self.planet.boundaries[0]
+                r_cmb = self.planet.boundaries[1]
+                r_surf = self.planet.boundaries[-1]
+                rfrac = r_icb / r_cmb
 
-            Cp_avg = self.planet.average_heat_capacity()
-            T_avg = self.planet.average_temperature()
-            CpT_avg = self.planet.specific_thermal_energy()
+                Cp_avg = self.planet.average_heat_capacity()
+                T_avg = self.planet.average_temperature()
+                CpT_avg = self.planet.specific_thermal_energy()
 
-            Eg_m = self.planet.specific_gravitational_energy()
-            Eg_r = self.planet.gravitational_energy_over_r()
+                Eg_m = self.planet.specific_gravitational_energy()
+                Eg_r = self.planet.gravitational_energy_over_r()
 
-            L_r = self.planet.latent_heat_over_r()
-            L_m = self.planet.specific_latent_heat()
+                L_r = self.planet.latent_heat_over_r()
+                L_m = self.planet.specific_latent_heat()
 
-            c_r = self.planet.light_element_release_over_r()
+                c_r = self.planet.light_element_release_over_r()
 
-            w_bulk = self.planet.wS + self.planet.wSi
-            w_l = np.sum(self.planet.w_l[:-1])
+                w_bulk = self.planet.wS + self.planet.wSi
+                w_l = np.sum(self.planet.w_l[:-1])
+                w_s = np.sum(self.planet.w_s[:-1])
 
-            P_cen = self.planet.pressure[0]
-            P_icb = self.planet.pressure[self.planet.cmb()]
-            P_cmb = self.planet.pressure[self.planet.icb()]
+                P_cen = self.planet.pressure[0]
+                P_icb = self.planet.pressure[self.planet.icb()]
+                P_cmb = self.planet.pressure[self.planet.cmb()]
 
-            liq = self.planet.compositions[1]
-            liq.set_method('slb3')
-            liq.set_state(0.,T_cmb)
+                rho_cen = self.planet.density[0]
 
-            rho_liq_0 = liq.density()
-            K_liq_0 = liq.K_T
+                liq = self.planet.compositions[1]
+                liq.set_method('slb3')
+                liq.set_state(0.,T_avg[1])
 
-            liq.set_state(P_icb,T_icb)
-            alpha_t = liq.alpha
+                rho_liq_0 = liq.density()
+                K_liq_0 = liq.K_T
 
-            mat = self.planet.materials[1]
-            alpha_c = coeff_comp_expansivity(mat,self.planet.w_l,P_icb,T_icb)
+                liq.set_state(P_icb,T_icb)
+                alpha_t = liq.alpha
 
-            row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_cen,T_icb,T_cmb,\
-                    T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
-                    CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r,w_bulk,w_l,\
-                    P_cen,P_icb,P_cmb,rho_liq_0,K_liq_0,\
-                    alpha_t,alpha_c])
+                mat = self.planet.materials[1]
+                alpha_c = coeff_comp_expansivity(mat,self.planet.w_l,P_icb,T_icb)
 
-            at_eutectic = not self.planet.liquidus_model.is_Fe_rich(self.planet.w_l[0],\
-                   self.planet.pressure[self.planet.icb()])
+                row = np.array([mfrac,rfrac,r_icb,r_cmb,r_surf,T_cen,T_icb,T_cmb,\
+                        T_avg[0],T_avg[1],Eg_r,L_r,Eg_m,L_m,Cp_avg[0],Cp_avg[1],\
+                        CpT_avg[0],CpT_avg[1],m_ic,m_oc,c_r,w_bulk,w_l,w_s,\
+                        P_cen,P_icb,P_cmb,rho_cen,rho_liq_0,K_liq_0,\
+                        alpha_t,alpha_c])
 
-            row_list.append(row)
+                at_eutectic = not self.planet.liquidus_model.is_Fe_rich(self.planet.w_l[0],\
+                       self.planet.pressure[self.planet.icb()])
 
-        print row_list
+                row_list.append(row)
+            except:
+                "Problem encountered during integration. Skipping step."
+
+#         print row_list
         self.data = pd.DataFrame(row_list)
         self.data.columns = self.labels
 #         self.T_max = self.data.T_icb.max()
@@ -370,8 +377,15 @@ class model_suite(object):
         Load tabulated data for a set of runs from a file
         '''
         self.data = pd.load(file_name)
-    def printData(self):
-        print self.data
+    def printData(self,quantaties=None):
+        '''
+        Print data with optional specification of quantity names. If not specified
+        all saved quantities are output.
+        '''
+        if quantaties is None:
+            print self.data
+        else:
+            print self.data[quantaties]
     def func_of_Ticb(self,label,**kwargs):
         '''
         Fit a function as of a given quantity w. r. t. the inner core
@@ -384,7 +398,7 @@ class model_suite(object):
     
     def func_of_Tcmb(self,label,**kwargs):
         '''
-        Fit a function as of a given quantity w. r. t. the inner core
+        Fit a function as of a given quantity w. r. t. the core mantle
         boundary temperature.
         '''
         y = self.data[label][::-1] 
@@ -393,7 +407,11 @@ class model_suite(object):
         return UnivariateSpline(x,y,**kwargs)
 
     def func_of_data(self,xlabel,ylabel,**kwargs):
-        if self.data[xlabel][0] > self.data[xlabel][-1]:
+        '''
+        Fit a spline function of one quantity w. r. t. another quantity 
+        for the growth of the inner core
+        '''
+        if self.data[xlabel][0] > np.array(self.data[xlabel])[-1]:
             y = self.data[ylabel][::-1] 
             x = self.data[xlabel][::-1] # Note x must be increasing for Univariatespline
         else:
@@ -401,6 +419,9 @@ class model_suite(object):
             x = self.data[xlabel]
 
         return UnivariateSpline(x,y,**kwargs)
+
+    def func_of_ricb(self,label,**kwargs):
+        return self.func_of_data('r_icb',label,**kwargs)
 
     def thermal_energy_change(self):
         m_ic_func = self.func_of_Tcmb('m_ic')
@@ -413,85 +434,139 @@ class model_suite(object):
 
 
 if __name__ == "__main__":
+    # Define a mercury model with a given core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.06,.00)
+#     merc = mercuryModel(0.63,.06,.00)
+    merc = mercuryModel(0.63,.09,.00)    
+
+    # Tabulate and save energetics for a suite of models with a growing core.
+#     mfracs = np.hstack( (np.linspace(0.,0.2,11), np.linspace(0.25,1.,16) )
+    mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
+    model1 = model_suite(merc,mfracs)
+    model1.get_energetics()
+    model1.printData()
+#     model1.saveData('tables/energetics_63_06_00.dat')
+    model1.saveData('tables/energetics_63_09_00.dat')
+
+#     # Load results from a saved model suite.
+#      model1.loadData('tables/energetics_63_00_00_11step.dat')
+#      model1.printData()
+
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
 #     merc.generate_profiles(0.5)
 #     merc.show_profiles()
 
-    ### Test 2: Tabulate and plot energetics for a mercuryModel
-    model1 = model_suite(merc,np.linspace(0.,0.9,10))
-    model1.get_energetics()
-    model1.printData()
-    model1.saveData('tables/energetics_63_06_00.dat')
-#     model1.loadData('tables/energetics_63_00_00_11step.dat')
-#     model1.printData()
-
+#     ### Test 2: Fit functions of Tcmb and plot energetic quantities
+# 
 #     r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
-    r_func = model1.func_of_Tcmb('r_icb',k=2) # m
-
-    dr_icb_dT_cmb = r_func.derivative() # m / K
-    Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
-    L_r_func = model1.func_of_Tcmb('L_r') # J / m
-    Eg_m_func = model1.func_of_Tcmb('Eg_m')
-    L_m_func = model1.func_of_Tcmb('L_m')
-
-    dEth_ic, dEth_oc = model1.thermal_energy_change()
-
-    t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
-    t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
-
-
-    f1 = plt.figure()
-    ax1= plt.subplot(111)
-#     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
+# #     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
+# 
+#     dr_icb_dT_cmb = r_func.derivative() # m / K
+#     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
+#     L_r_func = model1.func_of_Tcmb('L_r') # J / m
+#     Eg_m_func = model1.func_of_Tcmb('Eg_m')
+#     L_m_func = model1.func_of_Tcmb('L_m')
+# 
+#     dEth_ic, dEth_oc = model1.thermal_energy_change()
+# 
+#     t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
+#     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
+# 
+# 
+#     f1 = plt.figure()
+#     ax1= plt.subplot(111)
+# #     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
+# #     ax1.plot(t_cmb,r_func(t_cmb))
 #     ax1.plot(t_cmb,r_func(t_cmb))
-    ax1.plot(t_cmb,r_func(t_cmb))
-    ax1.set_xlabel('T_cmb (K)')
-    ax1.set_ylabel('dR_icb (m)')
-
-
-    # check units on these
-    f2 = plt.figure()
-    ax2 = plt.subplot(111)
-    ax2.plot(t_cmb,Eg_r_func(t_cmb))
-    ax2.plot(t_cmb,L_r_func(t_cmb))
-#     ax2.plot(t_cmb,dEth_ic(t_cmb))
-#     ax2.plot(t_cmb,dEth_oc(t_cmb))
-    ax2.set_xlabel('T_cmb (K)')
-    ax2.set_ylabel('dE/dR_icb (J/m)')
-
-    f3 = plt.figure()
-    ax3 = plt.subplot(111)
-    ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-    ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-    ax3.plot(t_cmb,dEth_ic(t_cmb))
-    ax3.plot(t_cmb,dEth_oc(t_cmb))
-    ax3.set_xlabel('T_cmb (K)')
-    ax3.set_ylabel('dE/dT_cmb (J/K)')
-
-    f4 = plt.figure()
-    ax4 = plt.subplot(111)
-    ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
-    ax4.set_xlabel('T_cmb (K)')
-    ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
-
+#     ax1.set_xlabel('T_cmb (K)')
+#     ax1.set_ylabel('dR_icb (m)')
+# 
+# 
+#     # check units on these
+#     f2 = plt.figure()
+#     ax2 = plt.subplot(111)
+#     ax2.plot(t_cmb,Eg_r_func(t_cmb))
+#     ax2.plot(t_cmb,L_r_func(t_cmb))
+# #     ax2.plot(t_cmb,dEth_ic(t_cmb))
+# #     ax2.plot(t_cmb,dEth_oc(t_cmb))
+#     ax2.set_xlabel('T_cmb (K)')
+#     ax2.set_ylabel('dE/dR_icb (J/m)')
+# 
 #     f3 = plt.figure()
 #     ax3 = plt.subplot(111)
-#     ax3.plot(t_cmb,Eg_m_func(t_cmb))
-#     ax3.plot(t_cmb,L_m_func(t_cmb))
-
-#     f4 = plt.figure()
-#     ax4 = plt.subplot(111)
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
+#     ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+#     ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+#     ax3.plot(t_cmb,dEth_ic(t_cmb))
+#     ax3.plot(t_cmb,dEth_oc(t_cmb))
+#     ax3.set_xlabel('T_cmb (K)')
+#     ax3.set_ylabel('dE/dT_cmb (J/K)')
 # 
 #     f4 = plt.figure()
 #     ax4 = plt.subplot(111)
-#     ax4.plot(t,derivative(model1.func_of_Ticb('CpT_avg_ic'),t))
-#     ax4.plot(t,derivative(model1.func_of_Ticb('CpT_avg_oc'),t))
+#     ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
+#     ax4.set_xlabel('T_cmb (K)')
+#     ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
+# 
+# #     f3 = plt.figure()
+# #     ax3 = plt.subplot(111)
+# #     ax3.plot(t_cmb,Eg_m_func(t_cmb))
+# #     ax3.plot(t_cmb,L_m_func(t_cmb))
+# 
+# #     f4 = plt.figure()
+# #     ax4 = plt.subplot(111)
+# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
+# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
+# # 
+# #     f4 = plt.figure()
+# #     ax4 = plt.subplot(111)
+# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
+# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
+# 
+#     plt.show()
 
-    plt.show()
+
+    # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
+    # then return an interpolated quantity for
+
+#     model1.loadData('tables/energetics_63_06_00.dat')
+#     model1.loadData('tables/energetics_63_14_00.dat')
 
 
+    model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
+                'Cp_oc','w_bulk','w_l','w_s','P_cen','P_icb','P_cmb','rho_cen',
+                'rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
+
+#     R = 650. * 1000 # 650 km
+    R = 1325. * 1000 # 1325 km
+
+    quants = ['r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
+                'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
+
+    funcs = []
+    vals = []
+    for q in quants:
+        print q
+        func = model1.func_of_ricb(q)
+        val = float(func(R))
+        funcs.append(func)
+        vals.append(val)
+
+    df = pd.DataFrame([vals])
+    df.columns = quants
+#     print df
+
+    # Test 4: Wishlist quadratic fit to liquidus
+
+    p_arr = model1.data.P_icb
+    t_arr = model1.data.T_icb
+    
+    quadratic_const = np.polyfit(p_arr,t_arr,2)
+
+    ptest = 30.e9
+    print np.polyval(quadratic_const,ptest)
+    df['Tm0'] = [ quadratic_const[-1] ]
+    df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
+    df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
+
+    print df
