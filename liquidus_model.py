@@ -273,6 +273,7 @@ class Dumberry_liquidus(object):
 
         T0 = self.iron_melting_curve(p)
         Teut,weut = self.eutectic(p)
+        n=100
 
         return T0 - (T0 - Teut)/weut*w
 
