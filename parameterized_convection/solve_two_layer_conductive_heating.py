@@ -15,8 +15,8 @@ km = 4.0
 qc = 1.e-14
 qm  = 1.e-14
 rs = 2440
-rl = 2200
-rc = 2320
+rl = 200
+rc = 1320
 Ts = 500
 Tl = 1800
 kp =kc/km
@@ -25,10 +25,7 @@ dT = Tl - Ts
 k=kc/km
 
 alpha = power(rc, 3.)*delta_q/(3*km)
-beta1 = power(rc, 2)*(qm/km -qc/kc)/6 -alpha/rc
-beta2 = power(rc, 2)*( (2*qc-qm)/km -qc/kc )/6
-assert beta1==beta2, "BAH!"
-beta = beta1
+beta = power(rc, 2)*(qm/km -qc/kc)/6 -alpha/rc
 gamma = -(qm*power(rl,2.))/(6*km) + alpha/rl + beta
 
 top = -qc*power(rs,2)/(6*kc)-gamma +dT
