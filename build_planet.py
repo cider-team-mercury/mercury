@@ -13,7 +13,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 from scipy.interpolate import UnivariateSpline
-from scipy.misc import derivative
 
 import burnman
 import burnman.minerals as minerals
@@ -610,26 +609,12 @@ class corePlanet(cm_Planet):
     def set_liquidus_model(self,liquidus):
         self.liquidus_model = liquidus()
 
-    def liquidus(self,pressure):
+    def set_liquidus(self):
         '''
-        Hack because the liquidus_model only works for a single value.
+        Set liquidus for current liquid composition to a UnivariateSpline)
         '''
-
-#         assert inspect.isfunction(self.liquidus_model.T_SP), "Liquidus is not a valid function"
-
-        try:
-            liquidus_at_P = lambda p: self.liquidus_model.T_SP(self.w_l[0],p)
-        except:
-            ValueError('wS_l not set.')
-
-        try:
-            return np.array([ liquidus_at_P(p) for p in pressure ])
-        except:
-            try:
-                return liquidus_at_P(pressure)
-            except:
-                raise TypeError('liquidus is not a valid function')
-
+        liq_arr = np.array([ self.liquidus_model.T_SP(self.w_l[0],p) for p in self.pressure])
+        self.liquidus = UnivariateSpline(self.pressure[::-1],liq_arr[::-1])
 
     def find_icb_temp(self,idx=0):
         '''
@@ -637,7 +622,8 @@ class corePlanet(cm_Planet):
         for the icb. Assumes that the 0th index refers to the inner core and inner
         core boundary.
         '''
-        assert not self.liquidus is None
+        assert not self.liquidus_model is None
+        self.set_liquidus()
 
         m_inner = self.massBelowBoundary[idx]
         p_func = UnivariateSpline(self.int_mass, self.pressure) 
@@ -810,7 +796,7 @@ class corePlanet(cm_Planet):
 
         t_func = UnivariateSpline(p_oc,t_oc)
 
-        return derivative(t_func,p_oc) > derivative(self.liquidus,p_oc)
+        return t_func.derivative()(p_oc) > self.liquidus.derivative()(p_oc)
         
 
 
