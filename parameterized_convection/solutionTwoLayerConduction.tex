@@ -1,0 +1,173 @@
+\documentclass[11pt, oneside]{article}   	% use "amsart" instead of "article" for AMSLaTeX format
+\usepackage{geometry}                		% See geometry.pdf to learn the layout options. There are lots.
+\geometry{letterpaper}                   		% ... or a4paper or a5paper or ... 
+%\geometry{landscape}                		% Activate for for rotated page geometry
+%\usepackage[parfill]{parskip}    		% Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{graphicx}				% Use pdf, png, jpg, or eps§ with pdflatex; use eps in DVI mode
+								% TeX will automatically convert eps --> pdf in pdflatex	
+									
+\usepackage{amssymb}
+\usepackage{amsmath}
+\newcommand{\pder}[2][]{\frac{\partial#1}{\partial#2}}
+
+\title{Analytical solution to two layer conduction with heating in spherical coordinates}
+\author{Brent G. Delgbridge}
+%\date{}							% Activate to display a given date or no date
+
+\begin{document}
+
+\maketitle
+
+\section{Problem Formulation:}
+
+\subsection{Thermal Conduction Equation in Spherical Conduction:}
+In order to determine the energy balance at the base of the stagnant lid in parameterized convection models we must determine the thermal gradient at the base of the lid. It is assumed that heat within the stagnant lid heat is transported conductively, and thus in order to determine the thermal profile within the lid we must solve the spherical conduction equation given by
+
+\begin{equation}
+	\label{EQ:conduction}
+	\frac{1}{r^2}\pder{r} \left(r^2 k_l \pder[T]{r}\right) +q_l = 0 \quad .
+\end{equation}
+
+Here $r$ is the radial distance from the center of the planet, $k_l$ and $q_l$ are the thermal conductivity and heat production in the stagnant lid respectively. Due to the preferential differentiation of the radiogenic nucleotides into the partial melts which form the crust, we expect a considerably higher level of heating in the crust which will drastically alter the temperature profile within the stagnant lid. Additionally, we expect that the thermal conductivities will differ between the crust and mantle. So to first order, we model the stagnant lid as two layers, with different thermal conductivities and rates of internal heating, $k_m$, $q_m$ and $k_c$, $q_c$, in the mantle and crust respectively. We will solve for the the thermal profiles $T_m$ and $T_c$ in each layer separately and then match the solutions at the boundary between the two layers. In this geometry both the thermal conductivity and heat production rates are constants representing their volume averaged quantities. We can now obtain the solution within each layer by simply integrating EQ(\ref{EQ:conduction}) twice with respect to $r$. 
+
+Multiplying by $r^2$  and integrating we obtain:
+
+\begin{equation}
+	\int \pder{r} \left(r^2 k_l \pder[T]{r}\right) = - \int r^2 q_l \Rightarrow \pder[T]{r} = - \frac{q_l r }{3 k_l} + \frac{c_1}{r^2} \quad , \notag
+\end{equation}
+where we have absorbed $k_l$ into the integration constant c1 to be determined by the boundary conditions later. 
+
+Integrating again we obtain the following solution:
+\begin{equation}
+T(r) =
+	\begin{cases}
+	T_c(r) = -\frac{q_c}{6 k_l} r^2 + \frac{c_1}{r} +c_2 & \text{if }  r_{s} \geq r \geq r_{c} \\
+   	T_m(r) = -\frac{q_m}{6 k_l} r^2 + \frac{m_1}{r} +m_2   & \text{if }  r_{c} > r \geq r_{l}
+  	\end{cases}
+\end{equation}
+
+\section{Boundary Conditions:}
+\subsection{Fixed Temperature at the planet surface $(r_s)$ :}
+The temperature at the surface of the planet $(T_s)$ is assumed to be fixed to $T_c(r_s) = T_s$, from which we obtain
+\begin{equation}
+	T_s = -\frac{q_c}{6 k_l} r_s^2 + \frac{c_1}{r_s} +c_2 \quad .
+\end{equation}
+
+\subsection{Fixed Temperature at base of the stagnant lid $(r_l)$ :}
+The temperature at the base of the stagnant lid $(T_l)$ is fixed to $T_m(r_l) = T_l$, from which we obtain
+\begin{equation}
+	T_l = -\frac{q_m}{6 k_m} r_l^2 + \frac{m_1}{r_l} +m_2 \quad .
+\end{equation}
+
+\subsection{Temperature matching conditions at the interior boundary $(r_c)$ :}
+Both solutions must agree on the temperature at the boundary between the crust and mantle. From setting the two equations equal at the boundary $ T_c(r_s) = T_m(r_s)$, we obtain
+
+\begin{equation}
+	-\frac{q_c}{6 k_l} r_c^2 + \frac{c_1}{r_c} +c_2 = -\frac{q_m}{6 k_m} r_c^2 + \frac{m_1}{r_c} +m_2  \quad .
+\end{equation}
+
+\subsection{Flux matching conditions at the interior boundary $(r_c)$ :}
+Both solutions must agree on the flux at the boundary between the crust and mantle. By setting the flux of the two equations equal at the boundary $\left (-k_c \pder[T_c]{r} = -k_m \pder[T_m]{r} \right)$we obtain
+
+\[
+\text{fluxes} =
+\begin{cases}
+ F_c(r_c)  & = -k_c \left(- \frac{q_c r_c }{3 k_c}  - \frac{c_1}{r_c^2} \right)    \nonumber \\
+ F_m(r_c)  & = - k_m \left( -\frac{q_m r_c}{3 k_m}  - \frac{m_1}{r_c^2} \right) \nonumber
+\end{cases}
+\] 
+
+Simplifying the above expression and equating we obtain
+\begin{equation}
+	\label {BC:flux}
+	\frac{q_c r_c }{3}  + \frac{ k_c c_1}{r_c^2}   = \frac{q_m r_c}{3}  + \frac{ k_m m_1}{r_c^2} 
+\end{equation}
+
+\section{ Solution for integration constants $(c_1, c_2, m_1, m_2 )$:}
+\subsection{Solving for $m_1$ from the flux matching condition EQ(\ref{BC:flux}):}
+Multiplying EQ(\ref{BC:flux}) by $r_c^2$ and dividing by $k_m$ and solving for $m_1$:
+
+\begin{align}
+	m_1 & = \frac{q_c r_c^3}{3 k_m} + \frac{ k_c  c_1}{k_m} - \frac{q_m r_c^3}{3 k_m} \nonumber \\
+		& = \frac{r_c^3}{3 k_m} \left( q_c -q_m \right) + \frac{k_c}{k_m} c_1 \nonumber \\
+		& = \alpha + k c_1
+\end{align}
+
+where we have defined,
+\[
+\begin{cases}
+	\alpha & = \frac{r_c^3}{3 k_m}(q_c - q_m )  \nonumber \\
+	k & = \frac{k_c}{k_m}
+\end{cases}
+\quad .
+\]
+
+\subsection{Solving for $m_2$ in the temperature matching condition}
+
+\begin{align}
+	m_2 & = -\frac{q_c r_c^2}{6 k_c} + \frac{c_1}{r_c} +c_2 +\frac{q_m r_c^2}{6 k_m} - \frac{m_1}{r_c}   \nonumber \\
+		& = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c} \right) +  \frac{c_1}{r_c} + c_2 -  \frac{m_1}{r_c}  \nonumber \\
+		& = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c} \right) +  \frac{c_1}{r_c} + c_2 - \left(  \frac{\alpha + k c_1}{r_c} \right)  \nonumber \\
+		& = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c} \right) -  \frac{\alpha}{r_c} +  \left( \frac{1-k}{r_c}\right) c_1 + c_2 \nonumber \\
+		&= \beta +  \left( \frac{1-k}{r_c}\right) c_1 + c_2
+\end{align}
+
+where we have defined,
+
+\begin{align}
+	\beta & = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c} \right) -  \frac{\alpha}{r_c} \nonumber \\
+		 & = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c} \right) - \frac{r_c^2}{3 k_m}(q_c - q_m ) \nonumber \\
+		 & = \frac{r_c^2}{6}\left( \frac{q_m}{k_m} - \frac{q_c}{k_c}  - 2 \frac{(q_c - q_m)}{k_m} \right) \nonumber \\
+		 &= \frac{r_c^2}{6}\left( \frac{2 q_c -q_m}{k_m} - \frac{q_c}{k_c}   \right) \nonumber	 
+\end{align}
+
+\subsection{Solving for $c_2$ from the temperature boundary condition at the base of the stagnant lid :}
+
+\begin{align}
+	T_l & = -\frac{q_m r_l^2}{6 k_m} + \frac{m_1}{r_l} +m_2 \nonumber \\
+	      & = -\frac{q_m r_l^2}{6 k_m} + \frac{ (\alpha + k c_1 )}{r_l} +\beta +  \left( \frac{1-k}{r_c}\right) c_1 + c_2 \nonumber \\
+	      & = -\frac{q_m r_l^2}{6 k_m} + \frac{ \alpha }{r_l} +\beta  + \left(\frac{ k }{r_l} + \frac{1-k}{r_c}\right) c_1 + c_2 \nonumber \\
+	      & = \gamma +  \left(\frac{ k }{r_l} + \frac{1-k}{r_c}\right) c_1 + c_2 \nonumber \\
+	      \Rightarrow c_2&  = T_l - \gamma -  \left(\frac{ k }{r_l} + \frac{1-k}{r_c}\right) c_1 
+\end{align}
+
+where we have defined,
+
+\begin{equation}
+	\gamma = -\frac{q_m r_l^2}{6 k_m} + \frac{ \alpha }{r_l} +\beta 
+\end{equation}
+
+\subsection{Solving for $c_1$ from the temperature boundary condition at the surface :}
+
+\begin{align}
+	T_s & = -\frac{q_c r_s^2}{6 k_c} + \frac{c_1}{r_s} + c_2 \nonumber \\
+	       & = -\frac{q_c r_s^2}{6 k_c} + \frac{c_1}{r_s} + T_l - \gamma -  \left(\frac{ k }{r_l} + \frac{1-k}{r_c}\right) c_1\nonumber \\
+	       & = -\frac{q_c r_s^2}{6 k_c}  + T_l - \gamma -  \left(\frac{ k }{r_l} + \frac{1-k}{r_c} - \frac{1}{r_s}\right) c_1 \nonumber  \\
+	       \Rightarrow   c_1 & =  \frac{- \frac{q_c r_s^2}{6 k_c}  - \gamma + ( T_l -T_s)}{\left(\frac{ k }{r_l} + \frac{1-k}{r_c} - \frac{1}{r_s}\right)}
+\end{align}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\end{document}  

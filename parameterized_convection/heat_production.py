@@ -258,8 +258,10 @@ WD94_thorium_params = {'heat_release': H_Thorium,
 WD94 = radiogenic_heating(WD94_uranium_params, WD94_thorium_params, WD94_potassium_params, 'Wanke and Dreibus [1994]')
 
 # Lodders and Fegley Models:
-LF97_uranium_params = {'heat_release': H_Uranium238,
-                       'half_life': T_Uranium238,
+LF97_uranium_params = {'heat_realease_235': H_Uranium235,
+                       'heat_release_238': H_Uranium238,
+                       'half_life_235': T_Uranium235,
+                       'half_life_238': T_Uraniu238,
                        'partition_coefficient': D_Wanke_Dreibus_Mars,
                        'bulk_concentration': C_Uranium_Lodders
 }
@@ -294,7 +296,7 @@ if __name__ == "__main__":
   time = np.linspace(0., Julian_year * 4.5e9, 1000)
   plt.plot(time/(1.e9*Julian_year), schubert_spoon_heating_model(time)/1.e-11, label='Schubert and Spohn')
   print schubert_spoon_heating_model(time)
-  models = [WD94, LF97, CI, TS82]
+  models = [LF97,]
   for ii, model in enumerate(models):
       #plt.subplot(1,len(models),ii)
       heat = model.heat_production(time)
