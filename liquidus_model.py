@@ -24,7 +24,7 @@ class Solver:
         Class to calculate Eutectic liquidus for Fe/FeS mixtures
         '''
         # Low Sulfur Freeze P-T-S Values
-        S_l = [0.,3.,6.,9.,12.]
+#         S_l = [0.,3.,6.,9.,12.]
         P_l = [0.0,10.,14.,23.,40.]
 
 
@@ -53,6 +53,8 @@ class Solver:
         T_23GPa_l = [2308.,2211.,2106.,1985.,1819.,1435.]
         S_40GPa_l = [0.,3.,6.,9.,12.]
         T_40GPa_l = [2498.,2372.,2215.,1997.,1565.]
+
+        # modify the pure iron value to be consistent with Anzellini
 
         # Find T freeze for 30 GPa
         x = [23.,40.]
