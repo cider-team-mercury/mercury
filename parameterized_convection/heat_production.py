@@ -55,7 +55,8 @@ class radioactive_species(object):
                 1.e6 * self.mean_mantle_atomic_mass)  # convert from ppm to kg/kg
         else:
             self.bulk_concentration = bulk_concentration
-
+        print self.bulk_concentration, self.four_and_a_half_Gyr, np.log(2.), self.half_life
+        print self.bulk_concentration * np.exp(self.four_and_a_half_Gyr * np.log(2.) / self.half_life)
         self.initial_bulk_concentration = self.bulk_concentration * np.exp(self.four_and_a_half_Gyr * np.log(2.) / self.half_life)
         self.partition_coefficient = partition_coefficient
 
@@ -78,19 +79,31 @@ class radioactive_species(object):
 
 class radiogenic_heating(object):
     def __init__(self, uranium_params, thorium_params, potassium_params, model_name=None):
-        self.uranium_molar_mass = 238.03 * gram
+        self.uranium238_molar_mass = 238.0 * gram
+        self.uranium235_molar_mass = 235.0 * gram
         self.thorium_molar_mass = 232.04 * gram
         self.potassium_molar_mass = 39.10 * gram
         self.model_name = model_name
-
-        self.uranium = radioactive_species(molar_mass=self.uranium_molar_mass, **uranium_params)
+        h_235 = uranium_params.pop('heat_release_235')
+        t_235 = uranium_params.pop('half_life_235')
+        h_238 = uranium_params.pop('heat_release_238')
+        t_238 = uranium_params.pop('half_life_238')
+        #TODO FINISH THIS.
+        self.uranium235 = radioactive_species(molar_mass=self.uranium235_molar_mass,
+                                              heat_release=h_235,
+                                              half_life=t_235,
+                                              **uranium_params)
+        self.uranium238 = radioactive_species(molar_mass=self.uranium235_molar_mass,
+                                              heat_release=h_238,
+                                              half_life=t_238,
+                                              **uranium_params)
         self.thorium = radioactive_species(molar_mass=self.thorium_molar_mass, **thorium_params)
         self.potassium = radioactive_species(molar_mass=self.potassium_molar_mass, **potassium_params)
 
     def heat_production(self, time):
-        return self.uranium.heat_generation_rate(time) + self.thorium.heat_generation_rate(time) + \
-               self.potassium.heat_generation_rate(time)*0.000119
-
+        total_heat = 0.0071 * self.uranium235.heat_generation_rate(time) + 0.9928*self.uranium235.heat_generation_rate(time) + \
+                     self.thorium.heat_generation_rate(time) + self.potassium.heat_generation_rate(time)*0.000119
+        return total_heat
 
 # ------------------------------------------------------------- #
 # - Partition coefficients
@@ -192,8 +205,8 @@ TS82_thorium_params = {'heat_release': H_Thorium,
                        'bulk_concentration': C_Thorium_TS,
                        'ppm_given': False
 }
-TS82 = radiogenic_heating(TS82_uranium_params, TS82_thorium_params, TS82_potassium_params,
-                          'Turcotte and Schubert [1984] ')
+#TS82 = radiogenic_heating(TS82_uranium_params, TS82_thorium_params, TS82_potassium_params,
+#                          'Turcotte and Schubert [1984] ')
 
 # Bulk Silicate Earth Models:
 CI_uranium_params = {'heat_release': H_Uranium238,
@@ -213,8 +226,8 @@ CI_thorium_params = {'heat_release': H_Thorium,
                      'partition_coefficient': D_Wanke_Dreibus_Mars,
                      'bulk_concentration': C_Thorium_CI
 }
-CI = radiogenic_heating(CI_uranium_params, CI_thorium_params, CI_potassium_params,
-                        '"CI Carbonaceous Chondrites" [1995]')
+#CI = radiogenic_heating(CI_uranium_params, CI_thorium_params, CI_potassium_params,
+#                        '"CI Carbonaceous Chondrites" [1995]')
 
 # Bulk Silicate Earth Models:
 BSE_uranium_params = {'heat_release': H_Uranium,
@@ -234,7 +247,7 @@ BSE_thorium_params = {'heat_release': H_Thorium,
                       'partition_coefficient': D_Wanke_Dreibus_Mars,
                       'bulk_concentration': C_Thorium_BSE
 }
-BSE = radiogenic_heating(BSE_uranium_params, BSE_thorium_params, BSE_potassium_params, '"Bulk Silicate Earth" [1995]')
+#BSE = radiogenic_heating(BSE_uranium_params, BSE_thorium_params, BSE_potassium_params, '"Bulk Silicate Earth" [1995]')
 
 # Wanke and Dreibus Models:
 WD94_uranium_params = {'heat_release': H_Uranium238,
@@ -255,13 +268,13 @@ WD94_thorium_params = {'heat_release': H_Thorium,
                        'bulk_concentration': C_Thorium_Wanke
 }
 
-WD94 = radiogenic_heating(WD94_uranium_params, WD94_thorium_params, WD94_potassium_params, 'Wanke and Dreibus [1994]')
+#WD94 = radiogenic_heating(WD94_uranium_params, WD94_thorium_params, WD94_potassium_params, 'Wanke and Dreibus [1994]')
 
 # Lodders and Fegley Models:
-LF97_uranium_params = {'heat_realease_235': H_Uranium235,
+LF97_uranium_params = {'heat_release_235': H_Uranium235,
                        'heat_release_238': H_Uranium238,
                        'half_life_235': T_Uranium235,
-                       'half_life_238': T_Uraniu238,
+                       'half_life_238': T_Uranium238,
                        'partition_coefficient': D_Wanke_Dreibus_Mars,
                        'bulk_concentration': C_Uranium_Lodders
 }
@@ -292,14 +305,14 @@ if __name__ == "__main__":
   plt.imshow(fig1, extent=[0., 4.5,0,6], aspect='auto')
   plt.xlim(0.,4.5)
   plt.ylim(0,6.)
-
   time = np.linspace(0., Julian_year * 4.5e9, 1000)
   plt.plot(time/(1.e9*Julian_year), schubert_spoon_heating_model(time)/1.e-11, label='Schubert and Spohn')
-  print schubert_spoon_heating_model(time)
   models = [LF97,]
   for ii, model in enumerate(models):
       #plt.subplot(1,len(models),ii)
       heat = model.heat_production(time)
+      print heat
+      print schubert_spoon_heating_model(time)
       plt.plot(time / (1.e9 * Julian_year), heat/1.e-11, label=model.model_name)
   plt.legend()
   plt.xlabel(r'Time [Ga]')
