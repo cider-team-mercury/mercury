@@ -307,3 +307,80 @@ class Dumberry_liquidus(object):
             return True
         else:
             return False
+
+
+def makeFigure(sol,fname,eutectic_cutoff=True):
+    Sinterp = np.linspace(0.,35.0,100)/100.
+    # Pinterp = np.array([14.,20.,21.,23.,27.,30.,33.,37.,40.])*1.e9
+    Pall = np.linspace(3.,40.,20)*1.e9
+
+    Porig = np.array([3.,10.,14.,21.,23.,30.,40.])*1.e9
+#     Porig = np.array([3.,10.,14.,21.,23.,40.])*1.e9
+
+#     sol = solver()
+
+    f = plt.figure()
+    ax = plt.subplot(111)
+
+    eutectic = []
+    for P in Pall:
+            Ttemp = []
+            Teut, Seut = sol.eutectic(P)
+            eutectic.append([Seut,Teut])
+            for S in Sinterp:
+                    Ttemp.append(sol.T_SP(S,P))
+            Ttemp = np.array(Ttemp)
+            if eutectic_cutoff:
+                ax.plot(Sinterp[Sinterp < Seut],Ttemp[Sinterp < Seut],'k--')
+            else:
+                ax.plot(Sinterp,Ttemp,'k--')
+    eutectic = np.array(eutectic)
+
+    for P in Porig:
+            Ttemp = []
+            Teut, Seut = sol.eutectic(P)
+            for S in Sinterp:
+                    Ttemp.append(sol.T_SP(S,P))
+            Ttemp = np.array(Ttemp)
+            if eutectic_cutoff:
+                ax.plot(Sinterp[Sinterp < Seut],Ttemp[Sinterp < Seut],'-',lw=2,label=str(P/1.e9)+' GPa')
+            else:
+                ax.plot(Sinterp,Ttemp,'-',label=str(P/1.e9)+' GPa')
+
+
+
+#     Teut = sol.eutectic_T_P(Porig/1.e9)
+#     Seut = sol.eutectic_S_P(Porig/1.e9)
+    ax.plot(eutectic[:,0],eutectic[:,1],'k-',lw=2,label='Eutectic')
+
+    plt.xlabel('Sulfur (wt. frac)')
+    plt.ylabel('Temperature (K)')
+#     plt.title('Fe-FeS Liquidus')
+    plt.legend(loc='upper right')
+    plt.grid(True)
+    # plt.show()
+    plt.savefig(fname)
+    return sol
+
+if __name__ == "__main__":
+
+    fig_size = [800/72.27 ,700/72.27]
+    params = {'backend': 'ps', 'axes.labelsize': 28, 'text.fontsize': 28, 'legend.fontsize': 22,
+              'xtick.labelsize': 20, 'ytick.labelsize': 20, 
+              'xtick.major.size': 10,'ytick.major.size': 10,
+              'xtick.minor.size': 6,'ytick.minor.size': 6,
+              'xtick.major.width': 2,'ytick.major.width': 2,
+              'xtick.minor.width': 2,'ytick.minor.width': 2,
+              'axes.linewidth': 2, 'xaxis.labelpad' : 50,
+              'text.usetex': False, 'figure.figsize': fig_size,
+              'figure.subplot.bottom': 0.100,'figure.subplot.top': 0.980,'figure.subplot.left': 0.130,'figure.subplot.right': 0.950}
+    plt.rcParams.update(params)
+
+    # use latex
+    plt.rc('text', usetex=False)
+    #plt.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    plt.rc('font',family='sans-serif')
+
+    sol = Dumberry_liquidus()
+    makeFigure(sol,'materials/dumberry_liquidus.png')
+    plt.show()
