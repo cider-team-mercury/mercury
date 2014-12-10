@@ -204,6 +204,11 @@ class Solver:
         else:
                 return max(self.T_SPl(S,P),self.T_SPh(S,P))
 
+    def find_eutectic(self):
+        '''
+        Find the eutectic from the intersection of T_SPl and T_SPh
+        '''
+
     def check_solid(self,S,P,T):
         '''
         checks whether point in S,P,T space is above or below solidus
@@ -382,5 +387,5 @@ if __name__ == "__main__":
     plt.rc('font',family='sans-serif')
 
     sol = Dumberry_liquidus()
-    makeFigure(sol,'materials/dumberry_liquidus.png')
+    makeFigure(sol,'dumberry_liquidus.png')
     plt.show()
