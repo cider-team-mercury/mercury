@@ -342,6 +342,25 @@ class  ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
 
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
+class ironSulfideSilicideLiquid_highExpansivity(burnman.HelperSolidSolution):
+    def __init__(self, mole_frac_S,mole_frac_Si):
+        # Fe, FeS and FeSi endmembers
+        base_materials = \
+            [liquid_iron(),liquid_iron_sulfide20(),liquid_iron_silicide17()]
+
+        # check that composition isn't outside of the range of the model
+        xS0 = base_materials[1].params['mole_fraction']
+        xSi0 = base_materials[2].params['mole_fraction']
+        assert( mole_frac_S <= xS0 )
+        assert( mole_frac_Si <= xSi0 )
+
+        molar_fraction = np.array([1. - mole_frac_Si / xSi0 - mole_frac_S / xS0, 
+            0.0 + mole_frac_S / xS0, 0.0 + mole_frac_Si / xSi0] )
+        # check
+        assert molar_fraction[0] >= 0., "composition outside valid range"\
+                +" for ternary mixing model"
+
+        burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
 def williams_adiabat(phase,t0,p):
 #     t0 = 1500.
@@ -475,9 +494,9 @@ if __name__ == "__main__":
     # plot T of melting versus adiabats
     fig4 = plt.figure()
     ax4 = plt.subplot(111)
-    thigh =burnman.geotherm.adiabatic(p/1.e9,np.array([1700]),lFe_high_gamma)
-    tlow  = burnman.geotherm.adiabatic(p/1.e9,np.array([1900]),lFe_low_gamma)
-    tlow2 = burnman.geotherm.adiabatic(p/1.e9,np.array([1500]),lFe_low_gamma)
+    thigh =burnman.geotherm.adiabatic(p,np.array([1700]),lFe_high_gamma)
+    tlow  = burnman.geotherm.adiabatic(p,np.array([1900]),lFe_low_gamma)
+    tlow2 = burnman.geotherm.adiabatic(p,np.array([1500]),lFe_low_gamma)
 #     t  = burnman.geotherm.adiabatic(p/1.e9,np.array([1900]),lFe)
     ax4.plot(p/1.e9,liq_anzellini,'k',lw=3,label=r'$T_m$, 0 wt.% S') 
     ax4.plot(p/1.e9,liq_dum10,'k',lw=2,label=r'$T_m$, 10 wt.% S,linear') 
@@ -491,6 +510,7 @@ if __name__ == "__main__":
     plt.legend(loc='upper left')
     plt.xlabel(r'Temperature (K)')
     plt.ylabel(r'Pressure (GPa)')
+    plt.savefig('materials/melting_curve.png')
 
     # plot dT/dP of clapeyron slope versus adiabats for 0 wt%
     fig5 = plt.figure()
@@ -515,6 +535,7 @@ if __name__ == "__main__":
     plt.legend(loc='upper right')
     plt.xlabel(r'$dT/dP$ (K/Pa)')
     plt.ylabel(r'Pressure (GPa)')
+    plt.savefig('materials/clapeyron_1.png')
 
     # plot Williams form of the adiabat
 #     lFe_high = liquid_iron()
@@ -541,5 +562,6 @@ if __name__ == "__main__":
     plt.xlabel(r'$dT/dP$ (K/Pa)')
     plt.ylabel(r'Pressure (GPa)')
     plt.ylim((0.,50.))
+    plt.savefig('materials/clapeyron_2.png')
 
     plt.show()

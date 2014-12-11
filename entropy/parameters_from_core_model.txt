@@ -43,16 +43,17 @@ Model 1:
     Bulk S content 6 wt. %
     Bulk Si content 0 wt. %
     Saved Data: 'tables/energetics_63_06_00.dat'
+    Liquidus Model: Dumberry
+    Thermal expansivity: low
 
-    r_icb           r_cmb     L_m     Cp_oc  w_bulk       w_l  w_s  \
-0  650000  1917942.850862  247291  1.444301    0.06  0.063064    0
+    r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  650000  1917942.850862  247291  507.430249    0.06  0.063064    0
 
-          P_cen         P_cmb      rho_cen    rho_liq_0       K_liq_0  \
-0  3.608164e+10  7.006855e+09  8942.770558  5976.748873  7.117539e+10
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.608164e+10  1705.181782  7.006855e+09  8942.770558  5976.748873
 
-    alpha_t   alpha_c         Tm0           Tm1           Tm2
-0  0.000023  1.017357 -482.405583 -3.145649e-10  4.585374e-21
-
+        K_liq_0   alpha_t   alpha_c         Tm0           Tm1           Tm2
+0  7.117539e+10  0.000023  1.017357 -482.405583 -3.145649e-10  4.585374e-21
 
 
 Model 2: 
@@ -61,12 +62,14 @@ Model 2:
     Bulk S content 9 wt. %
     Bulk Si content 0 wt. %
     Saved Data: 'tables/energetics_63_09_00.dat'
+    Liquidus Model: Dumberry
+    Thermal expansivity: low
 
-     r_icb           r_cmb     L_m     Cp_oc  w_bulk       w_l  w_s  \
-0  1325000  1933279.578336  247291  1.329197    0.09  0.155306    0
+     r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  1325000  1933279.578336  247291  529.905766    0.09  0.155306    0
 
-          P_cen         P_cmb      rho_cen    rho_liq_0       K_liq_0  \
-0  3.855515e+10  6.897301e+09  9193.078499  5167.146198  6.621499e+10
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.855515e+10  1184.139889  6.897301e+09  9193.078499  5167.146198
 
-    alpha_t   alpha_c         Tm0           Tm1           Tm2
-0  0.000031  0.519803 -1010.33841 -1.690160e-10  2.514734e-21
+        K_liq_0   alpha_t   alpha_c         Tm0           Tm1           Tm2
+0  6.621499e+10  0.000031  0.519803 -1010.33841 -1.690160e-10  2.514734e-21
