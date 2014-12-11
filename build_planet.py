@@ -458,7 +458,7 @@ class cm_Planet(object):
             for p,t in zip(p_layer,t_layer):
                 phase.set_state(p,t)
                 try:
-                    C.append(phase.C_p * phase.molar_mass() )
+                    C.append(phase.C_p / phase.molar_mass() )
                 except:
                     C.append(0.)
             C_avg.append(np.mean(C) )
@@ -479,7 +479,7 @@ class cm_Planet(object):
             for p,t in zip(p_layer,t_layer):
                 phase.set_state(p,t)
                 try:
-                    CT.append(phase.C_p * phase.molar_mass() * t)
+                    CT.append(phase.C_p / phase.molar_mass() * t)
                 except:
                     CT.append(0.)
             CT_avg.append(np.mean(CT) )
@@ -504,7 +504,7 @@ class cm_Planet(object):
             for p,t,m in zip(p_layer,t_layer,dm_layer):
                 phase.set_state(p,t)
                 try:
-                    E_th_layer.append(phase.C_p * phase.molar_mass() * m)
+                    E_th_layer.append(phase.C_p / phase.molar_mass() * m)
                 except:
                     E_th_layer.append(0.)
             E_th.append(np.sum(np.array(E_th_layer)) )
