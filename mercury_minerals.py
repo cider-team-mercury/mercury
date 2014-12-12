@@ -348,6 +348,10 @@ class ironSulfideSilicideLiquid_highExpansivity(burnman.HelperSolidSolution):
         base_materials = \
             [liquid_iron(),liquid_iron_sulfide20(),liquid_iron_silicide17()]
 
+        # Set a gruneisen parameter corresponding to high thermal expansivity
+        for mat in base_materials:
+            mat.params['grueneisen_0'] = 3.6
+
         # check that composition isn't outside of the range of the model
         xS0 = base_materials[1].params['mole_fraction']
         xSi0 = base_materials[2].params['mole_fraction']
