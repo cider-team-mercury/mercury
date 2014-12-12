@@ -28,7 +28,7 @@ from core_partition import partition, density_coexist,w_to_x,x_to_w,\
 
 # Material Properties
 from mercury_minerals import olivine,orthopyroxene,\
-        ironSilicideAlloy,ironSulfideSilicideLiquid
+        ironSilicideAlloy,ironSulfideSilicideLiquid,ironSulfideSilicideLiquid_highExpansivity
 
 # Constants
 import mercury_reference as ref
@@ -69,8 +69,13 @@ class mercuryModel(corePlanet):
         masses = [ 0., self.M_core, self.M_mantle]
         compositions = [None,None,None]
 
+        # Low Expansivity liquid iron
         materials = [ironSilicideAlloy,ironSulfideSilicideLiquid,\
                 [olivine,orthopyroxene]]
+
+        # High Expansivity liquid iron
+#         materials = [ironSilicideAlloy,ironSulfideSilicideLiquid_highExpansivity,\
+#                 [olivine,orthopyroxene]]
 
         # build planet!
         super(mercuryModel,self).__init__(masses, compositions,T0,\
@@ -85,22 +90,22 @@ class mercuryModel(corePlanet):
         #mantle minerals
         n_fe_ol = ref.n_fe_ol # iron content of mantle minerals
         n_fe_opx = ref.n_fe_opx
-        ol = olivine(n_fe_ol)
-        opx = orthopyroxene(n_fe_opx)
+        ol = self.materials[2][0](n_fe_ol)
+        opx = self.materials[2][1](n_fe_opx)
 
         # fraction of olivine and orthopyroxene in the mantle
         fol = ref.fol; fopx = ref.fopx
         rock = burnman.Composite([fol,fopx],[ol,opx])
 
         # liquid outer core
-        liquidFeSSi = ironSulfideSilicideLiquid(self.x_l[0],self.x_l[1]) # ternary solution
+        liquidFeSSi = self.materials[1](self.x_l[0],self.x_l[1]) # ternary solution
 
         # solid inner core
-        solidFeSi = ironSilicideAlloy(self.x_s[1]) # solid solution of Si in Fe
+        solidFeSi = self.materials[0](self.x_s[1]) # solid solution of Si in Fe
 
         # set materials for each layer
-        self.materials = [ironSilicideAlloy,ironSulfideSilicideLiquid,\
-                [olivine,orthopyroxene]]
+#         self.materials = [ironSilicideAlloy,ironSulfideSilicideLiquid,\
+#                 [olivine,orthopyroxene]]
         
         # set self.compositions and set methods
         super(mercuryModel,self).set_compositions([solidFeSi,liquidFeSSi,rock])
@@ -436,19 +441,20 @@ class model_suite(object):
 if __name__ == "__main__":
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-#     merc = mercuryModel(0.63,.06,.00)
-    merc = mercuryModel(0.63,.09,.00)    
+    merc = mercuryModel(0.63,.09,.00)        
 
     # Tabulate and save energetics for a suite of models with a growing core.
     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
     model1 = model_suite(merc,mfracs)
-#     model1.get_energetics()
-#     model1.printData()
-#     model1.saveData('tables/energetics_63_09_00.dat')
+    model1.get_energetics()
+    model1.printData()
+#     model1.saveData('tables/interpolated_63_09_00.dat')
+
+
 
 #     # Load results from a saved model suite.
-    model1.loadData('tables/energetics_63_06_00.dat')
-    model1.printData()
+#     model1.loadData('tables/energetics_63_06_00.dat')
+#     model1.printData()
 
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
@@ -528,19 +534,20 @@ if __name__ == "__main__":
     # then return an interpolated quantity for
 
     model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
-                'Cp_oc','w_bulk','w_l','w_s','P_cen','P_icb','P_cmb','rho_cen',
-                'rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
+                'Cp_oc','w_bulk','w_l','w_s','P_cen','T_icb','T_cmb','P_icb','P_cmb',\
+                'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
 
-    R = 650. * 1000 # 650 km
-#     R = 1325. * 1000 # 1325 km
+    # Chosen inner core radius
+#     R = 650. * 1000 # 650 km
+    R = 1325. * 1000 # 1325 km
 
     quants = ['r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
-                'P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
+                'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
 
     funcs = []
     vals = []
     for q in quants:
-        print q
+#         print q
         func = model1.func_of_ricb(q)
         val = float(func(R))
         funcs.append(func)

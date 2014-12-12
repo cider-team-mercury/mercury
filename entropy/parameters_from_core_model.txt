@@ -43,16 +43,17 @@ Model 1:
     Bulk S content 6 wt. %
     Bulk Si content 0 wt. %
     Saved Data: 'tables/energetics_63_06_00.dat'
+    Liquidus Model: Dumberry
+    Thermal expansivity: low
 
-    r_icb           r_cmb     L_m     Cp_oc  w_bulk       w_l  w_s  \
-0  650000  1917942.850862  247291  1.444301    0.06  0.063064    0
+    r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  650000  1917942.850862  247291  507.430249    0.06  0.063064    0
 
-          P_cen         P_cmb      rho_cen    rho_liq_0       K_liq_0  \
-0  3.608164e+10  7.006855e+09  8942.770558  5976.748873  7.117539e+10
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.608164e+10  1705.181782  7.006855e+09  8942.770558  5976.748873
 
-    alpha_t   alpha_c         Tm0           Tm1           Tm2
-0  0.000023  1.017357 -482.405583 -3.145649e-10  4.585374e-21
-
+        K_liq_0   alpha_t   alpha_c         Tm0           Tm1           Tm2
+0  7.117539e+10  0.000023  1.017357 -482.405583 -3.145649e-10  4.585374e-21
 
 
 Model 2: 
@@ -61,12 +62,89 @@ Model 2:
     Bulk S content 9 wt. %
     Bulk Si content 0 wt. %
     Saved Data: 'tables/energetics_63_09_00.dat'
+    Liquidus Model: Dumberry
+    Thermal expansivity: low
 
-     r_icb           r_cmb     L_m     Cp_oc  w_bulk       w_l  w_s  \
-0  1325000  1933279.578336  247291  1.329197    0.09  0.155306    0
+     r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  1325000  1933279.578336  247291  529.905766    0.09  0.155306    0
 
-          P_cen         P_cmb      rho_cen    rho_liq_0       K_liq_0  \
-0  3.855515e+10  6.897301e+09  9193.078499  5167.146198  6.621499e+10
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.855515e+10  1184.139889  6.897301e+09  9193.078499  5167.146198
 
-    alpha_t   alpha_c         Tm0           Tm1           Tm2
-0  0.000031  0.519803 -1010.33841 -1.690160e-10  2.514734e-21
+        K_liq_0   alpha_t   alpha_c         Tm0           Tm1           Tm2
+0  6.621499e+10  0.000031  0.519803 -1010.33841 -1.690160e-10  2.514734e-21
+
+Model 3: 
+    Fraction of mass in core .63
+    Inner core radius 650 km
+    Bulk S content 6 wt. %
+    Bulk Si content 0 wt. %
+    Saved Data: 'tables/highExpansivity_63_06_00.dat'
+    Liquidus Model: Dumberry
+    Thermal expansivity: high
+
+    r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  650000  1913033.658008  247291  599.654167    0.06  0.063062    0
+
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.620477e+10  1520.395516  7.072078e+09  8947.094533  6054.239981
+
+        K_liq_0   alpha_t   alpha_c        Tm0           Tm1           Tm2
+0  7.650186e+10  0.000042  1.003643 -514.16313 -2.981441e-10  4.336654e-21
+
+
+Model 4:
+    Fraction of mass in core .63
+    Inner core radius 1325 km
+    Bulk S content 9 wt. %
+    Bulk Si content 0 wt. %
+    Saved Data: 'tables/highExpansivity_63_09_00.dat'
+    Liquidus Model: dumberry
+    Thermal expansivity: high
+
+     r_icb           r_cmb     L_m      Cp_oc  w_bulk       w_l  w_s  \
+0  1325000  1922524.953381  247291  590.57304    0.09  0.155398    0
+
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.889611e+10  1107.628849  7.011038e+09  9202.626999  5390.625103
+
+        K_liq_0   alpha_t   alpha_c         Tm0           Tm1           Tm2
+0  8.199299e+10  0.000051  0.491397 -558.950594 -2.319962e-10  2.975364e-21
+
+
+Model 5:
+    Fraction of mass in core .63
+    Inner core radius 650 km
+    Bulk S content 6 wt. %
+    Bulk Si content 0 wt. %
+    Saved Data: 'tables/highExpansivity_63_06_00.dat'
+    Liquidus Model: interpolated
+    Thermal expansivity: low
+
+    r_icb           r_cmb     L_m       Cp_oc  w_bulk       w_l  w_s  \
+0  650000  1922174.181282  247291  512.770324    0.06  0.063972    0
+
+          P_cen        T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.574929e+10  1860.435916  6.949538e+09  8870.091095  5904.873107
+
+        K_liq_0   alpha_t   alpha_c          Tm0           Tm1           Tm2
+0  6.642341e+10  0.000023  1.017276 -1211.244888 -1.887552e-10  3.072423e-21
+
+
+Model 6:
+    Fraction of mass in core .63
+    Inner core radius 650 km
+    Bulk S content 9 wt. %
+    Bulk Si content 0 wt. %
+    Saved Data: 'tables/highExpansivity_63_09_00.dat'
+    Liquidus Model: interpolated
+    Thermal expansivity: low
+
+     r_icb           r_cmb     L_m       Cp_oc  w_bulk      w_l  w_s  \
+0  1325000  1934097.958562  247291  531.111545    0.09  0.15287    0
+
+          P_cen       T_cmb         P_cmb      rho_cen    rho_liq_0  \
+0  3.849059e+10  1204.51741  6.887182e+09  9181.970616  5161.011003
+
+        K_liq_0   alpha_t   alpha_c          Tm0           Tm1           Tm2
+0  6.579530e+10  0.000031  0.539964 -3275.182195 -1.099838e-10  1.858435e-21

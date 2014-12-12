@@ -342,6 +342,29 @@ class  ironSulfideSilicideLiquid(burnman.HelperSolidSolution):
 
         burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
+class ironSulfideSilicideLiquid_highExpansivity(burnman.HelperSolidSolution):
+    def __init__(self, mole_frac_S,mole_frac_Si):
+        # Fe, FeS and FeSi endmembers
+        base_materials = \
+            [liquid_iron(),liquid_iron_sulfide20(),liquid_iron_silicide17()]
+
+        # Set a gruneisen parameter corresponding to high thermal expansivity
+        for mat in base_materials:
+            mat.params['grueneisen_0'] = 3.6
+
+        # check that composition isn't outside of the range of the model
+        xS0 = base_materials[1].params['mole_fraction']
+        xSi0 = base_materials[2].params['mole_fraction']
+        assert( mole_frac_S <= xS0 )
+        assert( mole_frac_Si <= xSi0 )
+
+        molar_fraction = np.array([1. - mole_frac_Si / xSi0 - mole_frac_S / xS0, 
+            0.0 + mole_frac_S / xS0, 0.0 + mole_frac_Si / xSi0] )
+        # check
+        assert molar_fraction[0] >= 0., "composition outside valid range"\
+                +" for ternary mixing model"
+
+        burnman.HelperSolidSolution.__init__(self, base_materials, molar_fraction)
 
 def williams_adiabat(phase,t0,p):
 #     t0 = 1500.
@@ -402,64 +425,147 @@ if __name__ == "__main__":
 #         ax2.plot(p,rho)
 # #         ax3.plot(p,t)
 
+    # Format matplotlib plots
+    fig_size = [800/72.27 ,700/72.27]
+    params = {'backend': 'ps', 'axes.labelsize': 28, 'text.fontsize': 28,
+            'legend.fontsize': 18,
+              'xtick.labelsize': 20, 'ytick.labelsize': 20, 
+              'xtick.major.size': 10,'ytick.major.size': 10,
+              'xtick.minor.size': 6,'ytick.minor.size': 6,
+              'xtick.major.width': 2,'ytick.major.width': 2,
+              'xtick.minor.width': 2,'ytick.minor.width': 2,
+              'axes.linewidth': 2, 'xaxis.labelpad' : 50,
+              'text.usetex': False, 'figure.figsize': fig_size,
+              'figure.subplot.bottom': 0.100,'figure.subplot.top': 0.980,'figure.subplot.left': 0.130,'figure.subplot.right': 0.950}
+    plt.rcParams.update(params)
+    # use latex
+    plt.rc('text', usetex=False)
+    #plt.rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+    plt.rc('font',family='sans-serif')
 
     # creating a compoarison of dT/dP a la Williams 2009
 #     from liquidus_model import Solver_no14 as FeSLiquidusModel
     from liquidus_model import Solver as FeSLiquidusModel
+    from liquidus_model import Solver_no14 as FeSLiquidusNo14
+    from liquidus_model import Dumberry_liquidus as DumberryModel
     from mercury_reference import Tm_anzellini
+
     p = np.linspace(0.,40.,101.) * 1.e9
-    liquidus_at_P = lambda p: FeSLiquidusModel().T_SP(0.,p)
-    liq = np.array([ liquidus_at_P(x) for x in p ])
+
+    # liquidus at 0 wt % S
+    f_liq_0 = lambda p: FeSLiquidusModel().T_SP(0.,p)
+    liq0 = np.array([ f_liq_0(x) for x in p ])
+
     liq_anzellini = Tm_anzellini(p)
-    dT_dP_liq = np.gradient(liq)/np.gradient(p) * 1.e9
+    dT_dP_liq = np.gradient(liq0)/np.gradient(p) * 1.e9
     dT_dP_anzellini = np.gradient(liq_anzellini)/np.gradient(p) * 1.e9
 
-    lFe_high = liquid_iron()
-    lFe_high.params['grueneisen_0'] = 3.6
-    lFe_low = liquid_iron()
-    lFe_low.params['grueneisen_0'] = 1.7
-    for ph in [lFe,lFe_high,lFe_low]: ph.set_method('slb3')
+
+    # liquidus at 10 wt % S
+    f_liq_10 = lambda p: FeSLiquidusModel().T_SP(0.1,p)
+    liq10  = np.array([ f_liq_10(x) for x in p ])
+
+    f_liq_dum_10 = lambda p: DumberryModel().T_SP(0.1,p)
+    liq_dum10 = np.array([ f_liq_dum_10(x) for x in p ])
+
+    f_liq_no14_10 =  lambda p: FeSLiquidusNo14().T_SP(0.1,p)
+    liq_no14 =  np.array([ f_liq_no14_10(x) for x in p])
+
+    dT_dP_liq10 = np.gradient(liq10)/np.gradient(p) * 1.e9
+    dT_dP_liqdum10 = np.gradient(liq_dum10)/np.gradient(p) * 1.e9
+    dT_dP_liqno14 = np.gradient(liq_no14)/np.gradient(p) * 1.e9
+
+    # Test the effect of gruneisen parameter and K' 
+    lFe_high_gamma = liquid_iron()
+    lFe_high_gamma.params['grueneisen_0'] = 3.6 #Kprime=5.9
+    lFe_low_gamma = liquid_iron()
+    lFe_low_gamma.params['grueneisen_0'] = 1.7
+
+    lFe_high_kprime = liquid_iron()
+    lFe_high_kprime.params['grueneisen_0'] = 1.7
+    lFe_high_kprime.params['Kprime_0'] = 7.
+    lFe_low_kprime = liquid_iron()
+    lFe_low_kprime.params['grueneisen_0'] = 1.7
+    lFe_low_kprime.params['Kprime_0'] = 4.6
+
+    # Test the effect of 10 wt%
+    x = w_to_x([0.1,0.,0.9])[0]
+    lFeS_low_gamma = ironSulfideSilicideLiquid(x,0.)
+
+    for ph in [lFe,lFe_high_gamma,lFe_low_gamma,\
+            lFe_high_kprime,lFe_low_kprime,lFeS_low_gamma]: ph.set_method('slb3')
 
     # plot T of melting versus adiabats
     fig4 = plt.figure()
     ax4 = plt.subplot(111)
-    thigh =burnman.geotherm.adiabatic(p,np.array([1700]),lFe_high)
-    tlow  = burnman.geotherm.adiabatic(p,np.array([1900]),lFe_low)
-    t  = burnman.geotherm.adiabatic(p,np.array([1800]),lFe)
-    ax4.plot(p,liq,'k--') 
-    ax4.plot(p,liq_anzellini,'k',lw=2) 
-    ax4.plot(p,thigh,'g')
-    ax4.plot(p,tlow,'r')
-    ax4.plot(p,t,'b')
+    thigh =burnman.geotherm.adiabatic(p,np.array([1700]),lFe_high_gamma)
+    tlow  = burnman.geotherm.adiabatic(p,np.array([1900]),lFe_low_gamma)
+    tlow2 = burnman.geotherm.adiabatic(p,np.array([1500]),lFe_low_gamma)
+#     t  = burnman.geotherm.adiabatic(p/1.e9,np.array([1900]),lFe)
+    ax4.plot(p/1.e9,liq_anzellini,'k',lw=3,label=r'$T_m$, 0 wt.% S') 
+    ax4.plot(p/1.e9,liq_dum10,'k',lw=2,label=r'$T_m$, 10 wt.% S,linear') 
+    ax4.plot(p/1.e9,liq10,'k--',lw=2,label=r'$T_m$, 10 wt.% S,interp1')
+    ax4.plot(p/1.e9,liq_no14,'k-.',lw=2,label=r'$T_m$, 10 wt.% S,interp2') 
+    ax4.plot(p/1.e9,thigh,'g',lw=2,label=r'adiabat, high $\alpha$')
+    ax4.plot(p/1.e9,tlow,'r',lw=2,label=r'adiabat, low $\alpha$')
+    ax4.plot(p/1.e9,tlow2,'b',lw=2,label=r'adiabat, low $\alpha$')
+#     ax4.plot(p,t,'b')
 
-    # plot dT/dP of clapeyron slope versus adiabats
+    plt.legend(loc='upper left')
+    plt.xlabel(r'Temperature (K)')
+    plt.ylabel(r'Pressure (GPa)')
+    plt.savefig('materials/melting_curve.png')
+
+    # plot dT/dP of clapeyron slope versus adiabats for 0 wt%
     fig5 = plt.figure()
     ax5 = plt.subplot(111)
-    ax5.plot(p,dT_dP_liq,'k--') 
-    ax5.plot(p,dT_dP_anzellini,'k',lw=2) 
-    for phase,t0 in zip([lFe,lFe_high,lFe_low],[1800.,1700.,1900.]):
-        phase.set_method('slb3')
-        t =burnman.geotherm.adiabatic(p,np.array([t0]),phase)
-        dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-        ax5.plot(p,dT_dP_ad)
-    phase = lFe_high; lFe_high.params['Kprime_0'] = 7.
-    t =burnman.geotherm.adiabatic(p,np.array([1700.]),phase)
-    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p,dT_dP_ad,'g--')
-    phase = lFe_high; lFe_high.params['Kprime_0'] = 4.6
-    t =burnman.geotherm.adiabatic(p,np.array([1700.]),phase)
-    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p,dT_dP_ad,'g-.')
+    ax5.plot(p/1.e9,dT_dP_anzellini,'k',lw=3,label=r'$T_m$, 0 wt.% S')
+    ax5.plot(p/1.e9,dT_dP_liq,'k--',lw=2,label=r'$T_m$, 0 wt.% S,interp1') 
 
-    
+    t =burnman.geotherm.adiabatic(p,np.array([1700.]),lFe_high_gamma)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p/1.e9,dT_dP_ad,'r-',lw=2,label=r'adiabat, high $\alpha$')
+    t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_low_gamma)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p/1.e9,dT_dP_ad,'g-',lw=2,label=r'adiabat, low $\alpha$')
+
+    t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_high_kprime)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p/1.e9,dT_dP_ad,'g--',lw=2,label=r"adiabat, high $K'$")
+    t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_low_kprime)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax5.plot(p/1.e9,dT_dP_ad,'g-.',lw=2,label=r"adiabat, low $K'$")
+
+    plt.legend(loc='upper right')
+    plt.xlabel(r'$dT/dP$ (K/Pa)')
+    plt.ylabel(r'Pressure (GPa)')
+    plt.savefig('materials/clapeyron_1.png')
+
     # plot Williams form of the adiabat
-    lFe_high = liquid_iron()
-    lFe_high.params['grueneisen_0'] = 3.6
-    lFe_high.params['Kprime_0'] = 7.
-    t = williams_adiabat(lFe_high,1700.,p)
-    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax4.plot(p,t,'c')
-    ax5.plot(p,dT_dP_ad,'c')
+#     lFe_high = liquid_iron()
+#     lFe_high.params['grueneisen_0'] = 3.6
+#     lFe_high.params['Kprime_0'] = 7.
+#     t = williams_adiabat(lFe_high,1700.,p)
+#     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+#     ax4.plot(p,t,'c')
+#     ax5.plot(p,dT_dP_ad,'c')
 
+    # plot dT/dP of clapeyron slope versus adiabats for 10 wt%
+    fig6 = plt.figure()
+    ax6 = plt.subplot(111)
+    ax6.plot(p/1.e9,dT_dP_anzellini,'k-',lw=3,label=r'$T_m$, 0 wt.% S')
+    ax6.plot(p/1.e9,dT_dP_liqdum10,'k',lw=2,label=r'$T_m$, 10 wt.% S,linear') 
+    ax6.plot(p/1.e9,dT_dP_liq10,'k--',lw=2,label=r'$T_m$, 10 wt.% S,interp1') 
+    ax6.plot(p/1.e9,dT_dP_liqno14,'k-.',lw=2,label=r'$T_m$, 10 wt.% S,interp2') 
+
+    t =burnman.geotherm.adiabatic(p,np.array([1500.]),lFeS_low_gamma)
+    dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
+    ax6.plot(p/1.e9,dT_dP_ad,'b-',lw=2,label=r'adiabat, low $\alpha$')
+
+    plt.legend(loc='upper right')
+    plt.xlabel(r'$dT/dP$ (K/Pa)')
+    plt.ylabel(r'Pressure (GPa)')
+    plt.ylim((0.,50.))
+    plt.savefig('materials/clapeyron_2.png')
 
     plt.show()
