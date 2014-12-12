@@ -83,6 +83,7 @@ mantle_params = {
     'critical_rayleigh_number': Ra_crit,
     'latent_heat_melting_crust': latent_heat_melting_crust,
     'magma_heat_capacity' : magma_heat_capacity,
-    'crustal_density' : rho_crust
+    'crustal_density' : rho_crust,
+    'crustal_thermal_conductivity' : k_crust
     }
 

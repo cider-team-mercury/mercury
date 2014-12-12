@@ -109,7 +109,7 @@ class MantleLayer(Layer):
         temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
 
         delta_temp = (T_upper_mantle - temperature_base_stagnant_lid) + (T_cmb - temperature_base_mantle)
-  
+        print T_upper_mantle, temperature_base_stagnant_lid, T_cmb, temperature_base_mantle 
         Ra =  coef * delta_temp * np.power(self.thickness - stagnant_lid_thickness, 3.) / (
               self.params['thermal_diffusivity'] * mu)
         assert( Ra > 0. )
@@ -516,7 +516,7 @@ T_upper_mantle = 2000
 T_cmb = 3000
 
 crustal_thickness = 12e3
-mantle_heat_production = 0.000001
+mantle_heat_production = 1.e-8 
 mercury_mantle = MantleLayer(radius_cmb, radius_planet)
 temp_func = mercury_mantle.get_stagnant_lid_thermal_profile(T_upper_mantle, stagnant_lid_thickness, mantle_heat_production)
 liquidus_func = mercury_mantle.get_mantle_liquidus()
