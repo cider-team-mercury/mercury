@@ -26,6 +26,8 @@ class gamma_iron(burnman.Mineral):
         
         Parameters for gamma - Fe are from Tsujino et al. 2013
         Have no source for G_0 of Gprime_0 or eta_s_0.
+
+        G_0 G_Prime0 from Mao et al. 2001 (fig. 3)
         '''
         self.params = {
             'equation_of_state':'slb3',
@@ -33,8 +35,10 @@ class gamma_iron(burnman.Mineral):
             'V_0': 7.381e-06, 
             'K_0': 111.5e9,
             'Kprime_0': 5.2,
-            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
-            'Gprime_0': 2.04,
+            'G_0': 73.7e9,
+            'Gprime_0': 1.72,
+#             'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+#             'Gprime_0': 2.04,
             'molar_mass': mFe / 1000.,
             'n': 1,
             'Debye_0': 340., 
@@ -49,6 +53,8 @@ class iron_silicide17(burnman.Mineral):
 
         Note: I dont undestand why the pure iron reference (komabayashi)
         with a high K_0 was a problem and yet FeSi is 
+
+        Use same G as for pure iron
         '''
         w = [0.,.17,1.-.17]; m = np.array([mS,mSi,mFe])
         x = w_to_x(w,m)
@@ -59,8 +65,10 @@ class iron_silicide17(burnman.Mineral):
             'V_0': 6.687e-06, 
             'K_0': 199.e9,
             'Kprime_0': 5.3,
-            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
-            'Gprime_0': 2.04,
+            'G_0': 73.7e9,
+            'Gprime_0': 1.72,
+#             'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+#             'Gprime_0': 2.04,
             'molar_mass': molar_mass,
             'n': 1,
             'Debye_0': 340., # using same as solid iron

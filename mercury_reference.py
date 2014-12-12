@@ -26,9 +26,9 @@ GM = np.array([2.203178e+13,20000000])
 M = GM / G
 
 # Zuber et al. 2012
-R_equatorial = np.array([2439.83,.05])
-R_polar = np.array([437.57,.01])
-R_mean = np.array([439.59,.05])
+R_equatorial = np.array([2439.83,.05])*1000.
+R_polar = np.array([2437.57,.01])*1000.
+R_mean = np.array([2439.59,.05])*1000.
 
 # mantle mineralogy
 # iron content of mantle minerals
