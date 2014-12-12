@@ -117,7 +117,7 @@ class MantleLayer(Layer):
   
         Ra =  coef * delta_temp * np.power(self.thickness - stagnant_lid_thickness, 3.) / (
               self.params['thermal_diffusivity'] * mu)
-        assert( Ra > 0. )
+        assert( Ra > 0. ), "{},{},{},{}".format(T_upper_mantle, temperature_base_stagnant_lid, T_cmb, temperature_base_mantle)
         return Ra
 
     def calculate_critical_internal_rayleigh_number(self, T_upper_mantle, T_cmb, stagnant_lid_thickness):
@@ -276,6 +276,10 @@ class MantleLayer(Layer):
         coef2 = temp_surface - coef1/radius_surface + Q*np.power(radius_surface , 2.)/(6.*k)
 
         temperature_profile_as_function_of_radius = lambda r: -Q/(6*k)*r*r + coef1/r + coef2
+        #r = np.linspace(self.outer_radius-stagnant_lid_thickness, self.outer_radius, 1000)
+        #t = temperature_profile_as_function_of_radius(r)
+        #plt.plot(t, r)
+        #plt.show()
         return temperature_profile_as_function_of_radius
 
     def calculate_thermal_gradient_base_stagnat_lid(self, T_upper_mantle, stagnant_lid_thickness, volumetric_heating):
@@ -306,10 +310,10 @@ class MantleLayer(Layer):
         temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle)
         delta_T = T_upper_mantle - temperature_base_stagnant_lid
         lhs_coef = self.params['density']*self.params['heat_capacity']*delta_T
-        flux_thermal_gradient = self.params['heat_capacity']*self.calculate_thermal_gradient_base_stagnat_lid(
+        flux_thermal_gradient = self.params['thermal_conductivity']*self.calculate_thermal_gradient_base_stagnat_lid(
             T_upper_mantle, stagnant_lid_thickness, volumetric_heating)
         upper_heat_flux = self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
-
+        print upper_heat_flux, flux_thermal_gradient
         dDlid_dt = (-upper_heat_flux - flux_thermal_gradient)/lhs_coef
         return dDlid_dt
 
@@ -326,7 +330,7 @@ class MantleLayer(Layer):
         radius_stagnant_lid = self.outer_radius - stagnant_lid_thickness
         surface_area_base_stagnant_lid = 4.*np.pi*radius_stagnant_lid
         volume_stagnant_lid = 4./3.*np.pi*(np.power(radius_stagnant_lid,3.) - np.power(self.inner_radius,3.))
-        lhs_coef = self.params['density']*self.params['heat_capacity']
+        lhs_coef = self.params['density']*self.params['heat_capacity']*self.volume
         upper_heat_flux = self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         lower_heat_flux = self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         crust_radius, crust_volume = self.crustal_geometry()
@@ -344,17 +348,18 @@ class MantleLayer(Layer):
         return dTc_dt
 
     def energy_balance(self, time, T_upper_mantle, T_cmb, stagnant_lid_thickness):
-        volumetric_heating = self.calculate_volumetric_heating(time)
+        volumetric_heating = 0.0#self.calculate_volumetric_heating(time)
         dTm_dt = self.energy_conservation_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness, volumetric_heating)
         dDlid_dt = self.get_rate_of_stagnant_lid_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness, volumetric_heating)
         dTc_dt = self.core_energy_balance(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        #print np.array([dTm_dt, dTc_dt, dDlid_dt])
         return np.array([dTm_dt, dTc_dt, dDlid_dt])
 
     def integrate(self):
         def ODE(y, t):
             return self.energy_balance(t, y[0], y[1], y[2])
 
-        times = np.linspace(0, Julian_year * 4.5e9, 1000)
+        times = np.linspace(0., Julian_year * 4.5e9, 10000)
         solution = integrate.odeint( ODE, self.initial_conditions, times)
         return times, solution
 
@@ -366,13 +371,12 @@ initial_Tcmb = 2300.
 initial_Dlid= 120.e3
 
 merc = MantleLayer(radius_cmb, radius_planet, crustal_thickness, mantle_params, initial_Tcmb, initial_Tm, initial_Dlid)
-print merc.initial_conditions
-print merc.energy_balance(1.e8, initial_Tm, initial_Tcmb, initial_Dlid)
+#print merc.initial_conditions
+#print merc.energy_balance(1.e8, initial_Tm, initial_Tcmb, initial_Dlid)
 times, solution = merc.integrate()
-
+#print times, solution
 plt.figure()
-#plt.plot(times,solution[0])
-plt.figure()
-#plt.plot(times,solution[1])
-plt.figure()
-#plt.plot(times,solution[2])
+plt.plot(times,solution[:, 0])
+plt.plot(times,solution[:, 1])
+#plt.plot(times,solution[:, 2])
+plt.show()
