@@ -439,6 +439,8 @@ class model_suite(object):
 
 
 if __name__ == "__main__":
+    # Generate profiles
+
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
     merc = mercuryModel(0.63,.09,.00)        
@@ -446,15 +448,13 @@ if __name__ == "__main__":
     # Tabulate and save energetics for a suite of models with a growing core.
     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
     model1 = model_suite(merc,mfracs)
-    model1.get_energetics()
-    model1.printData()
+#     model1.get_energetics()
+#     model1.printData()
 #     model1.saveData('tables/interpolated_63_09_00.dat')
 
-
-
-#     # Load results from a saved model suite.
-#     model1.loadData('tables/energetics_63_06_00.dat')
-#     model1.printData()
+    # Load results from a saved model suite.
+    model1.loadData('tables/energetics_63_09_00.dat')
+    model1.printData()
 
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
@@ -541,7 +541,7 @@ if __name__ == "__main__":
 #     R = 650. * 1000 # 650 km
     R = 1325. * 1000 # 1325 km
 
-    quants = ['r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
+    quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
                 'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
 
     funcs = []
@@ -564,10 +564,38 @@ if __name__ == "__main__":
     
     quadratic_const = np.polyfit(p_arr,t_arr,2)
 
-    ptest = 30.e9
-    print np.polyval(quadratic_const,ptest)
+#     ptest = 30.e9
+#     print np.polyval(quadratic_const,ptest)
     df['Tm0'] = [ quadratic_const[-1] ]
     df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
     df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
 
     print df
+
+#     # determinine profiles at that snapshot for given core radius
+# 
+#     fname='tables/elastic_09_0.csv'
+# #     merc.generate_profiles(df.m_frac[0])
+#     merc.generate_profiles(0.)
+#     r = merc.radius
+#     rho = merc.density
+#     vp = merc.vp
+#     vs = merc.vs
+#     K = merc.K
+#     G = merc.G
+#     vs[np.isnan(vs)] = 0. # Filter out nonsense
+#     G[G < 0.] = 0.
+# 
+#     profiles = pd.DataFrame()
+#     profiles['r'] = r
+#     profiles['rho'] = rho
+#     profiles['vp'] = vp
+#     profiles['vs'] = vs
+#     profiles['K'] = K
+#     profiles['G'] = G
+# 
+#     print profiles
+#     profiles.to_csv(fname)
+
+
+
