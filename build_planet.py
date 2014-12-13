@@ -550,6 +550,14 @@ class cm_Planet(object):
             layers.append(self.get_layer(i))
         return layers
 
+    def get_boundaries(self):
+        x = len(self.int_mass) 
+        bounds = []
+        for layer in self.get(layers):
+            idxs = np.arange(x)[layer]
+            bounds.append(idxs[-1])
+        return np.array(bounds)
+
     # access functions for all profiles (this is kind of redundant)
     def radial_profile(self):
         return self.radius
@@ -573,7 +581,27 @@ class cm_Planet(object):
         return self.K
     def G_profile(self):
         return self.G
+    def velocities_at_boundaries(self):
+        bonunds = self.get_boundaries()[:-1]
+        phases = self.compositions
+        vels = []
+        for i,bound in enumerate(bounds):
+            p_bound = self.pressure(bound)
+            t_bound = self.temperature(bound)
+            lower_phase = phases[i]
+            upper_phase = phase[i+1]
+            lower_phase.set_state(p_bound,t_bound)
+            upper_phase.set_state(p_bound,t_bound)
 
+            rho1, vp1, vs1, vphi1, K1, G1 = burnman.velocities_from_rock(lower_phase,\
+                    np.array(p_bound), np.array(t_bound))
+            rho2, vp2, vs2, vphi2, K2, G2 = burnman.velocities_from_rock(upper_phase,\
+                    np.array(p_bound), np.array(t_bound))
+            vel = np.array( [ [float(x) for x in [rho1, vp1, vs1, vphi1, K1, G1] ],\
+                [float(x) for x in [rho2, vp2, vs2, vphi2, K2, G2] ] ] )
+            vels.append(vel)
+
+            return vels
 
 class corePlanet(cm_Planet):
     def __init__(self,  masses, compositions, temperatures, liquidus=None,materials=None,**kwargs):
