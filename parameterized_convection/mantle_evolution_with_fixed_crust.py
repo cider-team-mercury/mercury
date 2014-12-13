@@ -387,28 +387,34 @@ class MantleLayer(Layer):
     def energy_balance(self, time, T_upper_mantle, T_cmb, stagnant_lid_thickness):
         #TODO: Replace with mantle and Crustal heating
         mantle_heating_rate = self.mantle_heating_rate(time)
+        print "Mantle Heating:", mantle_heating_rate
         crustal_heating_rate = self.crustal_heating_rate(time)
+        print "Crustal Heating:", crustal_heating_rate
         dTm_dt = self.energy_conservation_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness, mantle_heating_rate)
+        print "dTm_dt :", dTm_dt
         dDlid_dt = self.get_rate_of_stagnant_lid_growth(T_upper_mantle, T_cmb, stagnant_lid_thickness,
                                                         crustal_heating_rate, mantle_heating_rate)
+        print "dDlid_dt :", dDlid_dt
         dTc_dt = self.core_energy_balance(T_upper_mantle, T_cmb, stagnant_lid_thickness)
-        #print np.array([dTm_dt, dTc_dt, dDlid_dt])
+        print "dTc_dt:", dTc_dt
+        print np.array([dTm_dt, dTc_dt, dDlid_dt])
         return np.array([dTm_dt, dTc_dt, dDlid_dt])
 
     def integrate(self):
         def ODE(y, t):
+            print "These are the y's:", y
             return self.energy_balance(t, y[0], y[1], y[2])
 
         times = np.linspace(0., Julian_year * 4.5e9, 10000)
-        solution = integrate.odeint( ODE, self.initial_conditions, times)
+        solution = integrate.odeint( ODE, self.initial_conditions, times, full_output=True)
         return times, solution
 
 radius_planet = 2440.e3
 radius_cmb = 2020.e3
-crustal_thickness = 100.e3
+crustal_thickness = 50.e3
 initial_Tm = 2000.
 initial_Tcmb = 2500.
-initial_Dlid= 100.e3
+initial_Dlid= 50.e3
 
 merc = MantleLayer(radius_cmb, radius_planet, crustal_thickness, mantle_params, WD94, initial_Tcmb, initial_Tm, initial_Dlid)
 times, solution = merc.integrate()
