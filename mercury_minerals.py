@@ -97,7 +97,7 @@ class iron_sulfide (burnman.Mineral):
             'Debye_0': 300., # asymptote to 3R
             'grueneisen_0': 1.5,
             'q_0': 1.5,
-            'eta_s_0': 2. #Invented...do not take too much stock!,
+            'eta_s_0': 2., #Invented...do not take too much stock!,
             'mole_fraction': 0.,
             'weight_percent': 0.,
             'T_0' : 1000.} 
