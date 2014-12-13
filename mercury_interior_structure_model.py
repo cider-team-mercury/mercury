@@ -443,17 +443,18 @@ if __name__ == "__main__":
 
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.09,.00)        
+    merc = mercuryModel(0.63,.00,.00)        
 
     # Tabulate and save energetics for a suite of models with a growing core.
-    mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
+    # mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
+    mfracs = np.linspace(0., 0.8, 5) 
     model1 = model_suite(merc,mfracs)
-#     model1.get_energetics()
-#     model1.printData()
-#     model1.saveData('tables/interpolated_63_09_00.dat')
+    model1.get_energetics()
+    model1.printData()
+#    model1.saveData('tables/interpolated_63_09_00_coarse2.dat')
 
     # Load results from a saved model suite.
-    model1.loadData('tables/energetics_63_09_00.dat')
+#    model1.loadData('tables/energetics_63_00_00.dat')
     model1.printData()
 
 
@@ -463,71 +464,79 @@ if __name__ == "__main__":
 
 #     ### Test 2: Fit functions of Tcmb and plot energetic quantities
 # 
-#     r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
-# #     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
-# 
-#     dr_icb_dT_cmb = r_func.derivative() # m / K
-#     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
-#     L_r_func = model1.func_of_Tcmb('L_r') # J / m
-#     Eg_m_func = model1.func_of_Tcmb('Eg_m')
-#     L_m_func = model1.func_of_Tcmb('L_m')
-# 
-#     dEth_ic, dEth_oc = model1.thermal_energy_change()
-# 
-#     t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
-#     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
-# 
-# 
-#     f1 = plt.figure()
-#     ax1= plt.subplot(111)
-# #     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
-# #     ax1.plot(t_cmb,r_func(t_cmb))
+
+    t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
+    t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
+
+    r_func = model1.func_of_Tcmb('r_icb', s=0, k=1)
+#     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
+    r_sample = r_func(t_cmb)
+    rderiv = np.diff(r_sample) / np.diff(t_cmb)
+    rderiv_spline = UnivariateSpline(t_cmb[:-1]+np.diff(t_cmb)/2.,rderiv)
+
+    dr_icb_dT_cmb = r_func.derivative() # m / K
+
+    Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
+    L_r_func = model1.func_of_Tcmb('L_r') # J / m
+    Eg_m_func = model1.func_of_Tcmb('Eg_m')
+    L_m_func = model1.func_of_Tcmb('L_m')
+
+    dEth_ic, dEth_oc = model1.thermal_energy_change()
+
+
+
+    f1 = plt.figure()
+    ax1= plt.subplot(111)
+#     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
 #     ax1.plot(t_cmb,r_func(t_cmb))
-#     ax1.set_xlabel('T_cmb (K)')
-#     ax1.set_ylabel('dR_icb (m)')
-# 
-# 
-#     # check units on these
-#     f2 = plt.figure()
-#     ax2 = plt.subplot(111)
-#     ax2.plot(t_cmb,Eg_r_func(t_cmb))
-#     ax2.plot(t_cmb,L_r_func(t_cmb))
-# #     ax2.plot(t_cmb,dEth_ic(t_cmb))
-# #     ax2.plot(t_cmb,dEth_oc(t_cmb))
-#     ax2.set_xlabel('T_cmb (K)')
-#     ax2.set_ylabel('dE/dR_icb (J/m)')
-# 
+    ax1.plot(t_cmb,r_func(t_cmb))
+    ax1.plot(model1.data.T_cmb,model1.data.r_icb,'o')
+    ax1.set_xlabel('T_cmb (K)')
+    ax1.set_ylabel('dR_icb (m)')
+
+
+    # check units on these
+    f2 = plt.figure()
+    ax2 = plt.subplot(111)
+    ax2.plot(t_cmb,Eg_r_func(t_cmb))
+    ax2.plot(t_cmb,L_r_func(t_cmb))
+#     ax2.plot(t_cmb,dEth_ic(t_cmb))
+#     ax2.plot(t_cmb,dEth_oc(t_cmb))
+    ax2.set_xlabel('T_cmb (K)')
+    ax2.set_ylabel('dE/dR_icb (J/m)')
+
+    f3 = plt.figure()
+    ax3 = plt.subplot(111)
+    ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+    ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
+    ax3.plot(t_cmb,dEth_ic(t_cmb))
+    ax3.plot(t_cmb,dEth_oc(t_cmb))
+    ax3.set_xlabel('T_cmb (K)')
+    ax3.set_ylabel('dE/dT_cmb (J/K)')
+
+    f4 = plt.figure()
+    ax4 = plt.subplot(111)
+    ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
+    ax4.plot(t_cmb,rderiv_spline(t_cmb))
+    ax4.set_xlabel('T_cmb (K)')
+    ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
+
 #     f3 = plt.figure()
 #     ax3 = plt.subplot(111)
-#     ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-#     ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-#     ax3.plot(t_cmb,dEth_ic(t_cmb))
-#     ax3.plot(t_cmb,dEth_oc(t_cmb))
-#     ax3.set_xlabel('T_cmb (K)')
-#     ax3.set_ylabel('dE/dT_cmb (J/K)')
+#     ax3.plot(t_cmb,Eg_m_func(t_cmb))
+#     ax3.plot(t_cmb,L_m_func(t_cmb))
+
+#     f4 = plt.figure()
+#     ax4 = plt.subplot(111)
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
 # 
 #     f4 = plt.figure()
 #     ax4 = plt.subplot(111)
-#     ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
-#     ax4.set_xlabel('T_cmb (K)')
-#     ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
-# 
-# #     f3 = plt.figure()
-# #     ax3 = plt.subplot(111)
-# #     ax3.plot(t_cmb,Eg_m_func(t_cmb))
-# #     ax3.plot(t_cmb,L_m_func(t_cmb))
-# 
-# #     f4 = plt.figure()
-# #     ax4 = plt.subplot(111)
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
-# # 
-# #     f4 = plt.figure()
-# #     ax4 = plt.subplot(111)
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
-# 
-#     plt.show()
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
+
+    plt.show()
 
 
     # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
