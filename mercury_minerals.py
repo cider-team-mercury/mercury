@@ -35,10 +35,10 @@ class gamma_iron(burnman.Mineral):
             'V_0': 7.381e-06, 
             'K_0': 111.5e9,
             'Kprime_0': 5.2,
-            'G_0': 73.7e9,
-            'Gprime_0': 1.72,
-#             'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
-#             'Gprime_0': 2.04,
+#             'G_0': 73.7e9,
+#             'Gprime_0': 1.72,
+            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+            'Gprime_0': 2.04,
             'molar_mass': mFe / 1000.,
             'n': 1,
             'Debye_0': 340., 
@@ -65,10 +65,10 @@ class iron_silicide17(burnman.Mineral):
             'V_0': 6.687e-06, 
             'K_0': 199.e9,
             'Kprime_0': 5.3,
-            'G_0': 73.7e9,
-            'Gprime_0': 1.72,
-#             'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
-#             'Gprime_0': 2.04,
+#             'G_0': 73.7e9,
+#             'Gprime_0': 1.72,
+            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+            'Gprime_0': 2.04,
             'molar_mass': molar_mass,
             'n': 1,
             'Debye_0': 340., # using same as solid iron
@@ -97,7 +97,7 @@ class iron_sulfide (burnman.Mineral):
             'Debye_0': 300., # asymptote to 3R
             'grueneisen_0': 1.5,
             'q_0': 1.5,
-            'eta_s_0': 2. #Invented...do not take too much stock!,
+            'eta_s_0': 2., #Invented...do not take too much stock!,
             'mole_fraction': 0.,
             'weight_percent': 0.,
             'T_0' : 1000.} 
@@ -520,8 +520,8 @@ if __name__ == "__main__":
 #     ax4.plot(p,t,'b')
 
     plt.legend(loc='upper left')
-    plt.xlabel(r'Temperature (K)')
-    plt.ylabel(r'Pressure (GPa)')
+    plt.ylabel(r'Temperature (K)')
+    plt.xlabel(r'Pressure (GPa)')
     plt.savefig('materials/melting_curve.png')
 
     # plot dT/dP of clapeyron slope versus adiabats for 0 wt%
@@ -545,8 +545,8 @@ if __name__ == "__main__":
     ax5.plot(p/1.e9,dT_dP_ad,'g-.',lw=2,label=r"adiabat, low $K'$")
 
     plt.legend(loc='upper right')
-    plt.xlabel(r'$dT/dP$ (K/Pa)')
-    plt.ylabel(r'Pressure (GPa)')
+    plt.ylabel(r'$dT/dP$ (K/Pa)')
+    plt.xlabel(r'Pressure (GPa)')
     plt.savefig('materials/clapeyron_1.png')
 
     # plot Williams form of the adiabat
@@ -571,8 +571,8 @@ if __name__ == "__main__":
     ax6.plot(p/1.e9,dT_dP_ad,'b-',lw=2,label=r'adiabat, low $\alpha$')
 
     plt.legend(loc='upper right')
-    plt.xlabel(r'$dT/dP$ (K/Pa)')
-    plt.ylabel(r'Pressure (GPa)')
+    plt.ylabel(r'$dT/dP$ (K/Pa)')
+    plt.xlabel(r'Pressure (GPa)')
     plt.ylim((0.,50.))
     plt.savefig('materials/clapeyron_2.png')
 

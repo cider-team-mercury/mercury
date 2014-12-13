@@ -160,7 +160,7 @@ class mercuryModel(corePlanet):
 #         self.planet = corePlanet([self.M_inner,self.M_outer,self.M_mantle],
 #                 self.materials,T0,liquidus=liquidus)
 
-    def integrate(self,n_slices=500,P0=40.0e9,n_iter=5,**kwargs):
+    def integrate(self,n_slices=2000,P0=40.0e9,n_iter=5,**kwargs):
         """
         Iteratively determine the pressure, density temperature and gravity profiles
         for the planet as a function of radius within a planet.
@@ -192,7 +192,7 @@ class mercuryModel(corePlanet):
             self.set_innerCore(inner_Mfrac) 
             self.integrate(verbose=False,**kwargs)
 
-    def show_profiles(self):
+    def show_profiles(self,fname=None):
             # testing detection of snowing layers
             print self.detect_snow()
             print self.adiabat_steeper()
@@ -205,26 +205,30 @@ class mercuryModel(corePlanet):
 
             if True:
                 # Plot 
-                plt.subplot(141)
-                plt.plot(self.radial_profile()/1.e3, self.density_profile())
+                plt.subplot(221)
+                plt.plot(self.radial_profile()/1.e3, self.density_profile(),lw=2)
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Density [$kg/m^3$]")
 
-                plt.subplot(142)
-                plt.plot(self.radial_profile()/1.e3, self.gravity_profile())
+                plt.subplot(222)
+                plt.plot(self.radial_profile()/1.e3, self.gravity_profile(),lw=2)
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Gravity [$m/s^2$]")
 
-                plt.subplot(143)
-                plt.plot(self.radial_profile()/1.e3, self.pressure_profile()/1.e9)
+                plt.subplot(223)
+                plt.plot(self.radial_profile()/1.e3,\
+                        self.pressure_profile()/1.e9,lw=2)
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Pressure [$Pa$]")
 
-                plt.subplot(144)
-                plt.plot(self.radial_profile()/1.e3, self.temperature_profile())
-                plt.plot(r_c/1.e3,liq_c,'r')
+                plt.subplot(224)
+                plt.plot(self.radial_profile()/1.e3, self.temperature_profile(),lw=2)
+#                 plt.plot(r_c/1.e3,liq_c,'r')
                 plt.xlabel(r"Radius [$km$]")
                 plt.ylabel(r"Temperature [$K$]")
+
+                if isinstance(fname,str):
+                    plt.savefig(fname)
 
                 plt.show()
 
@@ -428,33 +432,50 @@ class model_suite(object):
     def func_of_ricb(self,label,**kwargs):
         return self.func_of_data('r_icb',label,**kwargs)
 
-    def thermal_energy_change(self):
+    def thermal_energy_change(self,**kwargs):
         m_ic_func = self.func_of_Tcmb('m_ic')
         m_oc_func = self.func_of_Tcmb('m_oc')
-        CpT_avg_ic_func = self.func_of_Tcmb('CpT_avg_ic') # J / kg
-        CpT_avg_oc_func = self.func_of_Tcmb('CpT_avg_oc')
+        CpT_avg_ic_func = self.func_of_Tcmb('CpT_avg_ic',**kwargs) # J / kg
+        CpT_avg_oc_func = self.func_of_Tcmb('CpT_avg_oc',**kwargs)
         Eth_ic = lambda t : CpT_avg_ic_func.derivative()(t) * m_ic_func(t) # J / K
         Eth_oc = lambda t : CpT_avg_oc_func.derivative()(t) * m_oc_func(t)
         return Eth_ic, Eth_oc
 
 
 if __name__ == "__main__":
+    fig_size = [1000/72.27 ,800/72.27]
+    params = {'backend': 'ps', 'axes.labelsize': 22, 'text.fontsize': 22,
+            'legend.fontsize': 18,
+              'xtick.labelsize': 16, 'ytick.labelsize': 16, 
+              'xtick.major.size': 10,'ytick.major.size': 10,
+              'xtick.minor.size': 6,'ytick.minor.size': 6,
+              'xtick.major.width': 2,'ytick.major.width': 2,
+              'xtick.minor.width': 2,'ytick.minor.width': 2,
+              'axes.linewidth': 2, 'xaxis.labelpad' : 50,
+              'text.usetex': False, 'figure.figsize': fig_size,
+              'figure.subplot.bottom': 0.100,'figure.subplot.top': 0.980,'figure.subplot.left': 0.130,'figure.subplot.right': 0.950}
+    plt.rcParams.update(params)
+    # use latex
+    plt.rc('text', usetex=False)
+    plt.rc('font',family='sans-serif')
+
     # Generate profiles
 
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.09,.00)        
+    merc = mercuryModel(0.63,.06,.00)        
 
     # Tabulate and save energetics for a suite of models with a growing core.
-    mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
+#     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
+    mfracs = np.linspace(0.,0.8,41)
     model1 = model_suite(merc,mfracs)
-#     model1.get_energetics()
-#     model1.printData()
-#     model1.saveData('tables/interpolated_63_09_00.dat')
+    model1.get_energetics()
+    model1.printData()
+    model1.saveData('tables/highres2_63_06_00.dat')
 
     # Load results from a saved model suite.
-    model1.loadData('tables/energetics_63_09_00.dat')
-    model1.printData()
+#     model1.loadData('tables/energetics_63_06_00.dat')
+#     model1.printData()
 
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
@@ -462,72 +483,97 @@ if __name__ == "__main__":
 #     merc.show_profiles()
 
 #     ### Test 2: Fit functions of Tcmb and plot energetic quantities
-# 
-#     r_func = model1.func_of_Tcmb('r_icb', s=1e20) # m
-# #     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
-# 
-#     dr_icb_dT_cmb = r_func.derivative() # m / K
-#     Eg_r_func = model1.func_of_Tcmb('Eg_r') # J / m
-#     L_r_func = model1.func_of_Tcmb('L_r') # J / m
+
+    r_func = model1.func_of_Tcmb('r_icb',s=1.e8 ) # m
+#     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
+
+    dr_icb_dT_cmb = r_func.derivative() # m / K
+    #wrap to get rid of unrealistic negative quantities
+    def Eg_r_func(temp):
+        func =  model1.func_of_Tcmb('Eg_r',s=0)
+        t2 = temp[ temp > model1.data.T_cmb[1]]
+        t1 = temp[ temp <= model1.data.T_cmb[1]]
+
+        en2  = float(func(model1.data.T_cmb[1])) * ( model1.data.T_cmb[0] - t2) \
+                        / (model1.data.T_cmb[0] - model1.data.T_cmb[1])
+        en1 = func(t1)
+        return np.hstack((en1,en2))
+
+            
+    def L_r_func(temp):
+        func =  model1.func_of_Tcmb('L_r',s=0)
+        t2 = temp[ temp > model1.data.T_cmb[1]]
+        t1 = temp[ temp <= model1.data.T_cmb[1]]
+
+        en2  = float(func(model1.data.T_cmb[1])) * ( model1.data.T_cmb[0] - t2) \
+                        / (model1.data.T_cmb[0] - model1.data.T_cmb[1])
+        en1 = func(t1)
+        return np.hstack((en1,en2))
+
+
 #     Eg_m_func = model1.func_of_Tcmb('Eg_m')
 #     L_m_func = model1.func_of_Tcmb('L_m')
-# 
-#     dEth_ic, dEth_oc = model1.thermal_energy_change()
-# 
-#     t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
-#     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
-# 
-# 
-#     f1 = plt.figure()
-#     ax1= plt.subplot(111)
-# #     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
-# #     ax1.plot(t_cmb,r_func(t_cmb))
+
+    dEth_ic, dEth_oc = model1.thermal_energy_change(s=1.e8)
+
+    t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
+    t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
+
+
+    f1 = plt.figure()
+    ax1= plt.subplot(111)
+#     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
 #     ax1.plot(t_cmb,r_func(t_cmb))
-#     ax1.set_xlabel('T_cmb (K)')
-#     ax1.set_ylabel('dR_icb (m)')
-# 
-# 
-#     # check units on these
-#     f2 = plt.figure()
-#     ax2 = plt.subplot(111)
-#     ax2.plot(t_cmb,Eg_r_func(t_cmb))
-#     ax2.plot(t_cmb,L_r_func(t_cmb))
-# #     ax2.plot(t_cmb,dEth_ic(t_cmb))
-# #     ax2.plot(t_cmb,dEth_oc(t_cmb))
-#     ax2.set_xlabel('T_cmb (K)')
-#     ax2.set_ylabel('dE/dR_icb (J/m)')
-# 
+    ax1.plot(t_cmb,r_func(t_cmb))
+    ax1.plot(model1.data.T_cmb,model1.data.r_icb,'bo')
+    ax1.set_xlabel('T_cmb (K)')
+    ax1.set_ylabel('dR_icb (m)')
+
+
+    # check units on these
+    f2 = plt.figure()
+    ax2 = plt.subplot(111)
+    ax2.plot(t_cmb,Eg_r_func(t_cmb))
+    ax2.plot(t_cmb,L_r_func(t_cmb))
+    ax2.plot(model1.data.T_cmb,model1.data.Eg_r,'bo')
+    ax2.plot(model1.data.T_cmb,model1.data.L_r,'go')
+#     ax2.plot(t_cmb,dEth_ic(t_cmb))
+#     ax2.plot(t_cmb,dEth_oc(t_cmb))
+    ax2.set_xlabel('T_cmb (K)')
+    ax2.set_ylabel('dE/dR_icb (J/m)')
+
+    f3 = plt.figure()
+    ax3 = plt.subplot(111)
+    ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb),label='Eg')
+    ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb),label='L')
+    ax3.plot(t_cmb,dEth_ic(t_cmb),label='Cpt_ic')
+    ax3.plot(t_cmb,dEth_oc(t_cmb),label='Cpt_oc')
+    ax3.set_xlabel('T_cmb (K)')
+    ax3.set_ylabel('dE/dT_cmb (J/K)')
+    plt.legend()
+
+    f4 = plt.figure()
+    ax4 = plt.subplot(111)
+    ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
+    ax4.set_xlabel('T_cmb (K)')
+    ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
+
 #     f3 = plt.figure()
 #     ax3 = plt.subplot(111)
-#     ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-#     ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb))
-#     ax3.plot(t_cmb,dEth_ic(t_cmb))
-#     ax3.plot(t_cmb,dEth_oc(t_cmb))
-#     ax3.set_xlabel('T_cmb (K)')
-#     ax3.set_ylabel('dE/dT_cmb (J/K)')
+#     ax3.plot(t_cmb,Eg_m_func(t_cmb))
+#     ax3.plot(t_cmb,L_m_func(t_cmb))
+
+#     f4 = plt.figure()
+#     ax4 = plt.subplot(111)
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
 # 
 #     f4 = plt.figure()
 #     ax4 = plt.subplot(111)
-#     ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
-#     ax4.set_xlabel('T_cmb (K)')
-#     ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
-# 
-# #     f3 = plt.figure()
-# #     ax3 = plt.subplot(111)
-# #     ax3.plot(t_cmb,Eg_m_func(t_cmb))
-# #     ax3.plot(t_cmb,L_m_func(t_cmb))
-# 
-# #     f4 = plt.figure()
-# #     ax4 = plt.subplot(111)
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
-# # 
-# #     f4 = plt.figure()
-# #     ax4 = plt.subplot(111)
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
-# #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
-# 
-#     plt.show()
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
+#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
+
+    plt.show()
 
 
     # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
@@ -575,7 +621,8 @@ if __name__ == "__main__":
 #     # determinine profiles at that snapshot for given core radius
 # 
 #     fname='tables/elastic_09_0.csv'
-# #     merc.generate_profiles(df.m_frac[0])
+#     merc.generate_profiles(df.m_frac[0])
+#     merc.show_profiles(fname='materials/profiles.png')
 #     merc.generate_profiles(0.)
 #     r = merc.radius
 #     rho = merc.density
