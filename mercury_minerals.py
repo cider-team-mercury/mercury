@@ -35,16 +35,15 @@ class gamma_iron(burnman.Mineral):
             'V_0': 7.381e-06, 
             'K_0': 111.5e9,
             'Kprime_0': 5.2,
-#             'G_0': 73.7e9,
-#             'Gprime_0': 1.72,
-            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+            'G_0': 83.2e9,  #Shear modulus and derivative from Gleason and Mao, 2013
             'Gprime_0': 2.04,
             'molar_mass': mFe / 1000.,
             'n': 1,
             'Debye_0': 340., 
             'grueneisen_0': 2.28, # are these correct?
             'q_0': 0.21,
-            'eta_s_0': 2. } #Invented... maybe somewhat similar to gruneisen?
+            'eta_s_0': 21., #Estimate from SLB2005 eq 55 and Gleason and Mao
+            }
 
 class iron_silicide17(burnman.Mineral):
     def __init__(self):
@@ -65,16 +64,14 @@ class iron_silicide17(burnman.Mineral):
             'V_0': 6.687e-06, 
             'K_0': 199.e9,
             'Kprime_0': 5.3,
-#             'G_0': 73.7e9,
-#             'Gprime_0': 1.72,
-            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+            'G_0': 83.2e9,  #Shear modulus and derivative from Gleason and Mao, 2013
             'Gprime_0': 2.04,
             'molar_mass': molar_mass,
             'n': 1,
             'Debye_0': 340., # using same as solid iron
             'grueneisen_0': 2.28, # using same as solid iron
             'q_0': 0.21, # using same as solid iron
-            'eta_s_0': 2., #Invented...
+            'eta_s_0': 21., #Estimate from SLB2005 eq 55 and Gleason and Mao
             'mole_fraction' : x[1],
             'weight_percent' : w[1]} 
 
@@ -90,14 +87,14 @@ class iron_sulfide (burnman.Mineral):
             'V_0': 9.991e-6, #  1 / (4.4 g / cm^3) * (.04396 kg / mol)
             'K_0': 54.3e9, 
             'Kprime_0': 4.,
-            'G_0': 83.2,  #Shear modulus and derivative from Gleason and Mao, 2013
+            'G_0': 83.2e9,  #Shear modulus and derivative from Gleason and Mao, 2013
             'Gprime_0': 2.04,
             'molar_mass': .04396, 
             'n': 2,
             'Debye_0': 300., # asymptote to 3R
             'grueneisen_0': 1.5,
             'q_0': 1.5,
-            'eta_s_0': 2., #Invented...do not take too much stock!,
+            'eta_s_0': 21., #Estimate from SLB2005 eq 55 and Gleason and Mao
             'mole_fraction': 0.,
             'weight_percent': 0.,
             'T_0' : 1000.} 
