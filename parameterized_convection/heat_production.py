@@ -25,18 +25,14 @@ from scipy.constants import pi, N_A, Julian_year, gram
 #  McDonough, William F., and S-S. Sun. "The composition of the Earth." Chemical geology
 #  120.3 (1995): 223-253.
 #
-#  Poirier, Jean-Paul. Introduction to the Physics of the Earth's Interior. Cambridge University Press, 2000.
+#  Hauck II, Steven A., et al. "Internal and tectonic evolution of Mercury." Earth and
+#  Planetary Science Letters 222.3 (2004): 713-728.
+
 
 class radioactive_species(object):
     def __init__(self, heat_release, half_life, bulk_concentration, partition_coefficient=None):
         """
-        Assumes that the concentrations are given in ppm. It turns out that most close-packed oxides and
-        silicates have a mean atomic mass close to 20, here we use a average Mantle value of 21.1 g
-        followingPoirier (1991).
-        Mg2SiO4 = 21.13 g
-        MgSiO3 = 20.12 g
-        MgO = 20.15 g
-
+        Assumes that the concentrations are given in ppm, WHICH IS WEIGHT FRACTION!
         :param heat_release:
         :param half_life:
         :param concentration:
@@ -75,6 +71,8 @@ class radiogenic_heating(object):
         U235fraction = 0.0071
         K40fraction  = 0.000119
         Th232fraction = 1.0
+        # From Hauck et al 2004
+        self.bulk_distribution_coefficient = 0.1
         natural_uranium_concentration = uranium_params.pop('bulk_concentration')
         #TODO FINISH THIS.
         self.uranium235 = radioactive_species(heat_release = uranium_params.pop('heat_release_235'),
@@ -91,6 +89,15 @@ class radiogenic_heating(object):
         total_heat = self.uranium235.heat_generation_rate(time) + self.uranium238.heat_generation_rate(time) + \
                      self.thorium.heat_generation_rate(time) + 0.000119*self.potassium.heat_generation_rate(time)
         return total_heat
+
+    def batch_melting_fractionization(self, melt_fraction):
+        '''
+        Fractionation due to batch-melting, equation (12) from Hauck et al 2004.
+        :param melt_fraction:
+        :return:
+        '''
+        concentration_melt = 1/(melt_fraction+self.bulk_distribution_coefficient*(1-melt_fraction))
+        return concentration_melt
 
 # ------------------------------------------------------------- #
 # - Partition coefficients
