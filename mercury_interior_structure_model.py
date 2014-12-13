@@ -469,13 +469,13 @@ if __name__ == "__main__":
 #     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
     mfracs = np.linspace(0.,0.8,41)
     model1 = model_suite(merc,mfracs)
-    model1.get_energetics()
-    model1.printData()
-    model1.saveData('tables/highres2_63_06_00.dat')
+#     model1.get_energetics()
+#     model1.printData()
+#     model1.saveData('tables/highres2_63_06_00.dat')
 
     # Load results from a saved model suite.
-#     model1.loadData('tables/energetics_63_06_00.dat')
-#     model1.printData()
+    model1.loadData('tables/highres2_63_06_00.dat')
+    model1.printData()
 
 
 #     ### Test 1: Look at profiles and determine whether snow predicted
@@ -527,7 +527,7 @@ if __name__ == "__main__":
     ax1.plot(t_cmb,r_func(t_cmb))
     ax1.plot(model1.data.T_cmb,model1.data.r_icb,'bo')
     ax1.set_xlabel('T_cmb (K)')
-    ax1.set_ylabel('dR_icb (m)')
+    ax1.set_ylabel('R_icb (m)')
 
 
     # check units on these
