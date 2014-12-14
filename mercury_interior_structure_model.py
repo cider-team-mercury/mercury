@@ -441,6 +441,24 @@ class model_suite(object):
         Eth_oc = lambda t : CpT_avg_oc_func.derivative()(t) * m_oc_func(t)
         return Eth_ic, Eth_oc
 
+    def get_effective_core_heat_capacity(self):
+        m_func = model1.func_of_Tcmb('m_ic',s=2.e42)
+        dm_dT_cmb = m_func.derivative() # kg / K
+        Eg_m_func = model1.func_of_Tcmb('Eg_m',s=0)
+        L_m_func = model1.func_of_Tcmb('L_m',s=0)
+        dEth_ic, dEth_oc = model1.thermal_energy_change(s=1.e8)
+        thermal_energy_change = lambda t_cmb: dEth_ic(t_cmb) + dEth_oc(t_cmb)
+        gravitational_energy_release = lambda t_cmb: Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)
+        latent_heat = lambda t_cmb: L_m_func(t_cmb)*dm_dT_cmb(t_cmb)
+        total = lambda t_cmb: thermal_energy_change(t_cmb) - gravitational_energy_release(t_cmb) - latent_heat(t_cmb)
+        return thermal_energy_change, gravitational_energy_release, latent_heat, total
+
+# Define a mercury model with a given total core mass and
+# .58,.68,.63 (range in masses found in Hauck)
+merc = mercuryModel(0.63,.06,.00)
+mfracs = np.linspace(0.,0.8,41)
+model1 = model_suite(merc,mfracs)
+model1.loadData('../tables/highres2_63_06_00.dat')
 
 if __name__ == "__main__":
     fig_size = [1000/72.27 ,800/72.27]

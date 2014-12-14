@@ -27,13 +27,13 @@
 # Earth and Planetary Science Letters 222.3 (2004): 713-728.
 
 import numpy as np
-# import matplotlib.pyplot as plt
 import scipy.integrate as integrate
-# import scipy.optimize as opt
-from scipy.misc import derivative
 from planetary_energetics import Layer
-from mercury_parameters import mantle_params, rho_core, core_heat_capacity, Radius
-
+from mercury_parameters import mantle_params
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join('.', os.pardir)))
+from mercury_interior_structure_model import model1
 import mercury_mantle_melt_model as melt_model
 import matplotlib.pyplot as plt
 from heat_production import WD94, schubert_spoon_heating_model
@@ -67,7 +67,7 @@ class MantleLayer(Layer):
     """
 
     def __init__(self, inner_radius, outer_radius, crustal_thickness, params, radiogenic_heating_model,
-                 T_cmb_initial=None, T_mantle_initial=None, D_lid_initial=None):
+                 T_cmb_initial=None, T_mantle_initial=None, D_lid_initial=None, core_energetics_model=model1):
         Layer.__init__(self, inner_radius, outer_radius, params)
         """
         Default Values for Mercury are loaded from the file mercury_paramaters, which are
@@ -82,6 +82,7 @@ class MantleLayer(Layer):
         self.initial_conditions = np.array([T_mantle_initial, T_cmb_initial, D_lid_initial])
         self.set_melt_fraction()
         self.time = 0.0
+        self.core_energetic_model = model1
 
     def effective_heat_capacity(self, volume_convecting_mantle):
         """
@@ -385,8 +386,6 @@ class MantleLayer(Layer):
         :param mantle_heat_production:
         :return:
         """
-        if stagnant_lid_thickness<0:
-            stagnant_lid_thickness=0.0
         radius_stagnant_lid, volume_stagnant_lid = self.stagnant_lid_geometry(stagnant_lid_thickness)
         surface_area_base_stagnant_lid = 4.*np.pi*np.power(radius_stagnant_lid, 2)
         volume_core = 4./3.*np.pi*np.power(self.inner_radius, 3)
@@ -420,7 +419,9 @@ class MantleLayer(Layer):
         return self.crust_radiogenic_fraction * self.params['crustal_density']*self.radiogenic_heating_model.heat_production(time)
 
     def core_energy_balance(self, T_upper_mantle, T_cmb, stagnant_lid_thickness):
-        lhs = rho_core*core_heat_capacity*4./3.*np.pi*np.power(self.inner_radius, 3.)
+        thermal_energy_change, gravitational_energy_release, latent_heat, total_effective_heat_capacity = \
+            self.core_energetic_model.get_effective_core_heat_capacity()
+        lhs = total_effective_heat_capacity(T_cmb)
         lower_heat_flux = self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         dTc_dt = -lower_heat_flux*self.inner_surface_area/lhs
         return dTc_dt
