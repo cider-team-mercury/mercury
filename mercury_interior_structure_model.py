@@ -637,6 +637,9 @@ if __name__ == "__main__":
 
     partlist =[]
     for i,layer in enumerate(merc.get_layers()):
+        if nsteps[i] == 0.:
+            print 'skip'
+            continue
         r0 = merc.radius[layer]
         rho0 = merc.density[layer]
         vp0 = merc.vp[layer]
