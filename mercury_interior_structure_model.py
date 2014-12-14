@@ -463,7 +463,7 @@ if __name__ == "__main__":
 
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.09,.00)        
+    merc = mercuryModel(0.63,.06,.00)        
 
     # Tabulate and save energetics for a suite of models with a growing core.
 #     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
@@ -474,8 +474,8 @@ if __name__ == "__main__":
 #     model1.saveData('tables/highres2_63_06_00.dat')
 
     # Load results from a saved model suite.
-#     model1.loadData('tables/highres2_63_06_00.dat')
-    model1.loadData('tables/energetics_63_09_00.dat')
+    model1.loadData('tables/highres2_63_06_00.dat')
+#     model1.loadData('tables/energetics_63_09_00.dat')
     model1.printData()
 
 
@@ -585,8 +585,8 @@ if __name__ == "__main__":
                 'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
 
     # Chosen inner core radius
-#     R = 650. * 1000 # 650 km
-    R = 1325. * 1000 # 1325 km
+    R = 650. * 1000 # 650 km
+#     R = 1325. * 1000 # 1325 km
 
     quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
                 'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
@@ -622,9 +622,9 @@ if __name__ == "__main__":
 #     # determinine profiles at that snapshot for given core radius
 #     # print with the calues on the boundaries doubled (for seismology code)
 # 
-    fname='tables/elastic_09_0'
-#     merc.generate_profiles(df.m_frac[0])
-    merc.generate_profiles(0.)
+    fname='tables/elastic_06_650'
+    merc.generate_profiles(df.m_frac[0])
+#     merc.generate_profiles(0.)
 #     merc.show_profiles(fname='materials/profiles.png')
     bounds = np.hstack((0.,merc.boundaries))
     rlayer = bounds[1:] - bounds[:-1]
@@ -637,6 +637,10 @@ if __name__ == "__main__":
 
     partlist =[]
     for i,layer in enumerate(merc.get_layers()):
+        if nsteps[i] == 0.:
+            print 'skip'
+            bounds[i+1] = 0.
+            continue
         r0 = merc.radius[layer]
         rho0 = merc.density[layer]
         vp0 = merc.vp[layer]
