@@ -9,6 +9,8 @@
 \usepackage{caption}
 \usepackage{color}
 \usepackage{amsmath}
+\usepackage{subcaption}
+
 
 
 
@@ -120,6 +122,7 @@ This study was initiated at the 2014 CIDER summer program on the dynamics of pla
 
 \section*{What if we had an InSight-style seismometer?}
 
+
 \columnbreak
 
 \section*{Dynamo simulation}
@@ -135,21 +138,41 @@ Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variati
 \label{flux}
 \end{center}
 
+\begin{figure*}
+ \includegraphics[width=0.18\textwidth]{CMB_flux.pdf} 
+\caption{GHAERa }
+\label{flux}
+\end{figure*}
+
 \begin{center}
 \begin{tabular}{cc}
  \includegraphics[width=0.12\textwidth]{br_cmb_x0.png} &
  \includegraphics[width=0.12\textwidth]{br_cmb_x10.png}
 \end{tabular}
-\captionof{figure}{ }
+\captionof{figure}{
+Radial magnetic field at CMB for the 10 times larger heat flux heterogeneity case (right) and homogeneous heat flux case (left).
+We model a thermally driven dynamo in a rotating spherical shell with $r_{i}/r_{o} = 0.35$ (i.e.  $r_i$ = 700km). 
+ }
 \label{dynamo}
 \end{center}
 
+\begin{itemize}
+\item Large heat flux at the pole induces intense magnetic field inside of tangent cylinder.
+\item This magnetic patch does not stick in the present parameter regime.
+\item The obtained magnetic field is larger than that  the homogeneous heat flux case in the dipolar regime. The present solution may be too strong to explain the mercury's magnetic field. We need to test more different cases .
+\end{itemize}
 
-
-\fbox {\parbox[br]{0.30\textwidth}{ \large References \\ \small
-
-} }
-
+{ \large References \\ \small
+A. M. Dziewonski and D. L. Anderson: Preliminary reference Earth model. Phys. Earth Planet. Int. 25, 297–356 (1981).
+H. P. Crotwell, T. J. Owens, and J. Ritsema. The TauP Toolkit: Flexible Seismic Travel-time and Ray-path Utilities. Seismol. Res. Lett., 70(2), 154–160 (1999). 
+M. Dumberry and A. Rivoldini, Mercury’s inner core size and core-crystallization regime, Icarus, 248, 254-268 (2015).
+ }
+\\
+{ \large Acknowledgements \\ \small
+This project was initiated at the 2014 CIDER summer program.  We are grateful for continuing support from CIDER- NSF: 1135452.
+Data for the Fe-FeS liquidus model was compiled and interpolated by June Wick and Nick Knezek.
+We are grateful for helpful discussions with Bruce Buffett, Chris Davies, Mathieu Dumberry, and numerous CIDER participants.
+}
 
 \end{multicols}
 
