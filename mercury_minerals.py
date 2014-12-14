@@ -507,7 +507,7 @@ if __name__ == "__main__":
     tlow  = burnman.geotherm.adiabatic(p,np.array([1900]),lFe_low_gamma)
     tlow2 = burnman.geotherm.adiabatic(p,np.array([1500]),lFe_low_gamma)
 #     t  = burnman.geotherm.adiabatic(p/1.e9,np.array([1900]),lFe)
-    ax4.plot(p/1.e9,liq_anzellini,'k',lw=3,label=r'$T_m$, 0 wt.% S') 
+    ax4.plot(p/1.e9,liq_anzellini,'k',lw=3,label=r'$dT_m$, 0 wt.% S') 
     ax4.plot(p/1.e9,liq_dum10,'k',lw=2,label=r'$T_m$, 10 wt.% S,linear') 
     ax4.plot(p/1.e9,liq10,'k--',lw=2,label=r'$T_m$, 10 wt.% S,interp1')
     ax4.plot(p/1.e9,liq_no14,'k-.',lw=2,label=r'$T_m$, 10 wt.% S,interp2') 
@@ -524,22 +524,22 @@ if __name__ == "__main__":
     # plot dT/dP of clapeyron slope versus adiabats for 0 wt%
     fig5 = plt.figure()
     ax5 = plt.subplot(111)
-    ax5.plot(p/1.e9,dT_dP_anzellini,'k',lw=3,label=r'$T_m$, 0 wt.% S')
-    ax5.plot(p/1.e9,dT_dP_liq,'k--',lw=2,label=r'$T_m$, 0 wt.% S,interp1') 
+    ax5.plot(p/1.e9,dT_dP_anzellini,'k',lw=3,label=r'$dT_m/dP$, 0 wt.% S')
+    ax5.plot(p/1.e9,dT_dP_liq,'k--',lw=2,label=r'$dT_m/dP$, 0 wt.% S,interp1') 
 
     t =burnman.geotherm.adiabatic(p,np.array([1700.]),lFe_high_gamma)
     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p/1.e9,dT_dP_ad,'r-',lw=2,label=r'adiabat, high $\alpha$')
+    ax5.plot(p/1.e9,dT_dP_ad,'r-',lw=2,label=r'$dT_{\rm ad}$, high $\alpha$')
     t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_low_gamma)
     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p/1.e9,dT_dP_ad,'g-',lw=2,label=r'adiabat, low $\alpha$')
+    ax5.plot(p/1.e9,dT_dP_ad,'g-',lw=2,label=r'$dT_{\rm ad}$, low $\alpha$')
 
     t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_high_kprime)
     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p/1.e9,dT_dP_ad,'g--',lw=2,label=r"adiabat, high $K'$")
+    ax5.plot(p/1.e9,dT_dP_ad,'g--',lw=2,label=r"$dT_{\rm ad}$, high $K'$")
     t =burnman.geotherm.adiabatic(p,np.array([1900.]),lFe_low_kprime)
     dT_dP_ad = np.gradient(t) / np.gradient(p) * 1.e9
-    ax5.plot(p/1.e9,dT_dP_ad,'g-.',lw=2,label=r"adiabat, low $K'$")
+    ax5.plot(p/1.e9,dT_dP_ad,'g-.',lw=2,label=r"$dT_{\rm ad}$, low $K'$")
 
     plt.legend(loc='upper right')
     plt.ylabel(r'$dT/dP$ (K/Pa)')
