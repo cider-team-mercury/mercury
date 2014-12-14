@@ -42,7 +42,7 @@ class radioactive_species(object):
         """
         self.half_life = half_life * Julian_year  # Convert from years to seconds
         self.heat_release = heat_release
-        self.four_and_a_half_Gyr = 4.5*Julian_year*1.e9
+        self.four_and_a_half_Gyr = 3.5*Julian_year*1.e9
         self.bulk_concentration = bulk_concentration*1.e-6 # ppm
         self.initial_bulk_concentration = self.bulk_concentration * np.exp(self.four_and_a_half_Gyr * np.log(2.) / self.half_life)
         self.partition_coefficient = partition_coefficient
