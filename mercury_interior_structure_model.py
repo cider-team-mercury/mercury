@@ -194,8 +194,8 @@ class mercuryModel(corePlanet):
 
     def show_profiles(self,fname=None):
             # testing detection of snowing layers
-            print self.detect_snow()
-            print self.adiabat_steeper()
+#             print self.detect_snow()
+#             print self.adiabat_steeper()
 
             outer_core = self.outer_core()
             core = self.core()
@@ -463,7 +463,7 @@ if __name__ == "__main__":
 
     # Define a mercury model with a given total core mass and 
     # .58,.68,.63 (range in masses found in Hauck)
-    merc = mercuryModel(0.63,.06,.00)        
+    merc = mercuryModel(0.63,.09,.00)        
 
     # Tabulate and save energetics for a suite of models with a growing core.
 #     mfracs = np.hstack((np.linspace(0.,0.1,11),np.linspace(0.15,0.8,14)) )
@@ -474,7 +474,8 @@ if __name__ == "__main__":
 #     model1.saveData('tables/highres2_63_06_00.dat')
 
     # Load results from a saved model suite.
-    model1.loadData('tables/highres2_63_06_00.dat')
+#     model1.loadData('tables/highres2_63_06_00.dat')
+    model1.loadData('tables/energetics_63_09_00.dat')
     model1.printData()
 
 
@@ -573,7 +574,7 @@ if __name__ == "__main__":
 #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
 #     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
 
-    plt.show()
+#     plt.show()
 
 
     # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
@@ -619,30 +620,65 @@ if __name__ == "__main__":
     print df
 
 #     # determinine profiles at that snapshot for given core radius
+#     # print with the calues on the boundaries doubled (for seismology code)
 # 
-#     fname='tables/elastic_09_0.csv'
+    fname='tables/elastic_09_0'
 #     merc.generate_profiles(df.m_frac[0])
+    merc.generate_profiles(0.)
 #     merc.show_profiles(fname='materials/profiles.png')
-#     merc.generate_profiles(0.)
-#     r = merc.radius
-#     rho = merc.density
-#     vp = merc.vp
-#     vs = merc.vs
-#     K = merc.K
-#     G = merc.G
-#     vs[np.isnan(vs)] = 0. # Filter out nonsense
-#     G[G < 0.] = 0.
-# 
-#     profiles = pd.DataFrame()
-#     profiles['r'] = r
-#     profiles['rho'] = rho
-#     profiles['vp'] = vp
-#     profiles['vs'] = vs
-#     profiles['K'] = K
-#     profiles['G'] = G
-# 
-#     print profiles
-#     profiles.to_csv(fname)
+    bounds = np.hstack((0.,merc.boundaries))
+    rlayer = bounds[1:] - bounds[:-1]
 
+    N = 350
+    nsteps = np.floor(N * rlayer / sum(rlayer)).astype(int)
+    nreplace = [nsteps[0],nsteps[1]]
 
+#     rstep = np.hstack([ np.linspace(x,y,z) for x,y,z in zip(bounds[:-1],bounds[1:],nsteps) ])
 
+    partlist =[]
+    for i,layer in enumerate(merc.get_layers()):
+        r0 = merc.radius[layer]
+        rho0 = merc.density[layer]
+        vp0 = merc.vp[layer]
+        vs0 = merc.vs[layer]
+        vphi0 = merc.vphi[layer]
+        K0 = merc.K[layer]
+        G0 = merc.G[layer]
+
+        rhofunc = UnivariateSpline(r0,rho0,k=1)
+        vpfunc = UnivariateSpline(r0,vp0,k=1)
+        vsfunc = UnivariateSpline(r0,vs0,k=1)
+        vphifunc = UnivariateSpline(r0,vphi0,k=1)
+        Kfunc = UnivariateSpline(r0,K0,k=1)
+        Gfunc = UnivariateSpline(r0,G0,k=1)
+
+        rstep = np.linspace(bounds[i],bounds[i+1],nsteps[i])
+        profile = pd.DataFrame()
+        profile['r'] = rstep
+        profile['rho'] = rhofunc(rstep)
+        profile['vp'] = vpfunc(rstep)
+        profile['vs'] = vsfunc(rstep)
+        profile['vphi'] = vsfunc(rstep)
+        profile['K'] = Kfunc(rstep)
+        profile['G'] = Gfunc(rstep)
+
+        partlist.append(profile)
+
+    profiles = pd.concat(partlist)
+    profiles.index = np.arange(len(profiles))
+    profiles[np.isnan(profiles)] = 0.
+    profiles[profiles < 0.] = 0.
+
+    print profiles
+    print fname+'.csv'
+    profiles.to_csv(fname+'.csv')
+
+#     vlist = merc.velocities_at_boundaries()
+#     for v,end in zip(vlist,['_icb.csv','_cmb.csv']):
+#         df1 = pd.DataFrame(v)
+#         df1.columns = profiles.columns
+#         print df1
+#         print fname+end
+#         df1.to_csv(fname + end)
+ 
+plt.show()

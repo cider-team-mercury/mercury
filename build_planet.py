@@ -113,6 +113,9 @@ class cm_Planet(object):
         # iterate over layers
         last = -1.
         for bound,comp in zip(self.massBelowBoundary,self.compositions):
+            if bound == 0.:
+                 comp = self.compositions[1]
+
             layer =  (self.int_mass > last) & ( self.int_mass <= bound)
             mrange = self.int_mass[ layer ] #range in int_mass within the layer
 
@@ -553,7 +556,7 @@ class cm_Planet(object):
     def get_boundaries(self):
         x = len(self.int_mass) 
         bounds = []
-        for layer in self.get(layers):
+        for layer in self.get_layers():
             idxs = np.arange(x)[layer]
             bounds.append(idxs[-1])
         return np.array(bounds)
@@ -582,26 +585,33 @@ class cm_Planet(object):
     def G_profile(self):
         return self.G
     def velocities_at_boundaries(self):
-        bonunds = self.get_boundaries()[:-1]
+        bounds = self.get_boundaries()[:-1]
         phases = self.compositions
         vels = []
         for i,bound in enumerate(bounds):
-            p_bound = self.pressure(bound)
-            t_bound = self.temperature(bound)
+            p_bound = self.pressure[bound]
+            t_bound = self.temperature[bound]
             lower_phase = phases[i]
-            upper_phase = phase[i+1]
+            upper_phase = phases[i+1]
             lower_phase.set_state(p_bound,t_bound)
             upper_phase.set_state(p_bound,t_bound)
+            r = self.boundaries[i]
 
             rho1, vp1, vs1, vphi1, K1, G1 = burnman.velocities_from_rock(lower_phase,\
-                    np.array(p_bound), np.array(t_bound))
+                    np.array([p_bound]), np.array([t_bound]))
             rho2, vp2, vs2, vphi2, K2, G2 = burnman.velocities_from_rock(upper_phase,\
-                    np.array(p_bound), np.array(t_bound))
-            vel = np.array( [ [float(x) for x in [rho1, vp1, vs1, vphi1, K1, G1] ],\
-                [float(x) for x in [rho2, vp2, vs2, vphi2, K2, G2] ] ] )
+                    np.array([p_bound]), np.array([t_bound]))
+
+            if vs1 < 0. or np.isnan(vs1): vs1 = 0.
+            if vs2 < 0. or np.isnan(vs2): vs2 = 0.
+            if G1 < 0. or np.isnan(G1): G1 = 0.
+            if G2 < 0. or np.isnan(G2): G2 = 0.
+
+            vel = np.array([[r]+ [float(x) for x in [rho1, vp1, vs1, vphi1, K1, G1] ],\
+                [r] +[float(x) for x in [rho2, vp2, vs2, vphi2, K2, G2] ] ] )
             vels.append(vel)
 
-            return vels
+        return vels
 
 class corePlanet(cm_Planet):
     def __init__(self,  masses, compositions, temperatures, liquidus=None,materials=None,**kwargs):
