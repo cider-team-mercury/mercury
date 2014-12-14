@@ -444,9 +444,9 @@ class model_suite(object):
 
 if __name__ == "__main__":
     fig_size = [1000/72.27 ,800/72.27]
-    params = {'backend': 'ps', 'axes.labelsize': 22, 'text.fontsize': 22,
-            'legend.fontsize': 18,
-              'xtick.labelsize': 16, 'ytick.labelsize': 16, 
+    params = {'backend': 'ps', 'axes.labelsize': 28, 'text.fontsize': 28,
+            'legend.fontsize': 28,
+              'xtick.labelsize': 22, 'ytick.labelsize': 22, 
               'xtick.major.size': 10,'ytick.major.size': 10,
               'xtick.minor.size': 6,'ytick.minor.size': 6,
               'xtick.major.width': 2,'ytick.major.width': 2,
@@ -485,204 +485,159 @@ if __name__ == "__main__":
 
 #     ### Test 2: Fit functions of Tcmb and plot energetic quantities
 
-    r_func = model1.func_of_Tcmb('r_icb',s=1.e8 ) # m
-#     r_func = model1.func_of_Tcmb('r_icb',k=2) # m
+    m_func = model1.func_of_Tcmb('m_ic',s=2.e42)
+    dm_dT_cmb = m_func.derivative() # kg / K
 
-    dr_icb_dT_cmb = r_func.derivative() # m / K
     #wrap to get rid of unrealistic negative quantities
-    def Eg_r_func(temp):
-        func =  model1.func_of_Tcmb('Eg_r',s=0)
-        t2 = temp[ temp > model1.data.T_cmb[1]]
-        t1 = temp[ temp <= model1.data.T_cmb[1]]
-
-        en2  = float(func(model1.data.T_cmb[1])) * ( model1.data.T_cmb[0] - t2) \
-                        / (model1.data.T_cmb[0] - model1.data.T_cmb[1])
-        en1 = func(t1)
-        return np.hstack((en1,en2))
-
-            
-    def L_r_func(temp):
-        func =  model1.func_of_Tcmb('L_r',s=0)
-        t2 = temp[ temp > model1.data.T_cmb[1]]
-        t1 = temp[ temp <= model1.data.T_cmb[1]]
-
-        en2  = float(func(model1.data.T_cmb[1])) * ( model1.data.T_cmb[0] - t2) \
-                        / (model1.data.T_cmb[0] - model1.data.T_cmb[1])
-        en1 = func(t1)
-        return np.hstack((en1,en2))
-
-
-#     Eg_m_func = model1.func_of_Tcmb('Eg_m')
-#     L_m_func = model1.func_of_Tcmb('L_m')
+    Eg_m_func = model1.func_of_Tcmb('Eg_m',s=0)
+    L_m_func = model1.func_of_Tcmb('L_m',s=0)
 
     dEth_ic, dEth_oc = model1.thermal_energy_change(s=1.e8)
 
-    t_icb = np.linspace(model1.data.T_icb.min(),model1.data.T_icb.max(),100)
     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
 
 
     f1 = plt.figure()
     ax1= plt.subplot(111)
-#     ax1.plot(t_icb,model1.func_of_Ticb('r_icb')(t_icb))
-#     ax1.plot(t_cmb,r_func(t_cmb))
-    ax1.plot(t_cmb,r_func(t_cmb))
-    ax1.plot(model1.data.T_cmb,model1.data.r_icb,'bo')
+    ax1.plot(t_cmb,m_func(t_cmb))
+    ax1.plot(model1.data.T_cmb,model1.data.m_ic,'bo')
     ax1.set_xlabel('T_cmb (K)')
     ax1.set_ylabel('R_icb (m)')
 
-
-    # check units on these
     f2 = plt.figure()
     ax2 = plt.subplot(111)
-    ax2.plot(t_cmb,Eg_r_func(t_cmb))
-    ax2.plot(t_cmb,L_r_func(t_cmb))
-    ax2.plot(model1.data.T_cmb,model1.data.Eg_r,'bo')
-    ax2.plot(model1.data.T_cmb,model1.data.L_r,'go')
-#     ax2.plot(t_cmb,dEth_ic(t_cmb))
-#     ax2.plot(t_cmb,dEth_oc(t_cmb))
+    ax2.plot(t_cmb,Eg_m_func(t_cmb))
+    ax2.plot(t_cmb,L_m_func(t_cmb))
+    ax2.plot(model1.data.T_cmb,model1.data.Eg_m,'bo')
+    ax2.plot(model1.data.T_cmb,model1.data.L_m,'go')
     ax2.set_xlabel('T_cmb (K)')
-    ax2.set_ylabel('dE/dR_icb (J/m)')
+    ax2.set_ylabel('dE/dM_ic (J/kg)')
 
     f3 = plt.figure()
     ax3 = plt.subplot(111)
-    ax3.plot(t_cmb,-Eg_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb),label='Eg')
-    ax3.plot(t_cmb,-L_r_func(t_cmb)*dr_icb_dT_cmb(t_cmb),label='L')
-    ax3.plot(t_cmb,dEth_ic(t_cmb),label='Cpt_ic')
-    ax3.plot(t_cmb,dEth_oc(t_cmb),label='Cpt_oc')
-    ax3.set_xlabel('T_cmb (K)')
-    ax3.set_ylabel('dE/dT_cmb (J/K)')
-    plt.legend()
+    ax3.plot(t_cmb,-Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb),label=r'$dE_g/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,-L_m_func(t_cmb)*dm_dT_cmb(t_cmb),label=r'$dE_L/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,dEth_ic(t_cmb),label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,dEth_oc(t_cmb),label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
+    ax3.set_xlabel(r'$T_{\rm cmb}$ (K)')
+    ax3.set_ylabel(r'$dE/dT_{\rm cmb}$ (J/K)')
+    plt.legend(loc='upper left')
 
     f4 = plt.figure()
     ax4 = plt.subplot(111)
-    ax4.plot(t_cmb,dr_icb_dT_cmb(t_cmb))
+    ax4.plot(t_cmb,dm_dT_cmb(t_cmb))
     ax4.set_xlabel('T_cmb (K)')
-    ax4.set_ylabel('dR_icb/dT_cmb (m/K)')
+    ax4.set_ylabel('dM_ic/dT_cmb (kg/K)')
 
-#     f3 = plt.figure()
-#     ax3 = plt.subplot(111)
-#     ax3.plot(t_cmb,Eg_m_func(t_cmb))
-#     ax3.plot(t_cmb,L_m_func(t_cmb))
+    plt.show()
 
-#     f4 = plt.figure()
-#     ax4 = plt.subplot(111)
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic')(t))
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc')(t))
+
+#     # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
+#     # then return an interpolated quantity for
 # 
-#     f4 = plt.figure()
-#     ax4 = plt.subplot(111)
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_ic').derivative()(t))
-#     ax4.plot(t,model1.func_of_Ticb('CpT_avg_oc').derivative()(t))
-
-#     plt.show()
-
-
-    # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
-    # then return an interpolated quantity for
-
-    model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
-                'Cp_oc','w_bulk','w_l','w_s','P_cen','T_icb','T_cmb','P_icb','P_cmb',\
-                'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
-
-    # Chosen inner core radius
-    R = 650. * 1000 # 650 km
-#     R = 1325. * 1000 # 1325 km
-
-    quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
-                'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
-
-    funcs = []
-    vals = []
-    for q in quants:
-#         print q
-        func = model1.func_of_ricb(q)
-        val = float(func(R))
-        funcs.append(func)
-        vals.append(val)
-
-    df = pd.DataFrame([vals])
-    df.columns = quants
+#     model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
+#                 'Cp_oc','w_bulk','w_l','w_s','P_cen','T_icb','T_cmb','P_icb','P_cmb',\
+#                 'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
+# 
+#     # Chosen inner core radius
+#     R = 650. * 1000 # 650 km
+# #     R = 1325. * 1000 # 1325 km
+# 
+#     quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
+#                 'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
+# 
+#     funcs = []
+#     vals = []
+#     for q in quants:
+# #         print q
+#         func = model1.func_of_ricb(q)
+#         val = float(func(R))
+#         funcs.append(func)
+#         vals.append(val)
+# 
+#     df = pd.DataFrame([vals])
+#     df.columns = quants
+# #     print df
+# 
+#     # Test 4: Wishlist quadratic fit to liquidus
+# 
+#     p_arr = model1.data.P_icb
+#     t_arr = model1.data.T_icb
+#     
+#     quadratic_const = np.polyfit(p_arr,t_arr,2)
+# 
+# #     ptest = 30.e9
+# #     print np.polyval(quadratic_const,ptest)
+#     df['Tm0'] = [ quadratic_const[-1] ]
+#     df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
+#     df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
+# 
 #     print df
-
-    # Test 4: Wishlist quadratic fit to liquidus
-
-    p_arr = model1.data.P_icb
-    t_arr = model1.data.T_icb
-    
-    quadratic_const = np.polyfit(p_arr,t_arr,2)
-
-#     ptest = 30.e9
-#     print np.polyval(quadratic_const,ptest)
-    df['Tm0'] = [ quadratic_const[-1] ]
-    df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
-    df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
-
-    print df
-
-#     # determinine profiles at that snapshot for given core radius
-#     # print with the calues on the boundaries doubled (for seismology code)
 # 
-    fname='tables/elastic_06_650'
-    merc.generate_profiles(df.m_frac[0])
-#     merc.generate_profiles(0.)
-#     merc.show_profiles(fname='materials/profiles.png')
-    bounds = np.hstack((0.,merc.boundaries))
-    rlayer = bounds[1:] - bounds[:-1]
-
-    N = 350
-    nsteps = np.floor(N * rlayer / sum(rlayer)).astype(int)
-    nreplace = [nsteps[0],nsteps[1]]
-
-#     rstep = np.hstack([ np.linspace(x,y,z) for x,y,z in zip(bounds[:-1],bounds[1:],nsteps) ])
-
-    partlist =[]
-    for i,layer in enumerate(merc.get_layers()):
-        if nsteps[i] == 0.:
-            print 'skip'
-            bounds[i+1] = 0.
-            continue
-        r0 = merc.radius[layer]
-        rho0 = merc.density[layer]
-        vp0 = merc.vp[layer]
-        vs0 = merc.vs[layer]
-        vphi0 = merc.vphi[layer]
-        K0 = merc.K[layer]
-        G0 = merc.G[layer]
-
-        rhofunc = UnivariateSpline(r0,rho0,k=1)
-        vpfunc = UnivariateSpline(r0,vp0,k=1)
-        vsfunc = UnivariateSpline(r0,vs0,k=1)
-        vphifunc = UnivariateSpline(r0,vphi0,k=1)
-        Kfunc = UnivariateSpline(r0,K0,k=1)
-        Gfunc = UnivariateSpline(r0,G0,k=1)
-
-        rstep = np.linspace(bounds[i],bounds[i+1],nsteps[i])
-        profile = pd.DataFrame()
-        profile['r'] = rstep
-        profile['rho'] = rhofunc(rstep)
-        profile['vp'] = vpfunc(rstep)
-        profile['vs'] = vsfunc(rstep)
-        profile['vphi'] = vsfunc(rstep)
-        profile['K'] = Kfunc(rstep)
-        profile['G'] = Gfunc(rstep)
-
-        partlist.append(profile)
-
-    profiles = pd.concat(partlist)
-    profiles.index = np.arange(len(profiles))
-    profiles[np.isnan(profiles)] = 0.
-    profiles[profiles < 0.] = 0.
-
-    print profiles
-    print fname+'.csv'
-    profiles.to_csv(fname+'.csv')
-
-#     vlist = merc.velocities_at_boundaries()
-#     for v,end in zip(vlist,['_icb.csv','_cmb.csv']):
-#         df1 = pd.DataFrame(v)
-#         df1.columns = profiles.columns
-#         print df1
-#         print fname+end
-#         df1.to_csv(fname + end)
- 
-plt.show()
+# #     # determinine profiles at that snapshot for given core radius
+# #     # print with the calues on the boundaries doubled (for seismology code)
+# # 
+#     fname='tables/elastic_06_650'
+#     merc.generate_profiles(df.m_frac[0])
+# #     merc.generate_profiles(0.)
+# #     merc.show_profiles(fname='materials/profiles.png')
+#     bounds = np.hstack((0.,merc.boundaries))
+#     rlayer = bounds[1:] - bounds[:-1]
+# 
+#     N = 350
+#     nsteps = np.floor(N * rlayer / sum(rlayer)).astype(int)
+#     nreplace = [nsteps[0],nsteps[1]]
+# 
+# #     rstep = np.hstack([ np.linspace(x,y,z) for x,y,z in zip(bounds[:-1],bounds[1:],nsteps) ])
+# 
+#     partlist =[]
+#     for i,layer in enumerate(merc.get_layers()):
+#         if nsteps[i] == 0.:
+#             print 'skip'
+#             bounds[i+1] = 0.
+#             continue
+#         r0 = merc.radius[layer]
+#         rho0 = merc.density[layer]
+#         vp0 = merc.vp[layer]
+#         vs0 = merc.vs[layer]
+#         vphi0 = merc.vphi[layer]
+#         K0 = merc.K[layer]
+#         G0 = merc.G[layer]
+# 
+#         rhofunc = UnivariateSpline(r0,rho0,k=1)
+#         vpfunc = UnivariateSpline(r0,vp0,k=1)
+#         vsfunc = UnivariateSpline(r0,vs0,k=1)
+#         vphifunc = UnivariateSpline(r0,vphi0,k=1)
+#         Kfunc = UnivariateSpline(r0,K0,k=1)
+#         Gfunc = UnivariateSpline(r0,G0,k=1)
+# 
+#         rstep = np.linspace(bounds[i],bounds[i+1],nsteps[i])
+#         profile = pd.DataFrame()
+#         profile['r'] = rstep
+#         profile['rho'] = rhofunc(rstep)
+#         profile['vp'] = vpfunc(rstep)
+#         profile['vs'] = vsfunc(rstep)
+#         profile['vphi'] = vsfunc(rstep)
+#         profile['K'] = Kfunc(rstep)
+#         profile['G'] = Gfunc(rstep)
+# 
+#         partlist.append(profile)
+# 
+#     profiles = pd.concat(partlist)
+#     profiles.index = np.arange(len(profiles))
+#     profiles[np.isnan(profiles)] = 0.
+#     profiles[profiles < 0.] = 0.
+# 
+#     print profiles
+#     print fname+'.csv'
+#     profiles.to_csv(fname+'.csv')
+# 
+# #     vlist = merc.velocities_at_boundaries()
+# #     for v,end in zip(vlist,['_icb.csv','_cmb.csv']):
+# #         df1 = pd.DataFrame(v)
+# #         df1.columns = profiles.columns
+# #         print df1
+# #         print fname+end
+# #         df1.to_csv(fname + end)
+#  
+# plt.show()
