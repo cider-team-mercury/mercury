@@ -117,11 +117,14 @@ class MantleLayer(Layer):
         """
         coef = self.params['thermal_expansivity'] * self.params['density'] * self.params['surface_gravity']
         mu = self.calculate_viscosity(T_upper_mantle)
-        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness)
-        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle, stagnant_lid_thickness)
-
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, 
+                stagnant_lid_thickness)
+        assert(temperature_base_mantle < T_cmb)
+        temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle, 
+                stagnant_lid_thickness)
+        assert(temperature_base_mantle > T_upper_mantle) 
         delta_temp = (T_upper_mantle - temperature_base_stagnant_lid) + (T_cmb - temperature_base_mantle)
-
+        
         radius_stagnant_lid, volume_stagnant_lid = self.stagnant_lid_geometry(stagnant_lid_thickness)
         assert(radius_stagnant_lid > self.inner_radius), "TIME STAGNANT LID GREW UP TO BE THE MANTLE: {}".format(self.time)
         Ra =  coef * delta_temp * np.power(radius_stagnant_lid - self.inner_radius, 3.) / (
@@ -146,10 +149,12 @@ class MantleLayer(Layer):
         """
         hard_coded_coef = 0.28
         hard_coded_exponent = 0.21
-        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb,
+                stagnant_lid_thickness)
         #print "Temp. Base Mantle: ", temperature_base_mantle
         #print "Temp. CMB: ", T_cmb
-        delta_temp_internal = T_upper_mantle - self.params['surface_temperature'] + T_cmb - temperature_base_mantle
+        delta_temp_internal = T_upper_mantle - self.params['surface_temperature'] + T_cmb - \
+                temperature_base_mantle
         viscosity = self.calculate_viscosity(T_upper_mantle)
         coef = self.params['thermal_expansivity'] * self.params['surface_gravity'] * self.params['density']
         Ra_internal = coef * delta_temp_internal * np.power(self.thickness, 3.) / (
@@ -213,8 +218,10 @@ class MantleLayer(Layer):
         """
         beta = 1. / 3.
         Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        print "Rayleigh Number: ",Ra
+        assert(self.thickness > stagnant_lid_thickness)
         upper_boundary_layer_thickness = (self.thickness - stagnant_lid_thickness) * np.power(self.params['critical_rayleigh_number'] / Ra, beta)
-        #assert upper_boundary_layer_thickness<self.thickness
+        assert upper_boundary_layer_thickness<self.thickness
         assert upper_boundary_layer_thickness>0.0
 
         return upper_boundary_layer_thickness
@@ -228,17 +235,19 @@ class MantleLayer(Layer):
         "Local Critical Rayleigh Number" and the viscosity at the average temperature in the 
         boundary layer, see Richter et al 1978. 
         """
-        Ra_i_crit = self.calculate_critical_internal_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness)
-        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        Ra_i_crit = self.calculate_critical_internal_rayleigh_number(T_upper_mantle, T_cmb, 
+                stagnant_lid_thickness)
+        temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, 
+                stagnant_lid_thickness)
         average_boundary_temperature = (temperature_base_mantle + T_cmb) / 2.0
         mu_crit = self.calculate_viscosity(average_boundary_temperature)
         delta_T = T_cmb - temperature_base_mantle
         numerator = self.params['thermal_diffusivity'] * self.params[
             'factor_pressure_dependent_viscosity'] * mu_crit * Ra_i_crit
         denominator = self.params['thermal_expansivity'] * self.params['density'] * self.gravity_cmb * delta_T
-        print T_cmb, temperature_base_mantle, delta_T
         assert(denominator>0.0)
-        return np.power(numerator / denominator, 1. / 3.)
+        lower_boundary_layer_thickness = np.power(numerator / denominator, 1. / 3.)
+        return lower_boundary_layer_thickness
 
     def calculate_upper_heat_flux(self, T_upper_mantle, T_cmb, stagnant_lid_thickness):
         """
@@ -250,7 +259,8 @@ class MantleLayer(Layer):
         """
         temperature_base_stagnant_lid = self.calculate_temperature_base_stagnant_lid(T_upper_mantle, stagnant_lid_thickness)
         upper_boundary_layer_thickness = self.calculate_upper_boundary_layer_thickness(T_upper_mantle, T_cmb,
-                                                                                       stagnant_lid_thickness)
+                                                                                   stagnant_lid_thickness)
+        print "Upper Thick : ", upper_boundary_layer_thickness
         return self.params['thermal_conductivity'] * (
             T_upper_mantle - temperature_base_stagnant_lid) / upper_boundary_layer_thickness
 
@@ -265,6 +275,7 @@ class MantleLayer(Layer):
         temperature_base_mantle = self.calculate_temperature_base_mantle(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         lower_boundary_layer_thickness = self.calculate_lower_boundary_layer_thickness(T_upper_mantle, T_cmb,
                                                                                        stagnant_lid_thickness)
+        print "Lower thick: ", lower_boundary_layer_thickness
         return self.params['thermal_conductivity'] * (T_cmb - temperature_base_mantle) / lower_boundary_layer_thickness
 
     def convert_radius_to_hydrostatic_pressure(self, radius):
@@ -368,8 +379,9 @@ class MantleLayer(Layer):
         delta_T = T_upper_mantle - temperature_base_stagnant_lid
         if delta_T != 0.0:
             lhs_coef = self.params['density']*self.params['heat_capacity']*delta_T
-            flux_thermal_gradient = self.params['thermal_conductivity']*self.calculate_thermal_gradient_base_stagnat_lid(
-            T_upper_mantle, stagnant_lid_thickness, crustal_heating_rate, mantle_heating_rate)
+            flux_thermal_gradient = self.params['thermal_conductivity']*self.\
+                calculate_thermal_gradient_base_stagnat_lid(T_upper_mantle, stagnant_lid_thickness,
+                                                            crustal_heating_rate, mantle_heating_rate)
             upper_heat_flux = self.calculate_upper_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
             dDlid_dt = (-upper_heat_flux - flux_thermal_gradient)/lhs_coef
         else:
@@ -396,6 +408,8 @@ class MantleLayer(Layer):
         crust_radius, crust_volume = self.crustal_geometry()
         dTm_dt = (-upper_heat_flux*surface_area_base_stagnant_lid + lower_heat_flux*self.inner_surface_area +
                   mantle_heating_rate*volume_convecting_mantle)/lhs_coef
+        print "LOWER YO", lower_heat_flux*self.inner_surface_area
+        print "HIDDY HO", upper_heat_flux*surface_area_base_stagnant_lid
         return dTm_dt
 
     def set_melt_fraction(self):
@@ -419,11 +433,17 @@ class MantleLayer(Layer):
         return self.crust_radiogenic_fraction * self.params['crustal_density']*self.radiogenic_heating_model.heat_production(time)
 
     def core_energy_balance(self, T_upper_mantle, T_cmb, stagnant_lid_thickness):
-        thermal_energy_change, gravitational_energy_release, latent_heat, total_effective_heat_capacity = \
-            self.core_energetic_model.get_effective_core_heat_capacity()
+        thermal_energy_change, gravitational_energy_release, latent_heat, total_effective_heat_capacity,\
+                radius_inner_core = self.core_energetic_model.get_effective_core_heat_capacity()
         lhs = total_effective_heat_capacity(T_cmb)
+        if(lhs<0):
+            print "I am the lhs: ", lhs
+            print  thermal_energy_change(T_cmb), gravitational_energy_release(T_cmb), latent_heat(T_cmb) 
         lower_heat_flux = self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        print "Lower Heat Flux :", lower_heat_flux
         dTc_dt = -lower_heat_flux*self.inner_surface_area/lhs
+        print "Effective Heat Capacity: ", lhs,thermal_energy_change(T_cmb), gravitational_energy_release(T_cmb),latent_heat(T_cmb) 
+        assert(dTc_dt<0)
         return dTc_dt
 
     def energy_balance(self, time, T_upper_mantle, T_cmb, stagnant_lid_thickness):
@@ -443,22 +463,23 @@ class MantleLayer(Layer):
 
     def integrate(self):
         def ODE(y, t):
+           print self.time
            print "T_upper_mantle: ", y[0]
            print "T_cmb         : ", y[1]
            print "Stagnant Lid Thickness: ", y[2]
            return self.energy_balance(t, y[0], y[1], y[2])
 
-        times = np.linspace(0., Julian_year * 4.5e9, 1000)
+        times = np.linspace(0., Julian_year * 0.5e9, 1000)
         solution = integrate.odeint( ODE, self.initial_conditions, times)
         return times, solution
 
 if __name__ == "__main__":
     radius_planet = 2440.e3
     radius_cmb = 2020.e3
-    crustal_thickness = 120.e3
+    crustal_thickness = 20.e3
     initial_Tm = 1700.
     initial_Tcmb = 2000.
-    initial_Dlid= 100.e3
+    initial_Dlid= 50.e3
 
 
     merc = MantleLayer(radius_cmb, radius_planet, crustal_thickness, mantle_params, WD94, initial_Tcmb, initial_Tm, initial_Dlid)

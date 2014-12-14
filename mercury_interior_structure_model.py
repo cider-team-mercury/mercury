@@ -442,16 +442,25 @@ class model_suite(object):
         return Eth_ic, Eth_oc
 
     def get_effective_core_heat_capacity(self):
+        temp_no_core = self.data.T_cmb[0]
         m_func = model1.func_of_Tcmb('m_ic',s=2.e42)
+        r_func = model1.func_of_Tcmb('r_icb')
         dm_dT_cmb = m_func.derivative() # kg / K
         Eg_m_func = model1.func_of_Tcmb('Eg_m',s=0)
         L_m_func = model1.func_of_Tcmb('L_m',s=0)
         dEth_ic, dEth_oc = model1.thermal_energy_change(s=1.e8)
-        thermal_energy_change = lambda t_cmb: dEth_ic(t_cmb) + dEth_oc(t_cmb)
-        gravitational_energy_release = lambda t_cmb: Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)
-        latent_heat = lambda t_cmb: L_m_func(t_cmb)*dm_dT_cmb(t_cmb)
-        total = lambda t_cmb: thermal_energy_change(t_cmb) - gravitational_energy_release(t_cmb) - latent_heat(t_cmb)
-        return thermal_energy_change, gravitational_energy_release, latent_heat, total
+        def check_temp(t_cmb):
+            if t_cmb > temp_no_core:
+                return 0.0
+            else:
+                return 1.0
+        radius_inner_core = lambda t_cmb: r_func(t_cmb)
+        thermal_energy_change_per_temp = lambda t_cmb: dEth_ic(t_cmb) + dEth_oc(t_cmb)
+        gravitational_energy_release = lambda t_cmb: Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)*check_temp(t_cmb)
+        latent_heat = lambda t_cmb: L_m_func(t_cmb)*dm_dT_cmb(t_cmb)*check_temp(t_cmb)
+        total = lambda t_cmb: - thermal_energy_change_per_temp(t_cmb) + gravitational_energy_release(t_cmb) + \
+                latent_heat(t_cmb)
+        return thermal_energy_change_per_temp, gravitational_energy_release, latent_heat, total, radius_inner_core
 
 # Define a mercury model with a given total core mass and
 # .58,.68,.63 (range in masses found in Hauck)

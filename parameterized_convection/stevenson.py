@@ -111,6 +111,7 @@ class StevensonCoreLayer(planetary_energetics.Layer):
             pass    
         thermal_energy_change = p['rho']*p['c']*self.volume*p['mu']
         latent_heat = -p['L+Eg'] * p['rho'] * inner_core_surface_area * dRi_dTcmb
+        print (thermal_energy_change-latent_heat)
         dTdt = -core_flux * core_surface_area / (thermal_energy_change-latent_heat)
         return dTdt
 
