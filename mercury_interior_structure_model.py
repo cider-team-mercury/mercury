@@ -496,7 +496,6 @@ if __name__ == "__main__":
 
     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
 
-
     f1 = plt.figure()
     ax1= plt.subplot(111)
     ax1.plot(t_cmb,m_func(t_cmb))
@@ -515,13 +514,19 @@ if __name__ == "__main__":
 
     f3 = plt.figure()
     ax3 = plt.subplot(111)
-    ax3.plot(t_cmb,-Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb),label=r'$dE_g/dT_{\rm cmb}$',lw=2)
-    ax3.plot(t_cmb,-L_m_func(t_cmb)*dm_dT_cmb(t_cmb),label=r'$dE_L/dT_{\rm cmb}$',lw=2)
-    ax3.plot(t_cmb,dEth_ic(t_cmb),label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
-    ax3.plot(t_cmb,dEth_oc(t_cmb),label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
+    ax3.axvline(1498,linestyle='--',color='k',lw=2)
+    ax3.axvline(1704,linestyle='-.',lw=2,color='k')
+    ax3.plot(t_cmb,-Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)/1.e26,label=r'$dE_g/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,-L_m_func(t_cmb)*dm_dT_cmb(t_cmb)/1.e26,label=r'$dE_L/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,dEth_ic(t_cmb)/1.e26,label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
+    ax3.plot(t_cmb,dEth_oc(t_cmb)/1.e26,label=r'$dE_{\rm th,oc}/dT_{\rm cmb}$',lw=2)
     ax3.set_xlabel(r'$T_{\rm cmb}$ (K)')
-    ax3.set_ylabel(r'$dE/dT_{\rm cmb}$ (J/K)')
+    ax3.set_ylabel(r'$dE/dT_{\rm cmb}$ ($10^{26}$J/K)')
     plt.legend(loc='upper left')
+    plt.ylim(0.,2.5)
+    ax3.text(1310,2.25,r'$R_{icb}=1325$ km',fontsize=28)
+    ax3.text(1530,2.25,r'$R_{icb}=650$ km',fontsize=28)
+    plt.savefig("materials/core_energetics.png")
 
     f4 = plt.figure()
     ax4 = plt.subplot(111)
@@ -532,48 +537,48 @@ if __name__ == "__main__":
     plt.show()
 
 
-#     # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
-#     # then return an interpolated quantity for
-# 
-#     model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
-#                 'Cp_oc','w_bulk','w_l','w_s','P_cen','T_icb','T_cmb','P_icb','P_cmb',\
-#                 'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
-# 
-#     # Chosen inner core radius
+    # Test 3: Wishlist quantities, fit quantaties as a function of r_icb and 
+    # then return an interpolated quantity for
+
+    model1.printData(['m_frac','r_frac','r_icb','r_cmb','L_m','Cp_ic',\
+                'Cp_oc','w_bulk','w_l','w_s','P_cen','T_icb','T_cmb','P_icb','P_cmb',\
+                'rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c'] )
+
+    # Chosen inner core radius
 #     R = 650. * 1000 # 650 km
-# #     R = 1325. * 1000 # 1325 km
-# 
-#     quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
-#                 'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
-# 
-#     funcs = []
-#     vals = []
-#     for q in quants:
-# #         print q
-#         func = model1.func_of_ricb(q)
-#         val = float(func(R))
-#         funcs.append(func)
-#         vals.append(val)
-# 
-#     df = pd.DataFrame([vals])
-#     df.columns = quants
-# #     print df
-# 
-#     # Test 4: Wishlist quadratic fit to liquidus
-# 
-#     p_arr = model1.data.P_icb
-#     t_arr = model1.data.T_icb
-#     
-#     quadratic_const = np.polyfit(p_arr,t_arr,2)
-# 
-# #     ptest = 30.e9
-# #     print np.polyval(quadratic_const,ptest)
-#     df['Tm0'] = [ quadratic_const[-1] ]
-#     df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
-#     df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
-# 
+    R = 1325. * 1000 # 1325 km
+
+    quants = ['m_frac','r_icb','r_cmb','L_m','Cp_oc','w_bulk','w_l','w_s','P_cen',\
+                'T_cmb','P_cmb','rho_cen','rho_liq_0','K_liq_0','alpha_t','alpha_c']
+
+    funcs = []
+    vals = []
+    for q in quants:
+#         print q
+        func = model1.func_of_ricb(q)
+        val = float(func(R))
+        funcs.append(func)
+        vals.append(val)
+
+    df = pd.DataFrame([vals])
+    df.columns = quants
 #     print df
-# 
+
+    # Test 4: Wishlist quadratic fit to liquidus
+
+    p_arr = model1.data.P_icb
+    t_arr = model1.data.T_icb
+    
+    quadratic_const = np.polyfit(p_arr,t_arr,2)
+
+#     ptest = 30.e9
+#     print np.polyval(quadratic_const,ptest)
+    df['Tm0'] = [ quadratic_const[-1] ]
+    df['Tm1'] = [ quadratic_const[1] / quadratic_const[-1] ]
+    df['Tm2'] = [ quadratic_const[0] / quadratic_const[-1] ]
+
+    print df
+
 # #     # determinine profiles at that snapshot for given core radius
 # #     # print with the calues on the boundaries doubled (for seismology code)
 # # 
