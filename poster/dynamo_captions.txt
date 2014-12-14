@@ -1,0 +1,13 @@
+\section*{Preliminary results of dynamo model}
+%
+Figure 1.  Radial magnetic field at CMB for the 10 times larger heat flux heterogeneity case (top) and homogeneous heat flux case (bottom).
+We perform a thermally driven dynamo in a rotating spherical shell with $r_{i}/r_{o} = 0.35$ (i.e.  r_{i} = 700km). 
+%
+Figure 2. Time evolution of the first three axisymmetric components of Gauss coefficients at mercury's surface. Significant difference is only observed in $g_{3}^{0}$ component, which refracts the position of intense patch (see Figure 1).
+
+\begin{itemize}
+\item Large heat flux at the pole induces intense magnetic field inside of tangent cylinder.
+\item This magnetic patch does not stick in the present parameter regime.
+\item The obtained magnetic field is larger than that  the homogeneous heat flux case in the dipolar regime. The present solution may be too strong to explain the mercury's magnetic field. We need to test more different cases .
+\end{itemize}
+%
