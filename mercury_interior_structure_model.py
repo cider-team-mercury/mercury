@@ -454,7 +454,7 @@ if __name__ == "__main__":
               'axes.linewidth': 2, 'xaxis.labelpad' : 50,
               'text.usetex': False, 'figure.figsize': fig_size,
               'figure.subplot.bottom': 0.100,'figure.subplot.top': 0.980,'figure.subplot.left': 0.130,'figure.subplot.right': 0.950}
-    plt.rcParams.update(params)
+#    plt.rcParams.update(params)
     # use latex
     plt.rc('text', usetex=False)
     plt.rc('font',family='sans-serif')
@@ -495,6 +495,11 @@ if __name__ == "__main__":
     dEth_ic, dEth_oc = model1.thermal_energy_change(s=1.e8)
 
     t_cmb = np.linspace(model1.data.T_cmb.min(),model1.data.T_cmb.max(),100)
+    
+    # functions for parameterized convection
+    thermal_energy_change = lambda t_cmb: dEth_ic(t_cmb) + dEth_oc(t_cmb)
+    gravitational_energy_release = lambda t_cmb: Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)
+    latent_heat = lambda t_cmb: L_m_func(t_cmb)*dm_dT_cmb(t_cmb)
 
     f1 = plt.figure()
     ax1= plt.subplot(111)
