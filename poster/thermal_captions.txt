@@ -1,0 +1,6 @@
+Figure 1: Thermal evolution of the Mercurian mantle and core. This thermal evolution couples the core thermodynamics in the previous section with the mantle model of Stevenson et al (1983). The colored regions show the solution for models with +-100 degress C. Note the break in slope of the T_cmb temperature with the onset of inner core growth at approx. 2.5e2 Ma.
+
+Figure 2: Growth of the Inner Core versus time. This model run yields an inner core of approx. 1400 km, just slightly exceeding the upper bound of inner core size as constrained by Dumberry et al (2014).
+
+Figure 3: Change in the "Effective Heat Capacity" of the core versus time. After a rapid growth stage the values settle to a constant value reflecting the "Real Heat Capacity" of the core. 
+   
