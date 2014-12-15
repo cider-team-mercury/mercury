@@ -107,30 +107,32 @@ regions in the core is extremely sensitive to this interpolation.
 
 \begin{center}
 \begin{tabular}{cc}
- \includegraphics[width=0.15\textwidth]{profiles.png} &
+ \includegraphics[width=0.165\textwidth]{profiles.png} &
  \includegraphics[width=0.15\textwidth]{Liquidus_model.png} \\
 \end{tabular}
 \captionof{figure}{Left: pressure, gravity, density, and temperature profiles of a reasonable interior model for Mercury.  Right: Liquidus curves for different pressures in the Fe-FeS system, from compiled and interpolated experimental data (Wicks and Knezek, pers. comm.) }
 \label{interior_model}
 \end{center}
 
+Comparing the slope of the interpolated melting temperature to the slope of the
+adiabatic profile determines the crystallization behavior of the core, with a
+steeper melting temperature corresponding to  ``Earth-like'' conditions. For higher
+values of the thermal expansivity, $\alpha$, the core will be ``snowing'' at all
+times. For lower $\alpha$, the onset of snowing occurs with increasing S-content.
+
+\columnbreak
+
 \begin{center}
 \begin{tabular}{cc}
  \includegraphics[width=0.15\textwidth]{clapeyron_1.png} &
- \includegraphics[width=0.15\textwidth]{core_energetics.png} \\
+ \includegraphics[width=0.165\textwidth]{core_energetics.png} \\
 \end{tabular}
 \captionof{figure}{Left: Clapeyron slopes and adiabats for different core models.  Right: resulting models for latent heat and gravitational energy release from a solidifying core. }
 \label{core_energy}
 \end{center}
 
 
-\columnbreak
 
-Comparing the slope of the interpolated melting temperature to the slope of the
-adiabatic profile determines the crystallization behavior of the core, with a
-steeper melting temperature corresponding to  ``Earth-like'' conditions. For higher
-values of the thermal expansivity, $\alpha$, the core will be ``snowing'' at all
-times. For lower $\alpha$, the onset of snowing occurs with increasing S-content.
 
 The interior structure model can be coupled to a parameterized convetion model for
 the thermal evolution of the planet. Shown on the right in Figure \ref{core_energy}
@@ -141,49 +143,38 @@ change in core mantle boundary temperature for bulk composition of 6 wt.\% S.
 
 
 
-\section*{Speculative seismology}
-
-In the future it may be possible to install one, or even a network of seismometers on Mercury. Would we be able to distingiush between different models of Mercury's interior? We extract self-consistent velocity and density models corresponding to two reasonable models: one with 6 wt.\% sulfur in the core, corresponding to a 650km inner core, and 9 wt.\% sulfer in the core, with a 1325km inner core.
-Raypaths and normal mode frequencies and eigenfunctions for these models are calculated using TauP Toolkit (Crotwell et al 1999) and Mineos (http://www.geodynamics.org) using Earth-like attenuation (Dziewonski \&  Anderson, 1981). The P-wave raypaths show that a P-wave shadow zones would not exist for the larger inner core. Differences in the inner core size also cause changes in the frequency and eigenfunctions of the normal modes. 
-
 \begin{center}
-\begin{tabular}{ccc}
- \includegraphics[width=0.09\textwidth]{merc_both_models_1} &
- \includegraphics[width=0.09\textwidth]{merc_both_models_2} &
- \includegraphics[width=0.09\textwidth]{merc_both_models_3} 
+\begin{tabular}{c}
+ \includegraphics[width=0.18\textwidth]{CMB_flux.pdf} 
 \end{tabular}
-\captionof{figure}{  V$_p$, V$_s$ and $\rho$ profiles for two realisations of Mercury's interior. Red lines corespond to the smaller inner core and blue to the larger inner core.}
+\captionof{figure}{ Heat flux variations for a conducting mantle with negligible internal heating. The total CMB heat flux is $\sim 0.6 \mathrm{TW}$, and peak-to-peak variations are about 20\%. }
+\label{flux}
 \end{center}
+
+Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variations at the surface.  This boundary condition may create significant heat-flux variations at the CMB, especially if the mantle is not convecting.  Here we solve a simple conduction equation in the mercurian mantle to calculate an estimate of heat flux at the CMB.  This heat-flux variation is then used to inform the boundary conditions of a dynamo simulation using the \texttt{Calypso} code.
 
 \columnbreak
 
-\begin{center}
-\begin{tabular}{ccc}
- \includegraphics[width=0.12\textwidth]{smapath.png} &
- \includegraphics[width=0.12\textwidth]{bigpath.png} &
-\end{tabular}
-\captionof{figure}{  P, PKP and PKIKP paths for the two velocity models. }
-\end{center}
-
-A bigger impact on any future seismic observations of Mercury will be the presence of an FeS layer at the top of core, we plan to investiagte this in the future.
-
-
-
 \section*{Dynamo simulation}
 
-Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variations at the surface.  This boundary condition may create significant heat-flux variations at the CMB, especially if the mantle is not convecting.  Here we solve a simple conduction equation in the mercurian mantle to calculate an estimate of heat flux at the CMB.  This heat-flux variation is then used to inform the boundary conditions of a dynamo simulation using the \texttt{Calypso} code.
-\\
 We model a thermally driven dynamo in a rotating spherical shell with $r_{i}/r_{o} = 0.35$ (i.e.  $r_i$ = 700km).  The dynamo is driven with a non-dimensional heat flux $\mathrm{Nu} \sim 5$.  We test three cases for the heat-flux boundary condition: (1) homogeneous heat flux, (2) variations in the heat flux are scaled to be the same as the conducting-mantle variations, and (3) the variations in heat flux are scaled to be the ten times the conducting-mantle variations.
 \begin{center}
-\begin{tabular}{ccc}
- \includegraphics[width=0.14\textwidth]{CMB_flux.pdf} &
- \includegraphics[width=0.08\textwidth]{br_cmb_x0.png} &
- \includegraphics[width=0.08\textwidth]{br_cmb_x10.png}
+\begin{tabular}{cc}
+ \includegraphics[width=0.1\textwidth]{br_cmb_x0.png} &
+ \includegraphics[width=0.1\textwidth]{br_cmb_x10.png}
 \end{tabular}
-\captionof{figure}{ Left: reat flux variations for a conducting mantle with negligible internal heating. The total CMB heat flux is $\sim 0.6 \mathrm{TW}$, and peak-to-peak variations are about 20\%. Right: radial magnetic field at the CMB for the case of ten times larger heat flux heterogeneity case (case 3). Center: radial magnetic field in the homogeneous heat flux case (case 1).
- }
+\captionof{figure}{ Right: radial magnetic field at the CMB for the case of ten times larger heat flux heterogeneity case (case 3). Left: radial magnetic field in the homogeneous heat flux case (case 1).}
 \label{dynamo}
 \end{center}
+
+\begin{center}
+\begin{tabular}{c}
+ \includegraphics[width=0.15\textwidth]{gauss_coefficients.pdf} 
+\end{tabular}
+\captionof{figure}{ Time evolution of the first three axisymmetric components of Gauss coefficients at Mercury's surface. A significant difference is only observed in the $g_{3}^{0}$ component, which relects the position of intense patch (see \ref{dynamo}, right). }
+\label{gauss}
+\end{center}
+
 
 To summarize preliminary results from our dynamo simulations:
 \begin{itemize}
@@ -200,11 +191,9 @@ We are grateful for helpful discussions with Bruce Buffett, Chris Davies, Mathie
 \\
 { \large References \\ \tiny
 Cottaar, Heister, Rose, and Unterborn. "BurnMan: A lower mantle mineral physics toolkit." Geochemistry, Geophysics, Geosystems 15.4 (2014): 1164-1179. \\
-H. P. Crotwell, T. J. Owens, and J. Ritsema. The TauP Toolkit: Flexible Seismic Travel-time and Ray-path Utilities. Seismol. Res. Lett., 70(2), 154–160 (1999). \\
 M. Dumberry and A. Rivoldini, Mercury’s inner core size and core-crystallization regime, Icarus, 248, 254-268 (2015). \\
 Grott, M., D. Breuer, and M. Laneuville. "Thermo-chemical evolution and global contraction of Mercury." Earth and Planetary Science Letters 307.1 (2011): 135-146. \\
 Hauck, Steven A., and Roger J. Phillips. "Thermal and crustal evolution of Mars." Journal of Geophysical Research: Planets (1991–2012) 107.E7 (2002): 6-1. \\
-A. M. Dziewonski and D. L. Anderson: Preliminary reference Earth model. Phys. Earth Planet. Int. 25, 297–356 (1981). \\
 Matsui, Hiroaki, Eric King, and Bruce Buffett. "Multiscale convection in a geodynamo simulation with uniform heat flux along the outer boundary." Geochemistry, Geophysics, Geosystems 15.8 (2014) \\
 Morschhauser, A., M. Grott, and D. Breuer. "Crustal recycling, mantle dehydration, and the thermal evolution of Mars." Icarus 212.2 (2011): 541-558. \\
 Williams, Quentin. "Bottom-up versus top-down solidification of the cores of small solar system bodies: Constraints on paradoxical cores." Earth and Planetary Science Letters 284.3 (2009): 564-569.
