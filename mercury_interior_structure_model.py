@@ -454,11 +454,11 @@ class model_suite(object):
                 return 0.0
             else:
                 return 1.0
-        radius_inner_core = lambda t_cmb: r_func(t_cmb)
+        radius_inner_core = lambda t_cmb: r_func(t_cmb)*check_temp(t_cmb)
         thermal_energy_change_per_temp = lambda t_cmb: dEth_ic(t_cmb) + dEth_oc(t_cmb)
         gravitational_energy_release = lambda t_cmb: Eg_m_func(t_cmb)*dm_dT_cmb(t_cmb)*check_temp(t_cmb)
         latent_heat = lambda t_cmb: L_m_func(t_cmb)*dm_dT_cmb(t_cmb)*check_temp(t_cmb)
-        total = lambda t_cmb: - thermal_energy_change_per_temp(t_cmb) + gravitational_energy_release(t_cmb) + \
+        total = lambda t_cmb:  - thermal_energy_change_per_temp(t_cmb) + gravitational_energy_release(t_cmb) + \
                 latent_heat(t_cmb)
         return thermal_energy_change_per_temp, gravitational_energy_release, latent_heat, total, radius_inner_core
 

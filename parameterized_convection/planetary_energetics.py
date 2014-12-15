@@ -56,7 +56,7 @@ class Planet(object):
         self.core_layer = layers[0]
         self.mantle_layer = layers[1]
 
-    def integrate( self ):
+    def integrate(self, T_cmb_initial, T_mantle_initial, times):
         
         def ODE( temperatures, t ):
             dTmantle_dt = self.mantle_layer.energy_balance( t, temperatures[1], temperatures[0] )
@@ -64,10 +64,6 @@ class Planet(object):
             dTcore_dt = self.core_layer.energy_balance(temperatures[0], cmb_flux )
             return np.array([dTcore_dt, dTmantle_dt])
 
-        T_cmb_initial = 3000.
-        T_mantle_initial = 1500.
-        times = np.linspace( 0., 4.e9*np.pi*1.e7)
- 
         solution = integrate.odeint( ODE, np.array([T_cmb_initial, T_mantle_initial]), times)
         return times, solution
         

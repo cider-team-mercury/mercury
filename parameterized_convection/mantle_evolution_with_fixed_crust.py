@@ -29,7 +29,7 @@
 import numpy as np
 import scipy.integrate as integrate
 from planetary_energetics import Layer
-from mercury_parameters import mantle_params
+from mercury_parameters import mantle_params, rho_core, core_heat_capacity
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join('.', os.pardir)))
@@ -219,7 +219,6 @@ class MantleLayer(Layer):
         beta = 1. / 3.
         Ra = self.calculate_rayleigh_number(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         print "Rayleigh Number: ",Ra
-        assert(self.thickness > stagnant_lid_thickness)
         upper_boundary_layer_thickness = (self.thickness - stagnant_lid_thickness) * np.power(self.params['critical_rayleigh_number'] / Ra, beta)
         assert upper_boundary_layer_thickness<self.thickness
         assert upper_boundary_layer_thickness>0.0
@@ -299,7 +298,7 @@ class MantleLayer(Layer):
         else:
             crustal_thickness = self.crustal_thickness
             
-        radius_crust = self.outer_radius - crustal_thickness
+        radius_crust = self.outer_radius - self.crustal_thickness
         volume_crust = 4./3.*np.pi*( np.power(self.outer_radius, 3.) - np.power(radius_crust, 3.) )
         return radius_crust, volume_crust
 
@@ -317,8 +316,10 @@ class MantleLayer(Layer):
         kc = self.params['crustal_thermal_conductivity']
         km = self.params['thermal_conductivity']
         #TODO: Replace with mantle and Crustal heating
-        qc = crustal_heating_rate
-        qm = mantle_heating_rate
+        radius_crust, volume_crust = self.crustal_geometry(stagnant_lid_thickness)
+        radius_stagnant_lid, volume_stagnant_lid = self.stagnant_lid_geometry(stagnant_lid_thickness)
+        qc = crustal_heating_rate/self.params['crustal_density']
+        qm = mantle_heating_rate/self.params['density']
         radius_surface = self.outer_radius
         radius_stagnant_lid, volume_crust = self.stagnant_lid_geometry(stagnant_lid_thickness)
         radius_crust, volume_crust = self.crustal_geometry()
@@ -435,11 +436,12 @@ class MantleLayer(Layer):
     def core_energy_balance(self, T_upper_mantle, T_cmb, stagnant_lid_thickness):
         thermal_energy_change, gravitational_energy_release, latent_heat, total_effective_heat_capacity,\
                 radius_inner_core = self.core_energetic_model.get_effective_core_heat_capacity()
-        lhs = total_effective_heat_capacity(T_cmb)
+        lhs = rho_core*core_heat_capacity*(4./3.*np.pi*np.power(self.inner_radius, 3.)) -\
+                gravitational_energy_release(T_cmb) - latent_heat(T_cmb)
         if(lhs<0):
             print "I am the lhs: ", lhs
             print  thermal_energy_change(T_cmb), gravitational_energy_release(T_cmb), latent_heat(T_cmb) 
-        lower_heat_flux = self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
+        lower_heat_flux = 1.e14#self.calculate_lower_heat_flux(T_upper_mantle, T_cmb, stagnant_lid_thickness)
         print "Lower Heat Flux :", lower_heat_flux
         dTc_dt = -lower_heat_flux*self.inner_surface_area/lhs
         print "Effective Heat Capacity: ", lhs,thermal_energy_change(T_cmb), gravitational_energy_release(T_cmb),latent_heat(T_cmb) 
@@ -464,13 +466,13 @@ class MantleLayer(Layer):
     def integrate(self):
         def ODE(y, t):
            print self.time
-           print "T_upper_mantle: ", y[0]
-           print "T_cmb         : ", y[1]
-           print "Stagnant Lid Thickness: ", y[2]
-           return self.energy_balance(t, y[0], y[1], y[2])
+           #print "T_upper_mantle: ", y[0]
+           print "T_cmb         : ", y
+           #print "Stagnant Lid Thickness: ", y[2]
+           return self.energy_balance(t, 2322, y, 1212)[1]
 
-        times = np.linspace(0., Julian_year * 0.5e9, 1000)
-        solution = integrate.odeint( ODE, self.initial_conditions, times)
+        times = np.linspace(0., Julian_year * 4.5e9, 1000)
+        solution = integrate.odeint( ODE, self.initial_conditions[1], times)
         return times, solution
 
 if __name__ == "__main__":
@@ -483,6 +485,10 @@ if __name__ == "__main__":
 
 
     merc = MantleLayer(radius_cmb, radius_planet, crustal_thickness, mantle_params, WD94, initial_Tcmb, initial_Tm, initial_Dlid)
+    
+    times = np.linspace(0., Julian_year * 4.5e9, 1000)
+    
+
     times, solution = merc.integrate()
     #######
 
@@ -577,6 +583,6 @@ if __name__ == "__main__":
     #print times, solution
     plt.figure()
     plt.plot(times,solution[:, 0])
-    plt.plot(times,solution[:, 1])
+    #plt.plot(times,solution[:, 1])
     ##plt.plot(times,solution[:, 2])
     plt.show()

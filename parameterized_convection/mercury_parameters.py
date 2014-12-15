@@ -53,7 +53,7 @@ core_radius = 2050.0 # - km - 1840 km to 2050 km
 T_upper_mantle_initial = 2000.0 # - K - 1650 K to 2000 K
 T_core_excess = 300.0 # - K - 0 K to 300 K
 k_crust = 4.0 # - W m^-1 K^-1 - 1.5 to 4
-mantle_viscosity_ref = 1.0e22 # - Pa s - 10^19 to 10^22
+mantle_viscosity_ref = 1.0e19 # - Pa s - 10^19 to 10^22
 regolith_thickness = 5.0e3 # - m - 0 to 5*10^3 m 
 mantle_differentiation_volume_change = 5.0 # - % - 0% to 5%
 

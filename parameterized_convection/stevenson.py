@@ -354,7 +354,7 @@ plt.xlabel('Time [Ga]')
 plt.ylabel(r'\frac{dE}{dT_cmb} [W/K] * 10^{-26}')
 plt.title(r'Core Energetics')
 ppl.legend()
-plt.savefig('Core Energetics')
+plt.savefig('core_energetics.png')
 
 
 
