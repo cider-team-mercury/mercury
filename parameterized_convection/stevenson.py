@@ -343,7 +343,7 @@ ppl.plot(t,radius, label="Inner Core Radius")
 plt.xlabel('Time [Ga]')
 plt.ylabel('Inner Core Radius [kg]')
 plt.title("Inner Core Growth")
-ppl.legend()
+ppl.legend(loc=4)
 plt.savefig('inner_core_growth.png')
 
 plt.figure()
