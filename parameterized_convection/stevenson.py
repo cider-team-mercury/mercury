@@ -290,7 +290,7 @@ mercury = planetary_energetics.Planet( [ realisticCoreLayer( 0.0, 2020.0e3, mode
 times = np.linspace( 0., Julian_year*np.pi*1.e7)
 
 T_excess = 800.
-times = np.linspace(0.0, 4.5*1.e9*Julian_year)
+times = np.linspace(0.0, 4.5*1.e9*Julian_year, 1000)
 T_mantle_initial = 1800.
 
 
@@ -322,7 +322,7 @@ plt.xlabel('Time [Ga]')
 plt.ylabel('Temperature [K]')
 plt.title("Thermal Evolution Mercury")
 ppl.legend(loc=1)
-plt.savefig('thermal_evolution.png')
+plt.savefig('../poster/thermal_evolution.png')
 
 thermal_energy_change, gravitational_energy_release, latent_heat, total_effective_heat_capacity,\
             radius_inner_core = model1.get_effective_core_heat_capacity()
@@ -339,12 +339,12 @@ for temp in y[:,1]:
     total.append(-total_effective_heat_capacity(temp)*1.e-26)
 
 plt.figure()
-ppl.plot(t,radius, label="Inner Core Radius")
+ppl.plot(t,radius, lw=3, label="Inner Core Radius")
 plt.xlabel('Time [Ga]')
 plt.ylabel('Inner Core Radius [kg]')
 plt.title("Inner Core Growth")
 ppl.legend(loc=4)
-plt.savefig('inner_core_growth.png')
+plt.savefig('../poster/inner_core_growth.png')
 
 plt.figure()
 ppl.plot(t,grav,  label="Gravitational Energy Release")
