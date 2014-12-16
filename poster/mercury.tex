@@ -110,13 +110,6 @@ interior model for Mercury, with 6 wt.\% S.  Right: Liquidus curves for differen
 \label{interior_model}
 \end{center}
 
-Comparing the slope of the interpolated melting temperature to the slope of the
-adiabatic profile determines the crystallization behavior of the core, with a
-steeper melting temperature corresponding to  ``Earth-like'' conditions. For higher
-values of the thermal expansivity, $\alpha$, the core will be ``snowing'' at all
-times. For lower $\alpha$, the onset of snowing occurs with increasing S-content.
-
-\columnbreak
 
 \begin{center}
 \begin{tabular}{cc}
@@ -130,24 +123,33 @@ release from a solidifying core, with corresponding thermal energy change.}
 \end{center}
 
 
+\columnbreak
 
+Comparing the slope of the interpolated melting temperature to the slope of the
+adiabatic profile determines the crystallization behavior of the core, with a
+steeper melting temperature corresponding to  ``Earth-like'' conditions. For higher
+values of the thermal expansivity, $\alpha$, the core will be ``snowing'' at all
+times. For lower $\alpha$, the onset of snowing occurs with increasing S-content.
 
 The interior structure model can be coupled to a parameterized convetion model for
 the thermal evolution of the planet. Shown on the right in Figure \ref{core_energy}
 are the changes in latent heat, gravitational and thermal energy in the core per
 change in core mantle boundary temperature for bulk composition of 6 wt.\% S. 
 
+\vspace{-100pt}
 \section*{Parameterized convection and thermal evolution}
-
-
 
 \begin{center}
 \begin{tabular}{cc}
  \includegraphics[width=0.15\textwidth]{thermal_evolution.png}
  \includegraphics[width=0.15\textwidth]{inner_core_growth.png}
 \end{tabular}
-\captionof{figure}{Left: Thermal evolution of the mercurian mantle and core. This thermal evolution model couples the core thermodynamics in the previous section with the parameterized convection model of Stevenson et al (1983). The colored regions show the solution for models with $\pm \mathrm{100}$ degress C. Note the break in slope of the $\mathrm{T_cmb}$ temperature with the onset of inner core growth at $\sim 2.5\times10^2 \mathrm{Ma}$. Right: Growth of the Inner Core versus time. This model run yields an inner core of $ \sim 1400\mathrm{km}$, slightly exceeding the upper bound of inner core size as constrained by Dumberry and Rivoldini (2015).}
-\label{flux}
+\captionof{figure}{Left: Thermal evolution of the mercurian mantle and core. This
+  thermal evolution model couples the core thermodynamics in the previous section
+  with the parameterized convection model of Stevenson et al (1983). The colored
+  regions show the solution for models with $\pm \mathrm{100}$ degrees C. Note the
+  break in slope of the $\mathrm{T_cmb}$ temperature with the onset of inner core growth at $\sim 2.5\times10^2 \mathrm{Ma}$. Right: Growth of the Inner Core versus time. This model run yields an inner core of $ \sim 1400\mathrm{km}$, slightly exceeding the upper bound of inner core size as constrained by Dumberry and Rivoldini (2015).}
+  \label{thermal}
 \end{center}
 
 
@@ -159,9 +161,25 @@ change in core mantle boundary temperature for bulk composition of 6 wt.\% S.
 \label{flux}
 \end{center}
 
-Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variations at the surface.  This boundary condition may create significant heat-flux variations at the CMB, especially if the mantle is not convecting.  Here we solve a simple conduction equation in the mercurian mantle to calculate an estimate of heat flux at the CMB.  This heat-flux variation is then used to inform the boundary conditions of a dynamo simulation using the \texttt{Calypso} code.
+
+% \vspace{-150pt}
+% \section*{Entropy Calculations}
+
+\begin{center}
+\begin{tabular}{c}
+ \includegraphics[width=0.18\textwidth]{entropy_fig.png} 
+\end{tabular}
+\captionof{figure}{Entropy budget and inner core radius for a core with 6wt.\%S and
+  current CMB heat flux of 0.5TW. In this model, there is insufficent entropy to
+  drive a dynamo before inner core solidification (negative Ohmic dissipation), but
+  compositional sources that arise from inner core growth increase the available
+entropy such that a present dynamo can be sustained (positive ohmic dissipation). }
+\label{entropy}
+\end{center}
 
 \columnbreak
+
+Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variations at the surface.  This boundary condition may create significant heat-flux variations at the CMB, especially if the mantle is not convecting.  Here we solve a simple conduction equation in the mercurian mantle to calculate an estimate of heat flux at the CMB.  This heat-flux variation is then used to inform the boundary conditions of a dynamo simulation using the \texttt{Calypso} code.
 
 \section*{Dynamo simulation}
 
@@ -172,8 +190,8 @@ homogeneous heat flux, (2) variations in the heat flux for the conducting-mantle
 Figure \ref{flux}, and (3) scaled to ten times the conducting-mantle variations.
 \begin{center}
 \begin{tabular}{cc}
- \includegraphics[width=0.1\textwidth]{br_cmb_x0.png} &
- \includegraphics[width=0.1\textwidth]{br_cmb_x10.png}
+ \includegraphics[width=0.16\textwidth]{br_cmb_x0.png} &
+ \includegraphics[width=0.16\textwidth]{br_cmb_x10.png}
 \end{tabular}
 \captionof{figure}{ Right: radial magnetic field at the CMB for the case of ten times larger heat flux heterogeneity case (case 3). Left: radial magnetic field in the homogeneous heat flux case (case 1).}
 \label{dynamo}
@@ -181,25 +199,29 @@ Figure \ref{flux}, and (3) scaled to ten times the conducting-mantle variations.
 
 \begin{center}
 \begin{tabular}{c}
- \includegraphics[width=0.15\textwidth]{gauss_coefficients.pdf} 
+ \includegraphics[width=0.32\textwidth]{coeff_flat.png} 
 \end{tabular}
-\captionof{figure}{ Time evolution of the first three axisymmetric components of Gauss coefficients at Mercury's surface. A significant difference is only observed in the $g_{3}^{0}$ component, which relects the position of intense patch (see \ref{dynamo}, right). }
+\captionof{figure}{ Time evolution of the first three axisymmetric components of
+  Gauss coefficients at Mercury's surface. A significant difference is only observed
+  in the $g_{3}^{0}$ component, which reflects the position of the intense magnetic
+  field patch (see \ref{dynamo}, right). }
 \label{gauss}
 \end{center}
 
 
 To summarize preliminary results from our dynamo simulations:
 \begin{itemize}
-\item Large heat fluxes at the poles induce intense magnetic fields inside of tangent cylinder.
-\item This magnetic patch is not stable in the present parameter regime.
-\item The obtained magnetic field is larger than in the homogeneous heat flux case in the dipolar regime. The present solution may be too strong to explain the mercury's magnetic field.
+\item Large heat fluxes at the poles induce intense magnetic fields inside the tangent cylinder.
+\item This magnetic field patch is not stable in the present parameter regime.
+\item The obtained magnetic field is larger than in the homogeneous heat flux case in the dipolar regime. The present solution may be too strong to explain the Mercury's magnetic field.
 \end{itemize}
-
+\vspace{30pt}
 { \large Acknowledgements \\ \small
 This project was initiated at the 2014 CIDER summer program.  We are grateful for continuing support from CIDER- NSF: 1135452.
 Data for the Fe-FeS liquidus model was compiled and interpolated by June Wick and Nick Knezek.
 We are grateful for helpful discussions with Bruce Buffett, Chris Davies, Mathieu Dumberry, and numerous CIDER participants.
 }
+\vspace{30pt}
 \\
 { \large References \\ \tiny
 Anzellini, S., Dewaele, A, Mezouar, M., Loubeyre, P., \& Morard, G. (2013). Melting of
