@@ -116,9 +116,10 @@ interior model for Mercury, with 6 wt.\% S.  Right: Liquidus curves for differen
  \includegraphics[width=0.15\textwidth]{clapeyron_1.png} &
  \includegraphics[width=0.165\textwidth]{core_energetics.png} \\
 \end{tabular}
-\captionof{figure}{Left: Clapeyron slopes and adiabats for pure liquid iron with
-different parameterizations.  Right:  Models for latent heat and gravitational energy
-release from a solidifying core, with corresponding thermal energy change.}
+\captionof{figure}{Left: Clapeyron slopes for different interpolations of the iron
+melting curve, compared to adiabats with various parameterizations.  Right:  Models
+for latent heat and gravitational energy release from a solidifying core, with
+corresponding thermal energy change.}
 \label{core_energy}
 \end{center}
 
@@ -131,7 +132,7 @@ steeper melting temperature corresponding to  ``Earth-like'' conditions. For hig
 values of the thermal expansivity, $\alpha$, the core will be ``snowing'' at all
 times. For lower $\alpha$, the onset of snowing occurs with increasing S-content.
 
-The interior structure model can be coupled to a parameterized convetion model for
+The interior structure model is coupled to a parameterized convetion model for
 the thermal evolution of the planet. Shown on the right in Figure \ref{core_energy}
 are the changes in latent heat, gravitational and thermal energy in the core per
 change in core mantle boundary temperature for bulk composition of 6 wt.\% S. 
@@ -148,7 +149,11 @@ change in core mantle boundary temperature for bulk composition of 6 wt.\% S.
   thermal evolution model couples the core thermodynamics in the previous section
   with the parameterized convection model of Stevenson et al (1983). The colored
   regions show the solution for models with $\pm \mathrm{100}$ degrees C. Note the
-  break in slope of the $\mathrm{T_{cmb}}$ temperature with the onset of inner core growth at $\sim 2.5\times10^2~\mathrm{Ma}$. Right: Growth of the Inner Core versus time. This model run yields an inner core of $ \sim 1400~\mathrm{km}$, slightly exceeding the upper bound of inner core size as constrained by Dumberry and Rivoldini (2015).}
+  break in slope of the $\mathrm{T_{cmb}}$ temperature with the onset of inner core
+  growth at $\sim 2.5\times10^2~\mathrm{Ma}$. Right: Growth of the Inner Core versus
+  time. This model run yields an inner core of $ \sim 1400~\mathrm{km}$, slightly
+exceeding the upper bound of inner core size as constrained by Dumberry and Rivoldini
+(2015).}
   \label{thermal}
 \end{center}
 
@@ -157,7 +162,7 @@ change in core mantle boundary temperature for bulk composition of 6 wt.\% S.
 \begin{tabular}{c}
  \includegraphics[width=0.28\textwidth]{CMB_flux.pdf} 
 \end{tabular}
-\captionof{figure}{ Heat flux variations for a conducting mantle with negligible internal heating. The total CMB heat flux is $\sim 0.6~\mathrm{TW}$, and peak-to-peak variations are about 20\%. }
+\captionof{figure}{ Heag flux variations due to insolation for a conducting mantle with negligible internal heating. The total CMB heat flux is $\sim 0.6~\mathrm{TW}$, and peak-to-peak variations are about 20\%. }
 \label{flux}
 \end{center}
 
@@ -184,7 +189,7 @@ Mercury's unusual 3:2 spin-orbit resonance causes persistent temperature variati
 \section*{Dynamo simulation}
 
 We model a thermally driven dynamo in a rotating spherical shell with $r_{i}/r_{o} =
-0.35$ (i.e.  $r_i$ = 700~km).  The dynamo is driven with a non-dimensional heat flux
+0.35$ ($r_i$ = 700~km for Mercury).  The dynamo is driven with a non-dimensional heat flux
 $\mathrm{Nu} \sim 5$.  We test three cases for the heat-flux boundary condition: (1)
 homogeneous heat flux, (2) variations in the heat flux for the conducting-mantle in
 Figure \ref{flux}, and (3) scaled to ten times the conducting-mantle variations.
@@ -232,7 +237,10 @@ M. Dumberry and A. Rivoldini, Mercury's inner core size and core-crystallization
 Grott, M., D. Breuer, and M. Laneuville. "Thermo-chemical evolution and global contraction of Mercury." Earth and Planetary Science Letters 307.1 (2011): 135-146. \\
 Hauck, Steven A., and Roger J. Phillips. "Thermal and crustal evolution of Mars." Journal of Geophysical Research: Planets (1991–2012) 107.E7 (2002): 6-1. \\
 Matsui, Hiroaki, Eric King, and Bruce Buffett. "Multiscale convection in a geodynamo simulation with uniform heat flux along the outer boundary." Geochemistry, Geophysics, Geosystems 15.8 (2014) \\
-Morschhauser, A., M. Grott, and D. Breuer. "Crustal recycling, mantle dehydration, and the thermal evolution of Mars." Icarus 212.2 (2011): 541-558. \\
+Morschhauser, A., M. Grott, and D. Breuer. "Crustal recycling, mantle dehydration,
+and the thermal evolution of Mars." Icarus 212.2 (2011): 541-558. \\
+Nimmo, F. Energetics of the Core Treatise on Geophysics vol. 8, pp. 31-66, (G.
+Schubert, ed.), 2007. \\
 Williams, Quentin. "Bottom-up versus top-down solidification of the cores of small solar system bodies: Constraints on paradoxical cores." Earth and Planetary Science Letters 284.3 (2009): 564-569.
  }
 
