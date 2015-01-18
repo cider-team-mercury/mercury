@@ -96,7 +96,7 @@ class radiogenic_heating(object):
         :param melt_fraction:
         :return:
         '''
-        concentration_melt = 1/(melt_fraction+self.bulk_distribution_coefficient*(1-melt_fraction))
+        concentration_melt = 1./(melt_fraction+self.bulk_distribution_coefficient*(1.-melt_fraction))
         return concentration_melt
 
 # ------------------------------------------------------------- #
